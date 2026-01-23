@@ -1,1 +1,1 @@
-# Risk-Prediction-Models-in-Python-Credit-Volatility-
+Just some random projects on the side
