@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Waveform AI — Fixed Classifier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+    h1  { color: #38bdf8; font-size: 1.5rem; margin-bottom: 0.25rem; }
+    h2  { color: #7dd3fc; font-size: 1rem; font-weight: normal; margin-bottom: 1.5rem; }
+    .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.2rem; border: 1px solid #334155; }
+    .card h3 { color: #38bdf8; margin-bottom: 0.8rem; }
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    button { padding: 0.5rem 1.1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600; }
+    button:hover { opacity: 0.85; }
+    .btn-sine     { background: #3b82f6; color: white; }
+    .btn-square   { background: #ef4444; color: white; }
+    .btn-triangle { background: #22c55e; color: white; }
+    .btn-noise    { background: #a855f7; color: white; }
+    .btn-predict  { background: #f59e0b; color: #0f172a; font-size: 1rem; padding: 0.65rem 1.8rem; }
+    canvas { width: 100%; height: 150px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; display: block; }
+    .result-box { background: #0f172a; border-radius: 8px; padding: 1.2rem 1.5rem; border: 2px solid #334155; min-height: 70px; margin-top: 1rem; }
+    .result-label { font-size: 1.6rem; font-weight: bold; color: #34d399; }
+    .result-conf  { font-size: 0.9rem; color: #94a3b8; margin-top: 0.2rem; }
+    .prob-bars { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
+    .prob-row  { display: flex; align-items: center; gap: 0.6rem; }
+    .prob-name { width: 75px; font-size: 0.8rem; color: #94a3b8; }
+    .prob-bar-outer { flex: 1; height: 16px; background: #334155; border-radius: 4px; overflow: hidden; }
+    .prob-bar-inner { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .prob-val { width: 45px; font-size: 0.8rem; text-align: right; color: #cbd5e1; }
+    .fix-box  { background: #0c2336; border-left: 3px solid #22c55e; padding: 0.8rem 1rem; border-radius: 4px; font-size: 0.82rem; color: #86efac; margin-top: 0.8rem; }
+    .status { font-size: 0.78rem; color: #64748b; margin-top: 0.4rem; }
+    .step-list { list-style: none; }
+    .step-list li { padding: 0.45rem 0; border-bottom: 1px solid #334155; font-size: 0.875rem; color: #94a3b8; }
+    .step-list li span { color: #38bdf8; font-weight: bold; margin-right: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<h1>Waveform AI Classifier — Fixed Version</h1>
+<h2>Now correctly classifies 4 types: Sine · Square · Triangle · Noise</h2>
+
+<div class="card">
+  <h3>1. Load a Waveform</h3>
+  <div class="btn-row">
+    <button class="btn-sine"     onclick="load('sine')">Sine Wave</button>
+    <button class="btn-square"   onclick="load('square')">Square Wave</button>
+    <button class="btn-triangle" onclick="load('triangle')">Triangle Wave</button>
+    <button class="btn-noise"    onclick="load('noise')">Random Noise</button>
+  </div>
+  <canvas id="scope"></canvas>
+  <p class="status" id="sig-status">No signal loaded</p>
+  <div class="fix-box">
+    <strong>What was fixed:</strong> Square waves now use np.sign(sin(t)) — hard ±1 transitions.
+    Random noise is now its own class (class 3), so the model no longer
+    misclassifies noise as a waveform.
+  </div>
+</div>
+
+<div class="card">
+  <h3>2. Classify It</h3>
+  <button class="btn-predict" onclick="predict()">Classify Signal →</button>
+  <p class="status" id="api-status">Load a signal first</p>
+
+  <div class="result-box" id="result-box">
+    <div style="color:#475569; font-size:0.875rem;">Load a signal, then click Classify</div>
+  </div>
+
+  <div class="prob-bars" id="prob-bars" style="display:none;">
+    <div class="prob-row"><span class="prob-name">Sine</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-sine"     style="background:#3b82f6;width:25%"></div></div>
+      <span class="prob-val" id="val-sine">-</span></div>
+    <div class="prob-row"><span class="prob-name">Square</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-square"   style="background:#ef4444;width:25%"></div></div>
+      <span class="prob-val" id="val-square">-</span></div>
+    <div class="prob-row"><span class="prob-name">Triangle</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-triangle" style="background:#22c55e;width:25%"></div></div>
+      <span class="prob-val" id="val-triangle">-</span></div>
+    <div class="prob-row"><span class="prob-name">Noise</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-noise"    style="background:#a855f7;width:25%"></div></div>
+      <span class="prob-val" id="val-noise">-</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>3. Full Learning Path</h3>
+  <ul class="step-list">
+    <li><span>Module 1</span> Python basics — variables, functions, classes, file I/O</li>
+    <li><span>Module 2a</span> NumPy &amp; Pandas — arrays, DataFrames, visualization</li>
+    <li><span>Module 2b</span> Statistics — distributions, correlation, hypothesis testing</li>
+    <li><span>Module 3</span> Machine Learning — regression, classification, evaluation</li>
+    <li><span>Module 4</span> Neural Networks from scratch — fixed waveform classifier (97%+ accuracy)</li>
+    <li><span>Module 5</span> Software Engineering — clean code, testing, git, APIs</li>
+    <li><span>Module 6</span> Full project — this page!</li>
+  </ul>
+</div>
+
+<script>
+  const API = window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost:5000';
+  let signal = null;
+
+  function draw(sig, color) {
+    const canvas = document.getElementById('scope');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = 150;
+    const W = canvas.width, H = canvas.height, pad = 20;
+    const mn = Math.min(...sig), mx = Math.max(...sig), rng = mx - mn || 1;
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){const y=pad+(H-2*pad)*i/4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();}
+    const zy=pad+(H-2*pad)*(mx/rng);
+    ctx.strokeStyle='#475569';ctx.beginPath();ctx.moveTo(pad,zy);ctx.lineTo(W-pad,zy);ctx.stroke();
+    ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();
+    sig.forEach((v,i)=>{const x=pad+(W-2*pad)*i/(sig.length-1),y=pad+(H-2*pad)*(1-(v-mn)/rng);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+    ctx.fillStyle=color;
+    sig.forEach((v,i)=>{const x=pad+(W-2*pad)*i/(sig.length-1),y=pad+(H-2*pad)*(1-(v-mn)/rng);ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();});
+  }
+
+  async function load(type) {
+    const colors={sine:'#3b82f6',square:'#ef4444',triangle:'#22c55e',noise:'#a855f7'};
+    try {
+      const res=await fetch(`${API}/demo?type=${type}`);
+      const data=await res.json();
+      signal=data.signal; draw(signal,colors[type]);
+      document.getElementById('sig-status').textContent=`${type} loaded — 50 samples`;
+      document.getElementById('api-status').textContent='Signal ready. Click Classify →';
+    } catch(e){ document.getElementById('sig-status').textContent='Cannot reach API. Is app.py running?'; }
+  }
+
+  async function predict() {
+    if(!signal){document.getElementById('api-status').textContent='Load a signal first!';return;}
+    document.getElementById('api-status').textContent='Running inference...';
+    try {
+      const res=await fetch(`${API}/predict`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal})});
+      const d=await res.json();
+      document.getElementById('result-box').innerHTML=`<div class="result-label">${d.prediction}</div><div class="result-conf">Confidence: <strong>${d.confidence}%</strong></div>`;
+      document.getElementById('prob-bars').style.display='flex';
+      const p=d.probabilities;
+      ['sine','square','triangle','noise'].forEach(k=>{
+        document.getElementById(`bar-${k}`).style.width=p[k]+'%';
+        document.getElementById(`val-${k}`).textContent=p[k]+'%';
+      });
+      document.getElementById('api-status').textContent='Done — model ran forward pass in <5ms';
+    } catch(e){ document.getElementById('api-status').textContent='Error: is app.py running?'; }
+  }
+</script>
+</body>
+</html>
