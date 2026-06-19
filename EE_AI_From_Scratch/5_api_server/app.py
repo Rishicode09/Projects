@@ -17,7 +17,7 @@ How to run:
   → Server starts at http://localhost:5000
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import numpy as np
 import os, sys
@@ -27,6 +27,10 @@ from neural_network import NeuralNetwork
 
 app = Flask(__name__)
 CORS(app)  # allow frontend (different port) to talk to this server
+
+# Folder that holds index.html (the frontend). When deployed, the API
+# serves the web page too, so you only run ONE service in the cloud.
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', '5_frontend')
 
 # ─────────────────────────────────────────────
 # LOAD TRAINED MODEL ON STARTUP
@@ -57,6 +61,13 @@ print("Model loaded successfully. Server ready.")
 # ─────────────────────────────────────────────
 # API ENDPOINTS
 # ─────────────────────────────────────────────
+
+@app.route('/', methods=['GET'])
+def home():
+    """Serve the frontend web page at the root URL.
+    EE: the front panel of your instrument — what the user sees first."""
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -130,4 +141,7 @@ if __name__ == '__main__':
     print("  POST /predict {signal:[...50 values...]}  → classify")
     print("\n  Open 5_frontend/index.html in your browser")
     print("="*55 + "\n")
-    app.run(debug=True, port=5000)
+    # Cloud platforms (Render, Railway, etc.) tell us which port to use
+    # via the PORT environment variable. Locally it defaults to 5000.
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

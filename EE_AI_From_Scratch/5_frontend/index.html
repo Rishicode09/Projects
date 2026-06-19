@@ -157,7 +157,11 @@
 </div>
 
 <script>
-  const API = 'http://localhost:5000';
+  // When served by the Flask app (deployed or local), use the same origin.
+  // Falls back to localhost:5000 if you open the file directly off disk.
+  const API = window.location.origin.startsWith('http')
+    ? window.location.origin
+    : 'http://localhost:5000';
   let currentSignal = null;
 
   // ── Draw signal on canvas (like a scope display) ──────────────────
