@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><title>Waveform AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;padding:2rem}
+h1{color:#38bdf8;font-size:1.6rem;margin-bottom:.3rem}
+h2{color:#7dd3fc;font-size:1rem;font-weight:normal;margin-bottom:1.5rem}
+.card{background:#1e293b;border-radius:12px;padding:1.5rem;margin-bottom:1.2rem;border:1px solid #334155}
+.card h3{color:#38bdf8;margin-bottom:.8rem}
+.row{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem}
+button{padding:.55rem 1.2rem;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;font-weight:600}
+.bs{background:#3b82f6;color:#fff}.bq{background:#ef4444;color:#fff}
+.bt{background:#22c55e;color:#fff}.bn{background:#8b5cf6;color:#fff}
+.bc{background:#f59e0b;color:#0f172a;font-size:1rem;padding:.7rem 2rem}
+canvas{width:100%;height:160px;background:#0f172a;border-radius:8px;border:1px solid #334155;display:block}
+.rb{background:#0f172a;border-radius:8px;padding:1.2rem;border:2px solid #334155;min-height:80px;margin-top:1rem}
+.rl{font-size:1.8rem;font-weight:bold;color:#34d399}
+.rc{font-size:.9rem;color:#94a3b8;margin-top:.2rem}
+.pb{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem}
+.pr{display:flex;align-items:center;gap:.8rem}
+.pn{width:80px;font-size:.85rem;color:#94a3b8}
+.bo{flex:1;height:18px;background:#334155;border-radius:4px;overflow:hidden}
+.bi{height:100%;border-radius:4px;transition:width .4s}
+.pv{width:45px;font-size:.85rem;text-align:right;color:#cbd5e1}
+.st{font-size:.8rem;color:#64748b;margin-top:.5rem}
+.ee{background:#162032;border-left:3px solid #38bdf8;padding:.8rem 1rem;border-radius:4px;font-size:.85rem;color:#94a3b8;margin-top:.8rem}
+li{padding:.4rem 0;border-bottom:1px solid #334155;font-size:.88rem;color:#94a3b8;list-style:none}
+li b{color:#38bdf8}
+</style></head><body>
+<h1>Waveform AI Classifier</h1>
+<h2>Full-Stack AI built from scratch for Electrical Engineers</h2>
+<div class="card"><h3>1. Load a Waveform</h3>
+<div class="row">
+  <button class="bs" onclick="load('sine')">Sine Wave</button>
+  <button class="bq" onclick="load('square')">Square Wave</button>
+  <button class="bt" onclick="load('triangle')">Triangle Wave</button>
+  <button class="bn" onclick="noise()">Random Noise</button>
+</div>
+<canvas id="scope"></canvas>
+<p class="st" id="ss">No signal loaded</p>
+<div class="ee"><b>EE Analogy:</b> This is your oscilloscope — 50 ADC samples. The AI gets exactly these 50 numbers.</div>
+</div>
+<div class="card"><h3>2. Classify It</h3>
+<button class="bc" onclick="classify()">Classify Signal &rarr;</button>
+<p class="st" id="as">Load a signal first</p>
+<div class="rb" id="rb"><div style="color:#475569">Load a signal then click Classify</div></div>
+<div class="pb" id="pb" style="display:none">
+  <div class="pr"><span class="pn">Sine</span><div class="bo"><div class="bi" id="bar-sine" style="background:#3b82f6;width:33%"></div></div><span class="pv" id="val-sine">--</span></div>
+  <div class="pr"><span class="pn">Square</span><div class="bo"><div class="bi" id="bar-square" style="background:#ef4444;width:33%"></div></div><span class="pv" id="val-square">--</span></div>
+  <div class="pr"><span class="pn">Triangle</span><div class="bo"><div class="bi" id="bar-triangle" style="background:#22c55e;width:33%"></div></div><span class="pv" id="val-triangle">--</span></div>
+</div>
+<div class="ee"><b>What happens:</b> Browser sends 50 values to Flask &rarr; normalize &rarr; forward pass &rarr; probabilities &rarr; display.</div>
+</div>
+<div class="card"><h3>3. How It Was Built</h3><ul>
+  <li><b>Step 1</b> 900 noisy waveforms generated as labeled training data</li>
+  <li><b>Step 2</b> Single neuron: weighted sum + ReLU = summing amp + half-wave rectifier</li>
+  <li><b>Step 3</b> Network: 50&rarr;64&rarr;32&rarr;3 (cascaded filter stages)</li>
+  <li><b>Step 4</b> 500 epochs backprop: auto-tuned 6,531 weights to ~99% accuracy</li>
+  <li><b>Step 5</b> Flask REST API + this HTML page = full-stack AI</li>
+</ul></div>
+<script>
+const API=window.location.origin.startsWith('http')?window.location.origin:'http://localhost:5000';
+let sig=null;
+function draw(s,color){
+  const c=document.getElementById('scope'),ctx=c.getContext('2d');
+  c.width=c.offsetWidth;c.height=160;
+  const W=c.width,H=c.height,p=20,mn=Math.min(...s),mx=Math.max(...s),r=(mx-mn)||1;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1e3a5f';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=p+(H-2*p)*i/4;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(W-p,y);ctx.stroke();}
+  ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();
+  s.forEach((v,i)=>{const x=p+(W-2*p)*i/(s.length-1),y=p+(H-2*p)*(1-(v-mn)/r);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();ctx.fillStyle=color;
+  s.forEach((v,i)=>{const x=p+(W-2*p)*i/(s.length-1),y=p+(H-2*p)*(1-(v-mn)/r);ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();});
+}
+async function load(type){
+  const cl={sine:'#3b82f6',square:'#ef4444',triangle:'#22c55e'};
+  try{const d=await(await fetch(API+'/demo?type='+type)).json();sig=d.signal;draw(sig,cl[type]);
+    document.getElementById('ss').textContent=type+' wave loaded (50 samples)';
+    document.getElementById('as').textContent='Ready — click Classify';
+  }catch(e){document.getElementById('ss').textContent='Cannot reach API — is app.py running?';}
+}
+function noise(){sig=Array.from({length:50},()=>Math.random()*2-1);draw(sig,'#a855f7');
+  document.getElementById('ss').textContent='Random noise (50 samples)';
+  document.getElementById('as').textContent='Ready — click Classify';}
+async function classify(){
+  if(!sig){document.getElementById('as').textContent='Load a signal first!';return;}
+  document.getElementById('as').textContent='Sending to model...';
+  try{const d=await(await fetch(API+'/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal:sig})})).json();
+    document.getElementById('rb').innerHTML='<div class="rl">'+d.prediction+'</div><div class="rc">Confidence: <b>'+d.confidence+'%</b></div>';
+    const pb=d.probabilities;document.getElementById('pb').style.display='flex';
+    ['sine','square','triangle'].forEach(k=>{document.getElementById('bar-'+k).style.width=pb[k]+'%';document.getElementById('val-'+k).textContent=pb[k]+'%';});
+    document.getElementById('as').textContent='Done!';
+  }catch(e){document.getElementById('as').textContent='Error — make sure app.py is running';}
+}
+</script></body></html>
