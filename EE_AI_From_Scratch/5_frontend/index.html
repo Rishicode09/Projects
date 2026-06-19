@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Waveform AI Classifier — EE Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { color: #38bdf8; font-size: 1.6rem; margin-bottom: 0.3rem; }
+    h2 { color: #7dd3fc; font-size: 1.1rem; font-weight: normal; margin-bottom: 1.5rem; }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.2rem;
+      border: 1px solid #334155;
+    }
+    .card h3 { color: #38bdf8; margin-bottom: 0.8rem; font-size: 1rem; }
+    .btn-row { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    button {
+      padding: 0.55rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    .btn-sine     { background: #3b82f6; color: white; }
+    .btn-square   { background: #ef4444; color: white; }
+    .btn-triangle { background: #22c55e; color: white; }
+    .btn-predict  { background: #f59e0b; color: #0f172a; font-size: 1rem; padding: 0.7rem 2rem; }
+    .btn-random   { background: #8b5cf6; color: white; }
+
+    canvas {
+      width: 100%;
+      height: 160px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      display: block;
+    }
+
+    .result-box {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      border: 2px solid #334155;
+      min-height: 80px;
+    }
+    .result-label { font-size: 1.8rem; font-weight: bold; color: #34d399; }
+    .result-conf  { font-size: 0.95rem; color: #94a3b8; margin-top: 0.2rem; }
+
+    .prob-bars { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+    .prob-row  { display: flex; align-items: center; gap: 0.8rem; }
+    .prob-name { width: 80px; font-size: 0.85rem; color: #94a3b8; }
+    .prob-bar-outer { flex: 1; height: 18px; background: #334155; border-radius: 4px; overflow: hidden; }
+    .prob-bar-inner { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .prob-val  { width: 45px; font-size: 0.85rem; text-align: right; color: #cbd5e1; }
+
+    .step-list { list-style: none; padding: 0; }
+    .step-list li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #334155;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+    .step-list li span { color: #38bdf8; font-weight: bold; margin-right: 0.5rem; }
+    .ee-box {
+      background: #162032;
+      border-left: 3px solid #38bdf8;
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 0.8rem;
+    }
+    .status { font-size: 0.8rem; color: #64748b; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<h1>⚡ Waveform AI Classifier</h1>
+<h2>Full-Stack AI Demo — Built from Scratch for Electrical Engineers</h2>
+
+<!-- SIGNAL SELECTOR -->
+<div class="card">
+  <h3>1. Load a Waveform (like selecting a signal source on your bench)</h3>
+  <div class="btn-row">
+    <button class="btn-sine"     onclick="loadSignal('sine')">Sine Wave</button>
+    <button class="btn-square"   onclick="loadSignal('square')">Square Wave</button>
+    <button class="btn-triangle" onclick="loadSignal('triangle')">Triangle Wave</button>
+    <button class="btn-random"   onclick="loadNoise()">Random Noise</button>
+  </div>
+  <canvas id="oscilloscope"></canvas>
+  <p class="status" id="signal-status">No signal loaded</p>
+  <div class="ee-box">
+    <strong>EE Analogy:</strong> This is your "oscilloscope" — 50 samples of a waveform,
+    exactly like your ADC would capture. The AI receives these 50 numbers.
+  </div>
+</div>
+
+<!-- PREDICTION -->
+<div class="card">
+  <h3>2. Run the AI Model (send signal to inference API)</h3>
+  <button class="btn-predict" onclick="predict()">Classify Signal →</button>
+  <p class="status" id="api-status">Waiting for signal...</p>
+
+  <div class="result-box" id="result-box" style="margin-top:1rem;">
+    <div style="color:#475569; font-size:0.9rem;">Load a signal and click Classify</div>
+  </div>
+
+  <div class="prob-bars" id="prob-bars" style="display:none;">
+    <div class="prob-row">
+      <span class="prob-name">Sine</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-sine" style="background:#3b82f6; width:33%;"></div></div>
+      <span class="prob-val" id="val-sine">—</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-name">Square</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-square" style="background:#ef4444; width:33%;"></div></div>
+      <span class="prob-val" id="val-square">—</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-name">Triangle</span>
+      <div class="prob-bar-outer"><div class="prob-bar-inner" id="bar-triangle" style="background:#22c55e; width:33%;"></div></div>
+      <span class="prob-val" id="val-triangle">—</span>
+    </div>
+  </div>
+
+  <div class="ee-box" style="margin-top:0.8rem;">
+    <strong>What happens when you click:</strong><br>
+    Your browser sends the 50 signal values to Flask → Flask normalizes them →
+    feeds them through the neural network → returns probabilities →
+    this page shows the result. Total round-trip: ~5ms.
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="card">
+  <h3>3. How It Was Built (your learning path)</h3>
+  <ul class="step-list">
+    <li><span>Step 1</span> Generated 900 waveforms (300 each type) as training data — like building a signal library</li>
+    <li><span>Step 2</span> Built a single neuron: weighted sum + ReLU activation — like an op-amp + half-wave rectifier</li>
+    <li><span>Step 3</span> Stacked neurons into 3 layers (50→64→32→3) — like cascaded filter stages</li>
+    <li><span>Step 4</span> Trained for 500 epochs with backpropagation — like auto-tuning 6,531 potentiometers</li>
+    <li><span>Step 5</span> Deployed as a Flask REST API + this HTML frontend — your instrument interface</li>
+  </ul>
+</div>
+
+<script>
+  const API = 'http://localhost:5000';
+  let currentSignal = null;
+
+  // ── Draw signal on canvas (like a scope display) ──────────────────
+  function drawSignal(signal, color = '#38bdf8') {
+    const canvas = document.getElementById('oscilloscope');
+    const ctx    = canvas.getContext('2d');
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = 160;
+
+    const W = canvas.width, H = canvas.height;
+    const pad = 20;
+    const min = Math.min(...signal), max = Math.max(...signal);
+    const range = max - min || 1;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.strokeStyle = '#1e3a5f';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad + (H - 2*pad) * i / 4;
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+    }
+
+    // Zero line
+    const zeroY = pad + (H - 2*pad) * (max / range);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad, zeroY); ctx.lineTo(W-pad, zeroY); ctx.stroke();
+
+    // Signal
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    signal.forEach((v, i) => {
+      const x = pad + (W - 2*pad) * i / (signal.length - 1);
+      const y = pad + (H - 2*pad) * (1 - (v - min) / range);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots at samples
+    ctx.fillStyle = color;
+    signal.forEach((v, i) => {
+      const x = pad + (W - 2*pad) * i / (signal.length - 1);
+      const y = pad + (H - 2*pad) * (1 - (v - min) / range);
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+    });
+  }
+
+  // ── Load signal from API ──────────────────────────────────────────
+  async function loadSignal(type) {
+    const colors = { sine: '#3b82f6', square: '#ef4444', triangle: '#22c55e' };
+    try {
+      const res  = await fetch(`${API}/demo?type=${type}`);
+      const data = await res.json();
+      currentSignal = data.signal;
+      drawSignal(currentSignal, colors[type]);
+      document.getElementById('signal-status').textContent =
+        `${type.charAt(0).toUpperCase() + type.slice(1)} wave loaded — 50 samples ready`;
+      document.getElementById('api-status').textContent = 'Signal loaded. Click Classify →';
+    } catch (e) {
+      document.getElementById('signal-status').textContent =
+        'Cannot reach API. Is 5_api_server/app.py running? (python 5_api_server/app.py)';
+    }
+  }
+
+  function loadNoise() {
+    currentSignal = Array.from({length: 50}, () => Math.random() * 2 - 1);
+    drawSignal(currentSignal, '#a855f7');
+    document.getElementById('signal-status').textContent = 'Random noise loaded — 50 samples';
+    document.getElementById('api-status').textContent = 'Signal loaded. Click Classify →';
+  }
+
+  // ── Send signal to model and show result ─────────────────────────
+  async function predict() {
+    if (!currentSignal) {
+      document.getElementById('api-status').textContent = 'Load a signal first!';
+      return;
+    }
+
+    document.getElementById('api-status').textContent = 'Sending to model...';
+
+    try {
+      const res  = await fetch(`${API}/predict`, {
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify({ signal: currentSignal })
+      });
+      const data = await res.json();
+
+      // Show result
+      document.getElementById('result-box').innerHTML = `
+        <div class="result-label">📊 ${data.prediction}</div>
+        <div class="result-conf">Confidence: <strong>${data.confidence}%</strong></div>
+      `;
+
+      // Show probability bars
+      const probs = data.probabilities;
+      document.getElementById('prob-bars').style.display = 'flex';
+      ['sine', 'square', 'triangle'].forEach(k => {
+        const val = probs[k];
+        document.getElementById(`bar-${k}`).style.width = val + '%';
+        document.getElementById(`val-${k}`).textContent = val + '%';
+      });
+
+      document.getElementById('api-status').textContent =
+        `API responded in <1s — model ran ${50*64 + 64*32 + 32*3} multiply-adds`;
+    } catch (e) {
+      document.getElementById('api-status').textContent =
+        'Error: Is app.py running? Run: python 5_api_server/app.py';
+    }
+  }
+</script>
+
+</body>
+</html>
