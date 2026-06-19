@@ -1,0 +1,20 @@
+# render.yaml — One-click deployment config for Render.com
+# =========================================================
+# EE Analogy: This is the "schematic + BOM" for your deployment.
+# Render reads it and knows exactly how to build and power up your app.
+#
+# How to use:
+#   1. Push this whole folder to a GitHub repo
+#   2. Go to render.com → New → Blueprint → pick your repo
+#   3. Render reads this file and deploys automatically
+#
+services:
+  - type: web                      # a web service (has a public URL)
+    name: waveform-ai-classifier
+    runtime: python
+    rootDir: EE_AI_From_Scratch    # remove this line if the folder IS the repo root
+    buildCommand: |
+      pip install -r requirements.txt
+      python build.py              # generates data + trains the model
+    startCommand: gunicorn --chdir 5_api_server app:app --bind 0.0.0.0:$PORT
+    plan: free
