@@ -8,7 +8,7 @@
 // It returns an object with: the total, each person's fair share,
 // every person's balance, and the list of payments to settle up.
 
-export function settleUp(people, expenses) {
+export function settleUp(people, expenses, settlements = []) {
   // --- Step 1: Total spent ---
   // .reduce(...) walks through the list adding each amount onto a running sum.
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -36,6 +36,14 @@ export function settleUp(people, expenses) {
   // Subtract everyone's fair share.
   people.forEach((name) => {
     balances[name] -= perPersonShare;
+  });
+
+  // Apply any settlements (debts already paid off in real life).
+  // When "from" pays "to", it's as if "from" paid out money (debt shrinks)
+  // and "to" received money (what they're owed shrinks).
+  settlements.forEach((s) => {
+    if (balances[s.from] !== undefined) balances[s.from] += s.amount;
+    if (balances[s.to] !== undefined) balances[s.to] -= s.amount;
   });
 
   // --- Step 4: Turn balances into actual payments ---
