@@ -1,0 +1,11 @@
+# Dependencies (re-created by "npm install")
+/node_modules
+
+# Next.js build output
+/.next
+/out
+
+# Misc
+.DS_Store
+*.log
+.env*
