@@ -1,7 +1,4 @@
 import { Text as RNText, type TextProps } from 'react-native';
-import { styled } from 'nativewind';
-
-const StyledText = styled(RNText);
 
 type Variant = 'display' | 'title' | 'subtitle' | 'body' | 'caption';
 
@@ -22,5 +19,5 @@ interface Props extends TextProps {
 /** Themed text primitive. Defaults to dark-mode-aware foreground colors. */
 export function Text({ variant = 'body', muted, className = '', ...rest }: Props) {
   const color = muted ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100';
-  return <StyledText className={`${VARIANT_CLASS[variant]} ${color} ${className}`} {...rest} />;
+  return <RNText className={`${VARIANT_CLASS[variant]} ${color} ${className}`} {...rest} />;
 }

@@ -1,13 +1,13 @@
 module.exports = function (api) {
-  const isTest = api.env('test');
+  // NODE_ENV-keyed cache so the test/app preset choice below is respected.
   api.cache.using(() => process.env.NODE_ENV);
+  const isTest = api.env('test');
   return {
-    // NativeWind's babel preset is only needed for the running app; the Jest
-    // suite covers pure logic, so we skip it under test to avoid coupling tests
-    // to the styling toolchain.
+    // The Jest suite covers pure logic and renders no styled components, so it
+    // skips NativeWind's transform; the app build uses the full v4 setup.
     presets: isTest
       ? ['babel-preset-expo']
-      : ['babel-preset-expo', 'nativewind/babel'],
+      : [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
     plugins: [
       [
         'module-resolver',
@@ -18,6 +18,9 @@ module.exports = function (api) {
           },
         },
       ],
+      // Must be listed last. Required by react-native-reanimated, which
+      // NativeWind v4 depends on internally.
+      'react-native-reanimated/plugin',
     ],
   };
 };

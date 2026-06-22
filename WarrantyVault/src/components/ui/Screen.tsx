@@ -1,22 +1,26 @@
 import { View, type ViewProps } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { styled } from 'nativewind';
-
-const StyledSafeArea = styled(SafeAreaView);
-const StyledView = styled(View);
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props extends ViewProps {
   className?: string;
   padded?: boolean;
 }
 
-/** Root screen container handling safe areas + themed background. */
+/**
+ * Root screen container handling the top safe area + themed background. Uses
+ * insets directly (rather than SafeAreaView) so NativeWind classes apply to a
+ * plain View.
+ */
 export function Screen({ className = '', padded = true, children, ...rest }: Props) {
+  const insets = useSafeAreaInsets();
   return (
-    <StyledSafeArea className="flex-1 bg-background-light dark:bg-background-dark" edges={['top']}>
-      <StyledView className={`flex-1 ${padded ? 'px-4' : ''} ${className}`} {...rest}>
+    <View
+      className="flex-1 bg-background-light dark:bg-background-dark"
+      style={{ paddingTop: insets.top }}
+    >
+      <View className={`flex-1 ${padded ? 'px-4' : ''} ${className}`} {...rest}>
         {children}
-      </StyledView>
-    </StyledSafeArea>
+      </View>
+    </View>
   );
 }

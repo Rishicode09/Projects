@@ -1,9 +1,6 @@
 import { ActivityIndicator, Pressable, type PressableProps } from 'react-native';
-import { styled } from 'nativewind';
 
 import { Text } from './Text';
-
-const StyledPressable = styled(Pressable);
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -38,7 +35,7 @@ export function Button({
 }: Props) {
   const isDisabled = disabled || loading;
   return (
-    <StyledPressable
+    <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!isDisabled, busy: loading }}
       disabled={isDisabled}
@@ -52,6 +49,6 @@ export function Button({
       ) : (
         <Text className={`font-semibold ${FG[variant]}`}>{title}</Text>
       )}
-    </StyledPressable>
+    </Pressable>
   );
 }

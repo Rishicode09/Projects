@@ -1,10 +1,6 @@
 import { TextInput, View, type TextInputProps } from 'react-native';
-import { styled } from 'nativewind';
 
 import { Text } from './Text';
-
-const StyledInput = styled(TextInput);
-const StyledView = styled(View);
 
 interface Props extends TextInputProps {
   label?: string;
@@ -14,13 +10,13 @@ interface Props extends TextInputProps {
 
 export function Input({ label, error, className = '', ...rest }: Props) {
   return (
-    <StyledView className="mb-4">
+    <View className="mb-4">
       {label ? (
         <Text variant="caption" muted className="mb-1.5">
           {label}
         </Text>
       ) : null}
-      <StyledInput
+      <TextInput
         accessibilityLabel={label}
         placeholderTextColor="#94A3B8"
         className={`min-h-[48px] rounded-2xl border bg-white px-4 text-base text-slate-900 dark:bg-slate-800 dark:text-slate-100 ${
@@ -33,6 +29,6 @@ export function Input({ label, error, className = '', ...rest }: Props) {
           {error}
         </Text>
       ) : null}
-    </StyledView>
+    </View>
   );
 }
