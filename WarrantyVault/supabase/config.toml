@@ -1,0 +1,5 @@
+# Minimal Supabase CLI config. Run `supabase init` to regenerate a full file.
+project_id = "warranty-vault"
+
+[functions.process-receipt]
+verify_jwt = true

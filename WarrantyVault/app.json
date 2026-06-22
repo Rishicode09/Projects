@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Warranty Vault",
+    "slug": "warranty-vault",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "warrantyvault",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.warrantyvault.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Warranty Vault needs access to your photos to upload receipts.",
+        "NSCameraUsageDescription": "Warranty Vault needs camera access to capture receipts."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "package": "com.warrantyvault.app",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-notifications",
+      "expo-image-picker",
+      "expo-document-picker"
+    ],
+    "extra": {
+      "supabaseUrl": "process.env.EXPO_PUBLIC_SUPABASE_URL",
+      "supabaseAnonKey": "process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY",
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}
