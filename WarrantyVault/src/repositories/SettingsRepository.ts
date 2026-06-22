@@ -1,4 +1,6 @@
 import { cache, cacheKeys } from '@/lib/cache';
+import { demoSettings } from '@/lib/demo/demoDb';
+import { env } from '@/lib/env';
 import { appError, err, ok, type Result } from '@/lib/result';
 import { supabase } from '@/lib/supabase';
 import type { NotificationPreferences, UserSettings } from '@/types/models';
@@ -23,6 +25,10 @@ function defaults(userId: string): UserSettings {
 
 export class SettingsRepository {
   async get(userId: string): Promise<Result<UserSettings>> {
+    if (!env.isConfigured) {
+      return ok(await demoSettings.get(userId));
+    }
+
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
@@ -40,6 +46,10 @@ export class SettingsRepository {
   }
 
   async upsert(settings: UserSettings): Promise<Result<UserSettings>> {
+    if (!env.isConfigured) {
+      return ok(await demoSettings.upsert(settings));
+    }
+
     const payload = { ...settings, updated_at: new Date().toISOString() };
     const { data, error } = await supabase
       .from(TABLE)

@@ -7,6 +7,7 @@ import { deriveWarrantyExpiry } from '@/services/ocr';
 import { createOcrService } from '@/services/ocr';
 import { storageService } from '@/services/storage/StorageService';
 import { addDays } from '@/lib/date';
+import { env } from '@/lib/env';
 import type { ProductDraft } from '@/types/models';
 
 type Phase = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
@@ -56,12 +57,19 @@ export function useReceiptUpload() {
     }
 
     setError(null);
-    setPhase('uploading');
-    const upload = await storageService.upload({ userId, ...source });
-    if (!upload.ok) {
-      setError(upload.error.message);
-      setPhase('error');
-      return null;
+
+    // In demo mode (no Supabase) we keep the local file URI instead of
+    // uploading to cloud storage.
+    let receiptUrl = source.uri;
+    if (env.isConfigured) {
+      setPhase('uploading');
+      const upload = await storageService.upload({ userId, ...source });
+      if (!upload.ok) {
+        setError(upload.error.message);
+        setPhase('error');
+        return null;
+      }
+      receiptUrl = upload.value.signedUrl;
     }
 
     setPhase('processing');
@@ -84,11 +92,11 @@ export function useReceiptUpload() {
       purchase_price: data.items[0]?.price ?? data.total_amount ?? 0,
       warranty_expiry: deriveWarrantyExpiry(purchaseDate, data.warranty_months),
       return_expiry: addDays(purchaseDate, DEFAULT_RETURN_WINDOW_DAYS),
-      receipt_url: upload.value.signedUrl,
+      receipt_url: receiptUrl,
     };
 
     setPhase('done');
-    return { receiptUrl: upload.value.signedUrl, draft };
+    return { receiptUrl, draft };
   }
 
   return { phase, error, pickImage, pickDocument, process };

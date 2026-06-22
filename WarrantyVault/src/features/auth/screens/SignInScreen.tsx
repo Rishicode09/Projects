@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { View } from 'react-native';
 
 import { Button, Input, Screen, Text } from '@/components/ui';
+import { env } from '@/lib/env';
 import type { AuthStackParamList } from '@/core/navigation/types';
 
 import { useAuthForm } from '../hooks/useAuthForm';
@@ -20,6 +21,13 @@ export function SignInScreen({ navigation }: Props) {
       <Text muted className="mb-8">
         Never miss a warranty or return deadline again.
       </Text>
+
+      {!env.isConfigured ? (
+        <Text variant="caption" className="mb-6 text-secondary">
+          Demo mode is on — no backend needed. Create an account with any email
+          and password to explore the app on this device.
+        </Text>
+      ) : null}
 
       <Input
         label="Email"

@@ -90,6 +90,15 @@ npm start                     # launch Expo
 Full instructions (Supabase setup, Edge Function deploy, seeding) live in
 [`docs/SETUP.md`](./docs/SETUP.md).
 
+### Demo mode (no backend required)
+
+If `EXPO_PUBLIC_SUPABASE_URL` / `..._ANON_KEY` are not set, the app runs in
+**demo mode**: sign-up/login and all data are stored locally on the device
+(AsyncStorage), and new accounts are seeded with sample products. This makes
+the app fully usable for evaluation without provisioning Supabase. Add real
+keys to switch to cloud sync automatically — the repository/auth layers branch
+on `env.isConfigured`.
+
 ## Testing
 
 - **Unit:** OCR mock, notification planner, claim generator, dashboard stats,

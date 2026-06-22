@@ -1,4 +1,6 @@
 import { cache, cacheKeys } from '@/lib/cache';
+import { demoProducts } from '@/lib/demo/demoDb';
+import { env } from '@/lib/env';
 import { appError, err, ok, type Result } from '@/lib/result';
 import { supabase } from '@/lib/supabase';
 import { productDraftSchema, productUpdateSchema } from '@/schemas/product.schema';
@@ -13,6 +15,8 @@ const TABLE = 'products';
  */
 export class ProductRepository {
   async list(userId: string): Promise<Result<Product[]>> {
+    if (!env.isConfigured) return ok(await demoProducts.list(userId));
+
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
@@ -44,6 +48,8 @@ export class ProductRepository {
       return err(appError('products/invalid', parsed.error.issues[0]?.message ?? 'Invalid product'));
     }
 
+    if (!env.isConfigured) return ok(await demoProducts.create(userId, parsed.data));
+
     const { data, error } = await supabase
       .from(TABLE)
       .insert({ ...parsed.data, user_id: userId })
@@ -57,10 +63,16 @@ export class ProductRepository {
     return ok(data as Product);
   }
 
-  async update(id: string, patch: ProductUpdate): Promise<Result<Product>> {
+  async update(id: string, patch: ProductUpdate, userId?: string): Promise<Result<Product>> {
     const parsed = productUpdateSchema.safeParse(patch);
     if (!parsed.success) {
       return err(appError('products/invalid', parsed.error.issues[0]?.message ?? 'Invalid update'));
+    }
+
+    if (!env.isConfigured) {
+      const updated = await demoProducts.update(userId ?? '', id, parsed.data);
+      if (!updated) return err(appError('products/update-failed', 'Product not found'));
+      return ok(updated);
     }
 
     const { data, error } = await supabase
@@ -79,6 +91,11 @@ export class ProductRepository {
   }
 
   async remove(id: string, userId: string): Promise<Result<void>> {
+    if (!env.isConfigured) {
+      await demoProducts.remove(userId, id);
+      return ok(undefined);
+    }
+
     const { error } = await supabase.from(TABLE).delete().eq('id', id);
     if (error) return err(appError('products/delete-failed', error.message, error));
     await this.invalidate(userId);

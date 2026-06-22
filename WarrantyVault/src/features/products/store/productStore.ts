@@ -47,7 +47,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
   },
 
   edit: async (id, patch) => {
-    const result = await productRepository.update(id, patch);
+    const userId = get().products.find((p) => p.id === id)?.user_id;
+    const result = await productRepository.update(id, patch, userId);
     if (!result.ok) {
       set({ error: result.error.message });
       return null;
@@ -65,7 +66,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
 }));
 
 async function scheduleReminders(userId: string, product: Product): Promise<void> {
-  const settings = await settingsRepository.get(userId);
-  if (!settings.ok) return;
-  await notificationService.scheduleForProduct(product, settings.value.notifications);
+  try {
+    const settings = await settingsRepository.get(userId);
+    if (!settings.ok) return;
+    await notificationService.scheduleForProduct(product, settings.value.notifications);
+  } catch {
+    // Notifications are unavailable on web / when permission is denied; never
+    // let scheduling failures block saving a product.
+  }
 }
