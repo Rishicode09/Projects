@@ -32,9 +32,10 @@ export function ProductListScreen({ navigation }: Props) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <ProductCard
             product={item}
+            index={index}
             onPress={(p) => navigation.navigate('ProductDetail', { productId: p.id })}
           />
         )}

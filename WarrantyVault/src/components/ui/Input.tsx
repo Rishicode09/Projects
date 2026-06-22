@@ -19,8 +19,8 @@ export function Input({ label, error, className = '', ...rest }: Props) {
       <TextInput
         accessibilityLabel={label}
         placeholderTextColor="#94A3B8"
-        className={`min-h-[48px] rounded-2xl border bg-white px-4 text-base text-slate-900 dark:bg-slate-800 dark:text-slate-100 ${
-          error ? 'border-danger' : 'border-slate-300 dark:border-slate-600'
+        className={`min-h-[52px] rounded-2xl border bg-white/10 px-4 text-base text-white ${
+          error ? 'border-danger' : 'border-white/20'
         } ${className}`}
         {...rest}
       />

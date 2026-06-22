@@ -13,7 +13,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <SafeAreaProvider>
         <ThemeProvider>
           <ErrorBoundary>
-            <StatusBar style="auto" />
+            <StatusBar style="light" />
             {children}
           </ErrorBoundary>
         </ThemeProvider>

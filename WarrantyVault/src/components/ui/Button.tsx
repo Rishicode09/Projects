@@ -1,21 +1,18 @@
-import { ActivityIndicator, Pressable, type PressableProps } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native';
 
 import { Text } from './Text';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
-const BG: Record<ButtonVariant, string> = {
-  primary: 'bg-primary active:opacity-80',
-  secondary: 'bg-secondary active:opacity-80',
-  ghost: 'bg-transparent border border-slate-300 dark:border-slate-600 active:opacity-70',
-  danger: 'bg-danger active:opacity-80',
+const GRADIENTS: Partial<Record<ButtonVariant, [string, string, ...string[]]>> = {
+  primary: ['#6366F1', '#A855F7', '#EC4899'],
+  secondary: ['#0EA5E9', '#22D3EE'],
 };
 
-const FG: Record<ButtonVariant, string> = {
-  primary: 'text-white',
-  secondary: 'text-white',
-  ghost: 'text-slate-900 dark:text-slate-100',
-  danger: 'text-white',
+const SOLID: Partial<Record<ButtonVariant, string>> = {
+  ghost: 'border border-white/25 bg-white/5 active:opacity-70',
+  danger: 'bg-danger active:opacity-80',
 };
 
 interface Props extends PressableProps {
@@ -34,20 +31,30 @@ export function Button({
   ...rest
 }: Props) {
   const isDisabled = disabled || loading;
+  const gradient = GRADIENTS[variant];
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!isDisabled, busy: loading }}
       disabled={isDisabled}
-      className={`min-h-[48px] flex-row items-center justify-center rounded-2xl px-5 ${BG[variant]} ${
-        isDisabled ? 'opacity-50' : ''
-      } ${className}`}
+      className={`min-h-[52px] flex-row items-center justify-center overflow-hidden rounded-2xl px-5 ${
+        SOLID[variant] ?? 'active:opacity-90'
+      } ${isDisabled ? 'opacity-50' : ''} ${className}`}
       {...rest}
     >
+      {gradient ? (
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       {loading ? (
         <ActivityIndicator color="#fff" />
       ) : (
-        <Text className={`font-semibold ${FG[variant]}`}>{title}</Text>
+        <Text className="font-bold text-white">{title}</Text>
       )}
     </Pressable>
   );

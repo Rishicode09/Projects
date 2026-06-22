@@ -8,22 +8,33 @@ import { ProductFormScreen } from '@/features/products/screens/ProductFormScreen
 import { ProductListScreen } from '@/features/products/screens/ProductListScreen';
 import { AddReceiptScreen } from '@/features/receipts/screens/AddReceiptScreen';
 import { SettingsScreen } from '@/features/settings/screens/SettingsScreen';
-import { useTheme } from '@/lib/theme/ThemeProvider';
 
 import type { MainStackParamList, TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
+// Dark, vibrant chrome to match the animated background.
+const CHROME = {
+  surface: 'rgba(15,23,42,0.92)',
+  border: 'rgba(255,255,255,0.08)',
+  active: '#C4B5FD',
+  inactive: '#64748B',
+  text: '#F8FAFC',
+};
+
 function Tabs() {
-  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        tabBarActiveTintColor: CHROME.active,
+        tabBarInactiveTintColor: CHROME.inactive,
+        tabBarStyle: {
+          position: 'absolute',
+          backgroundColor: CHROME.surface,
+          borderTopColor: CHROME.border,
+        },
       }}
     >
       <Tab.Screen
@@ -46,13 +57,13 @@ function Tabs() {
 }
 
 export function MainNavigator() {
-  const { colors } = useTheme();
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: CHROME.surface },
+        headerTintColor: CHROME.text,
         headerShadowVisible: false,
+        contentStyle: { backgroundColor: 'transparent' },
       }}
     >
       <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
