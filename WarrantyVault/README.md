@@ -38,7 +38,7 @@ inward: UI → hooks → stores → repositories/services → lib.
 
 ```
 src/
-├── app/              # navigation + providers (composition root)
+├── core/             # navigation + providers (composition root)
 ├── components/       # shared UI primitives + ErrorBoundary
 ├── features/         # auth, receipts, products, dashboard, claims, settings
 │   └── <feature>/    #   screens/ · hooks/ · store/ · services/ · components/

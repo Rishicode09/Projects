@@ -3,7 +3,7 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 import { Card, Screen, Text } from '@/components/ui';
 import { ProductCard } from '@/features/products/components/ProductCard';
 import { formatCurrency } from '@/lib/format';
-import type { DashboardScreenProps } from '@/app/navigation/types';
+import type { DashboardScreenProps } from '@/core/navigation/types';
 
 import { useDashboard } from '../hooks/useDashboard';
 

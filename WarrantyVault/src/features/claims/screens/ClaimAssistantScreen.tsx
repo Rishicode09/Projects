@@ -7,7 +7,7 @@ import { Button, Card, Input, Screen, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useProductStore } from '@/features/products/store/productStore';
 import { claimTemplateService, type ClaimTone } from '@/services/claims/ClaimTemplateService';
-import type { MainStackParamList } from '@/app/navigation/types';
+import type { MainStackParamList } from '@/core/navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ClaimAssistant'>;
 

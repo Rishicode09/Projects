@@ -1,7 +1,7 @@
 import { FlatList, RefreshControl, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components/ui';
-import type { ProductsScreenProps } from '@/app/navigation/types';
+import type { ProductsScreenProps } from '@/core/navigation/types';
 
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';

@@ -1,5 +1,5 @@
-import { AppProviders } from '@/app/providers/AppProviders';
-import { RootNavigator } from '@/app/navigation/RootNavigator';
+import { AppProviders } from '@/core/providers/AppProviders';
+import { RootNavigator } from '@/core/navigation/RootNavigator';
 import { assertEnv } from '@/lib/env';
 
 assertEnv();

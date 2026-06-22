@@ -5,7 +5,7 @@ import { ScrollView } from 'react-native';
 import { Button, Input, Screen, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { productDraftSchema } from '@/schemas/product.schema';
-import type { MainStackParamList } from '@/app/navigation/types';
+import type { MainStackParamList } from '@/core/navigation/types';
 import type { ProductDraft } from '@/types/models';
 
 import { useProductStore } from '../store/productStore';

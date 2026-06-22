@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { View } from 'react-native';
 
 import { Button, Input, Screen, Text } from '@/components/ui';
-import type { AuthStackParamList } from '@/app/navigation/types';
+import type { AuthStackParamList } from '@/core/navigation/types';
 
 import { useAuthForm } from '../hooks/useAuthForm';
 

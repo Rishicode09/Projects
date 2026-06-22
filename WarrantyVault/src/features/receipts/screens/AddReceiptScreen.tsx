@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { View } from 'react-native';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
-import type { MainStackParamList } from '@/app/navigation/types';
+import type { MainStackParamList } from '@/core/navigation/types';
 
 import { useReceiptUpload } from '../hooks/useReceiptUpload';
 

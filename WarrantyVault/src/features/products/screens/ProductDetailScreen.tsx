@@ -5,7 +5,7 @@ import { Button, Card, Screen, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { daysUntil, formatDisplayDate } from '@/lib/date';
 import { formatCurrency, titleCase } from '@/lib/format';
-import type { MainStackParamList } from '@/app/navigation/types';
+import type { MainStackParamList } from '@/core/navigation/types';
 
 import { useProductStore } from '../store/productStore';
 
