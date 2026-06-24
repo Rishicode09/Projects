@@ -307,6 +307,10 @@ function makeWordEl(word,wi){
 function buildWordDom(){
   wContainer.innerHTML='';
   S.words.forEach((w,i)=>wContainer.appendChild(makeWordEl(w,i)));
+  // Keep the smooth caret INSIDE the words container so its coordinates are
+  // measured against the same (transformed) box and it scrolls with the words.
+  const sc=document.getElementById('smooth-caret');
+  if(sc) wContainer.appendChild(sc);
 }
 function getWordEl(wi){return wContainer.querySelector(`.word[data-wi="${wi}"]`);}
 
@@ -542,25 +546,10 @@ hiddenInput.addEventListener('keydown',e=>{
 
   if(S.gameMode==='story'){handleStoryKey(e);return;}
 
-  // FREE MODE: Backspace to previous word
-  if(e.key==='Backspace'&&hiddenInput.value===''&&S.wordIndex>0&&S.started){
+  // FREE MODE: once a word is submitted it's locked — block backspacing into a
+  // previous word (you can still fix the word you're currently typing).
+  if(e.key==='Backspace'&&hiddenInput.value===''&&S.started){
     e.preventDefault();
-    const prev=S.submittedWords.pop();
-    if(!prev)return;
-    S.wordIndex--;
-    hiddenInput.value=prev.typed;
-    S.charIndex=prev.typed.length;
-    if(prev.correct) S.correctChars=Math.max(0,S.correctChars-(prev.expected.length+1));
-    S.totalTyped=Math.max(0,S.totalTyped-prev.typed.length);
-    const wordEl=getWordEl(S.wordIndex);
-    if(wordEl){
-      const prevWord=S.words[S.wordIndex];
-      wordEl.querySelectorAll('.char').forEach((ch,ci)=>{
-        ch.classList.remove('correct','wrong');
-        if(ci<prev.typed.length) ch.classList.add(prev.typed[ci]===prevWord[ci]?'correct':'wrong');
-      });
-    }
-    scrollWords();updateCaret();updateHUD();
     return;
   }
 
@@ -572,7 +561,9 @@ hiddenInput.addEventListener('keydown',e=>{
 function handleStoryKey(e){
   if(e.key==='Backspace'){
     e.preventDefault();
-    if(S.pos>0){
+    // Only allow fixing the current word — can't backspace over a space into a
+    // completed word and rewrite the whole sentence.
+    if(S.pos>0 && S.fullText[S.pos-1]!==' '){
       S.pos--;
       const el=storyCharEls[S.pos];
       if(el.classList.contains('correct')){S.correctChars--;S.totalTyped=Math.max(0,S.totalTyped-1);}
@@ -615,9 +606,16 @@ function handleStoryKey(e){
 hiddenInput.addEventListener('input',()=>{
   if(S.finished)return;
   if(S.gameMode==='story'){hiddenInput.value='';return;}
-  const val=hiddenInput.value;
+  let val=hiddenInput.value;
   const curWord=S.words[S.wordIndex];
   if(!curWord)return;
+
+  // Cap overflow: allow at most 4 letters past the word's length so a runaway
+  // string can't pile up and confuse the typist (space still submits).
+  if(!val.endsWith(' ') && val.length > curWord.length + 4){
+    val = val.slice(0, curWord.length + 4);
+    hiddenInput.value = val;
+  }
 
   const prevLen=(S.typedChars[S.wordIndex]||'').length;
   const newLen=val.endsWith(' ')?val.length-1:val.length;
