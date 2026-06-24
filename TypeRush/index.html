@@ -97,11 +97,12 @@
   .opt-btn.selected{border-color:var(--accent2);color:var(--accent2);background:var(--bg3);box-shadow:0 0 10px var(--glow);}
   .opt-btn.toggle.on{border-color:var(--accent3);color:var(--accent3);background:var(--bg3);}
 
-  /* STORY GRID */
+  /* PANELS */
   #story-panel{display:none;}
   #story-panel.visible{display:block;}
   #words-panel{display:block;}
   #words-panel.hidden{display:none;}
+  .panel-hint{color:var(--text-dim);font-size:.8rem;margin-bottom:18px;}
 
   .story-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
   .story-card{
@@ -152,6 +153,7 @@
   #timer-bg{stroke:var(--bg3);stroke-width:5;}
   #timer-arc{stroke:var(--accent2);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
   #timer-text{font-size:1.3rem;font-weight:700;color:var(--accent2);z-index:1;}
+  #timer-label{position:absolute;bottom:-14px;font-size:.55rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;}
 
   /* COMBO */
   #combo-area{text-align:center;margin-bottom:8px;}
@@ -169,14 +171,16 @@
   #caps-notice{background:rgba(255,85,119,.15);color:var(--wrong);border:1px solid rgba(255,85,119,.3);}
   #strict-notice{background:rgba(255,107,157,.1);color:var(--accent3);border:1px solid rgba(255,107,157,.25);}
 
-  /* WORD AREA — 3-row window */
+  /* WORD AREA — 3-row window (FREE MODE) */
   #word-area{
+    display:none;
     background:var(--card);border:1px solid var(--border);
     border-radius:var(--radius);padding:20px;
     height:calc(3 * var(--line-h) + 2 * var(--word-gap) + 40px);
     overflow:hidden;position:relative;
     margin-bottom:0;transition:box-shadow .3s;cursor:text;
   }
+  #word-area.active{display:block;}
   #word-area.glow{box-shadow:0 0 28px var(--glow);}
   #word-area.shake{animation:shake .25s ease;}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
@@ -206,7 +210,7 @@
   .char.correct{color:var(--correct);}
   .char.wrong{color:var(--wrong);}
 
-  /* Smooth caret */
+  /* Smooth caret (free mode) */
   #smooth-caret{
     position:absolute;width:2px;
     background:var(--caret);border-radius:1px;
@@ -217,19 +221,44 @@
   #smooth-caret.instant{transition:none;}
   @keyframes caretBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
 
+  /* STORY AREA — TypeRacer-style passage (STORY MODE) */
+  #story-area{display:none;position:relative;}
+  #story-area.active{display:block;}
+  #story-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:12px;}
+  #story-name{color:var(--accent2);font-weight:700;font-size:.85rem;}
+  #story-progress-pct{color:var(--text-dim);font-size:.85rem;font-weight:700;}
+  #story-progress-track{height:7px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-bottom:14px;}
+  #story-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--correct));border-radius:99px;transition:width .15s ease;}
+  #story-text{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:24px 26px;font-size:1.35rem;line-height:2.15rem;
+    height:calc(4 * 2.15rem + 48px);overflow:hidden;position:relative;cursor:text;
+    white-space:pre-wrap;word-break:normal;overflow-wrap:break-word;
+    scroll-behavior:smooth;user-select:none;transition:box-shadow .3s;
+  }
+  #story-text.shake{animation:shake .25s ease;}
+  #story-text .char{color:var(--text-dim);border-radius:2px;transition:color .05s,background .05s;}
+  #story-text .char.correct{color:var(--text);}
+  #story-text .char.wrong,#story-text .char.flash{background:var(--wrong);color:#fff;}
+  #story-text .char.current::before{
+    content:'';position:absolute;margin-left:-2px;width:2px;height:1.5rem;
+    background:var(--caret);border-radius:1px;
+    animation:caretBlink 1s steps(1) infinite;
+  }
+
   #hidden-input{position:absolute;left:-9999px;top:0;opacity:0;pointer-events:none;}
 
   /* Focus / AFK overlay */
-  #focus-overlay{
+  .focus-overlay{
     position:absolute;inset:0;border-radius:var(--radius);
     background:rgba(15,15,19,.82);backdrop-filter:blur(4px);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;
   }
-  [data-theme="light"] #focus-overlay{background:rgba(240,240,248,.85);}
-  #focus-overlay.visible{opacity:1;pointer-events:all;cursor:pointer;}
-  #fo-icon{font-size:1.6rem;}
-  #fo-text{color:var(--text-dim);font-size:.85rem;}
+  [data-theme="light"] .focus-overlay{background:rgba(240,240,248,.85);}
+  .focus-overlay.visible{opacity:1;pointer-events:all;cursor:pointer;}
+  .fo-icon{font-size:1.6rem;}
+  .fo-text{color:var(--text-dim);font-size:.85rem;}
 
   /* Game footer */
   .game-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
@@ -296,6 +325,7 @@
   /* RESPONSIVE */
   @media(max-width:600px){
     #words-container{font-size:1.2rem;}
+    #story-text{font-size:1.15rem;line-height:1.95rem;height:calc(5 * 1.95rem + 48px);}
     .menu-title{font-size:2.1rem;}
     .hud-val{font-size:1.4rem;}
     #word-area{height:calc(3*1.9rem + 2*var(--word-gap) + 40px);}
@@ -330,12 +360,13 @@
   <div class="menu-sub">Train your fingers. Break your records.</div>
 
   <div class="mode-tabs">
-    <button class="mode-tab active" data-mode="words">Words</button>
-    <button class="mode-tab" data-mode="stories">Stories</button>
+    <button class="mode-tab active" data-mode="free">⌨️ Free Mode</button>
+    <button class="mode-tab" data-mode="story">📖 Story Mode</button>
   </div>
 
-  <!-- WORDS CONFIG -->
+  <!-- FREE MODE CONFIG -->
   <div id="words-panel">
+    <div class="panel-hint">Race a stream of words against the clock — pure speed, like a typing test.</div>
     <span class="option-label">Duration</span>
     <div class="option-row" id="duration-opts">
       <button class="opt-btn selected" data-val="15">15s</button>
@@ -356,16 +387,11 @@
     </div>
   </div>
 
-  <!-- STORY CONFIG -->
+  <!-- STORY MODE CONFIG -->
   <div id="story-panel">
+    <div class="panel-hint">Type a real passage of classic literature — race to the end. Each replay gives you the next excerpt.</div>
     <span class="option-label">Choose a Story</span>
     <div class="story-grid" id="story-grid"></div>
-    <span class="option-label">Duration</span>
-    <div class="option-row" id="story-duration-opts">
-      <button class="opt-btn" data-val="30">30s</button>
-      <button class="opt-btn selected" data-val="60">60s</button>
-      <button class="opt-btn" data-val="120">120s</button>
-    </div>
   </div>
 
   <button id="play-btn">▶  PLAY</button>
@@ -399,6 +425,7 @@
           <circle id="timer-arc" cx="36" cy="36" r="31" stroke-dasharray="194.78" stroke-dashoffset="0"/>
         </svg>
         <span id="timer-text">--</span>
+        <span id="timer-label">time</span>
       </div>
       <div class="hud-stat">
         <span class="hud-val" id="score-val">0</span>
@@ -421,18 +448,34 @@
       <span class="notice" id="strict-notice">⚠ Strict Mode</span>
     </div>
 
+    <!-- FREE MODE TYPING AREA -->
     <div id="word-area">
       <div id="row-highlight"></div>
       <div id="words-container"></div>
       <div id="smooth-caret"></div>
-      <input id="hidden-input" type="text" autocomplete="off"
-             autocorrect="off" autocapitalize="off" spellcheck="false"
-             inputmode="text">
-      <div id="focus-overlay">
-        <div id="fo-icon">⌨️</div>
-        <div id="fo-text">Click to focus</div>
+      <div class="focus-overlay">
+        <div class="fo-icon">⌨️</div>
+        <div class="fo-text">Click to focus</div>
       </div>
     </div>
+
+    <!-- STORY MODE TYPING AREA -->
+    <div id="story-area">
+      <div id="story-meta">
+        <span id="story-name"></span>
+        <span id="story-progress-pct">0%</span>
+      </div>
+      <div id="story-progress-track"><div id="story-progress-fill"></div></div>
+      <div id="story-text"></div>
+      <div class="focus-overlay">
+        <div class="fo-icon">⌨️</div>
+        <div class="fo-text">Click to focus</div>
+      </div>
+    </div>
+
+    <input id="hidden-input" type="text" autocomplete="off"
+           autocorrect="off" autocapitalize="off" spellcheck="false"
+           inputmode="text">
 
     <div class="game-footer">
       <div id="restart-hint"><kbd>Tab</kbd> restart · <kbd>Esc</kbd> menu</div>
@@ -463,27 +506,27 @@
 const STORIES = {
   pigs: {
     title:'Three Little Pigs', author:'Traditional', icon:'🐷',
-    text:`Once upon a time there were three little pigs who lived with their mother in a cosy cottage. One day their mother called them together and said it was time for them to go out into the world and build homes of their own. She packed each of them a small bag and kissed them goodbye. The first little pig was the laziest of all. He met a man carrying a bundle of straw and bought it on the spot. He threw up four walls and a roof in less than an hour and spent the rest of the day napping. The second little pig was a little more industrious. He found a man selling sticks and used them to build a tidy house with a proper door and two windows. The third little pig was the hardest worker of them all. He searched until he found a merchant selling bricks and spent many long days laying them one by one until his house stood strong and solid with a real fireplace and a chimney on top. One autumn evening a big bad wolf came prowling through the forest with his belly growling. He came to the house of straw and knocked on the door. Little pig, little pig, let me come in, he called. Not by the hair of my chinny chin chin, squealed the first pig. Then I will huff and I will puff and I will blow your house in, roared the wolf. And he huffed and he puffed and down came the house of straw. The first pig bolted to his brother's house of sticks. The wolf followed and knocked again. The two pigs refused to let him in. So he huffed and he puffed and blew the house of sticks to pieces. Both pigs ran as fast as their little legs would carry them to their brother's house of bricks. The wolf arrived, furious and out of breath, and pounded on the solid door. He huffed and he puffed until his face turned red but the brick house did not move an inch. Enraged, the wolf decided to climb down the chimney. But the third little pig was clever. He had a great pot of boiling water bubbling in the fireplace. The wolf tumbled down the chimney and landed in the pot with a tremendous splash. He yelped, scrambled out the door, and was never seen in those parts again. The three little pigs lived safely ever after in the house of bricks.`
+    text:`Once upon a time there were three little pigs who lived with their mother in a cosy cottage. One day their mother called them together and said it was time for them to go out into the world and build homes of their own. The first little pig was the laziest of all. He met a man carrying a bundle of straw and bought it on the spot. He threw up four walls and a roof in less than an hour and spent the rest of the day napping. The second little pig was a little more industrious. He found a man selling sticks and used them to build a tidy house with a proper door and two windows. The third little pig was the hardest worker of them all. He searched until he found a merchant selling bricks and spent many long days laying them one by one until his house stood strong and solid with a real fireplace and a chimney on top. One autumn evening a big bad wolf came prowling through the forest with his belly growling. He came to the house of straw and knocked on the door. Little pig, little pig, let me come in, he called. Not by the hair of my chinny chin chin, squealed the first pig. Then I will huff and I will puff and I will blow your house in, roared the wolf. And he huffed and he puffed and down came the house of straw. The first pig bolted to his brother's house of sticks. So the wolf huffed and he puffed and blew the house of sticks to pieces. Both pigs ran as fast as their little legs would carry them to their brother's house of bricks. The wolf arrived, furious and out of breath, and pounded on the solid door. He huffed and he puffed until his face turned red but the brick house did not move an inch. Enraged, the wolf decided to climb down the chimney. But the third little pig was clever. He had a great pot of boiling water bubbling in the fireplace. The wolf tumbled down the chimney and landed in the pot with a tremendous splash. He yelped, scrambled out the door, and was never seen in those parts again. The three little pigs lived safely ever after in the house of bricks.`
   },
   gatsby: {
     title:'The Great Gatsby', author:'F. Scott Fitzgerald, 1925', icon:'🥂',
-    text:`In my younger and more vulnerable years my father gave me some advice that I have been turning over in my mind ever since. Whenever you feel like criticizing anyone, he told me, just remember that all the people in this world have not had the advantages that you have had. He did not say any more, but we have always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that. In consequence, I am inclined to reserve all judgments, a habit that has opened up many curious natures to me and also made me the victim of not a few veteran bores. The abnormal mind is quick to detect and attach itself to this quality when it appears in a normal person, and so it came about that in college I was unjustly accused of being a politician, because I was privy to the secret griefs of wild, unknown men. Most of the confidences were unsought, frequently I have feigned sleep, preoccupation, or a hostile levity when I realized by some unmistakable sign that an intimate revelation was quivering on the horizon. For the intimate revelations of young men, or at least the terms in which they express them, are usually plagiaristic and marred by obvious suppressions. Reserving judgments is a matter of infinite hope. I was rather literary in college, one year I wrote a series of very solemn and obvious editorials for the Yale News, and now I am going to write something very romantic and terrible at the same time.`
+    text:`In my younger and more vulnerable years my father gave me some advice that I have been turning over in my mind ever since. Whenever you feel like criticizing anyone, he told me, just remember that all the people in this world have not had the advantages that you have had. He did not say any more, but we have always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that. In consequence, I am inclined to reserve all judgments, a habit that has opened up many curious natures to me and also made me the victim of not a few veteran bores. The abnormal mind is quick to detect and attach itself to this quality when it appears in a normal person, and so it came about that in college I was unjustly accused of being a politician, because I was privy to the secret griefs of wild, unknown men. Most of the confidences were unsought, and I have often feigned sleep or a hostile levity when I realized that an intimate revelation was quivering on the horizon. Reserving judgments is a matter of infinite hope. I was rather literary in college, and now I am going to write something very romantic and terrible at the same time.`
   },
   jekyll: {
     title:'Jekyll and Hyde', author:'R. L. Stevenson, 1886', icon:'🧪',
-    text:`Mr. Utterson the lawyer was a man of a rugged countenance that was never lighted by a smile. He was cold, scanty and embarrassed in discourse, backward in sentiment, lean, long, dusty and dreary. And yet somehow he was lovable. At friendly meetings, and when the wine was to his taste, something eminently human beaconed from his eye. Something of a kindly spirit glowed in his manner that never found its way into his talk. He was austere with himself and drank gin when he was alone, to mortify a taste for vintages. He had but one scruple in the matter of his weakness for the drama, yet he went to the theatre not more than twice a year. But he had an approved tolerance for others. Sometimes wondering, almost with envy, at the high pressure of spirits involved in their misdeeds. In this character, it was frequently his fortune to be the last reputable acquaintance and the last good influence in the lives of downgoing men. And to such as these, so long as they came about his chambers, he never marked a shade of change in his demeanour. No doubt the feat was easy to Mr. Utterson, for he was undemonstrative at the best, and even his friendship seemed to be founded in a similar catholicity of good nature. It is the mark of a modest man to accept his friendly circle ready made from the hands of opportunity. And that was the lawyer's way. His friends were those of his own blood or those whom he had known the longest. His affections, like ivy, were the growth of time.`
+    text:`Mr Utterson the lawyer was a man of a rugged countenance that was never lighted by a smile. He was cold, scanty and embarrassed in discourse, backward in sentiment, lean, long, dusty and dreary. And yet somehow he was lovable. At friendly meetings, and when the wine was to his taste, something eminently human beaconed from his eye. Something of a kindly spirit glowed in his manner that never found its way into his talk. He was austere with himself, and drank gin when he was alone to mortify a taste for vintages. He had an approved tolerance for others, sometimes wondering, almost with envy, at the high pressure of spirits involved in their misdeeds. In this character it was frequently his fortune to be the last reputable acquaintance and the last good influence in the lives of downgoing men. It is the mark of a modest man to accept his friendly circle ready made from the hands of opportunity, and that was the lawyer's way. His friends were those of his own blood, or those whom he had known the longest. His affections, like ivy, were the growth of time.`
   },
   alice: {
     title:'Alice in Wonderland', author:'Lewis Carroll, 1865', icon:'🐇',
-    text:`Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do. Once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it. And what is the use of a book, thought Alice, without pictures or conversations? So she was considering in her own mind whether the pleasure of making a daisy chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her. There was nothing so very remarkable in that. Nor did Alice think it so very much out of the way to hear the rabbit say to itself, oh dear, oh dear, I shall be too late! But when the rabbit actually took a watch out of its waistcoat pocket, and looked at it, and then hurried on, Alice started to her feet. It flashed across her mind that she had never before seen a rabbit with either a waistcoat pocket, or a watch to take out of it. Burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit hole under the hedge. In another moment down went Alice after it, never once considering how in the world she was to get out again. The rabbit hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down what seemed to be a very deep well.`
+    text:`Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do. Once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it. And what is the use of a book, thought Alice, without pictures or conversations? So she was considering in her own mind whether the pleasure of making a daisy chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her. There was nothing so very remarkable in that. Nor did Alice think it so very much out of the way to hear the rabbit say to itself, oh dear, oh dear, I shall be too late. But when the rabbit actually took a watch out of its waistcoat pocket, and looked at it, and then hurried on, Alice started to her feet. Burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit hole under the hedge. In another moment down went Alice after it, never once considering how in the world she was to get out again.`
   },
   holmes: {
     title:'Sherlock Holmes', author:'Arthur Conan Doyle, 1887', icon:'🔍',
-    text:`In the year 1878 I took my degree of Doctor of Medicine of the University of London, and proceeded to go through the course prescribed for surgeons in the army. Having completed my studies there, I was duly attached to the Fifth Northumberland Fusiliers as assistant surgeon. The regiment had barely reached India before the second Afghan war broke out. On landing at Bombay, I learned that my corps had advanced through the passes and was already deep in the enemy's country. I followed with many other officers who were in the same situation as myself, and succeeded in reaching Candahar in safety, where I found my regiment and at once entered upon my duties. The campaign brought honours and promotion to many, but for me it had nothing but misfortune and disaster. I was removed from my brigade and attached to the Berkshires, with whom I served at the fatal battle of Maiwand. There I was struck on the shoulder by a bullet, which shattered the bone and grazed the subclavian artery. I should have fallen into the hands of the murderous Ghazis had it not been for the devotion and courage shown by Murray, my orderly, who threw me across a pack horse, and succeeded in bringing me safely to the British lines. Worn with pain, and weak from the prolonged hardships which I had undergone, I was removed with a great train of wounded sufferers to the base hospital at Peshawar.`
+    text:`In the year 1878 I took my degree of Doctor of Medicine of the University of London, and proceeded to go through the course prescribed for surgeons in the army. Having completed my studies there, I was duly attached to the Fifth Northumberland Fusiliers as assistant surgeon. The regiment had barely reached India before the second Afghan war broke out. I followed with many other officers who were in the same situation as myself, and succeeded in reaching Candahar in safety, where I found my regiment and at once entered upon my duties. The campaign brought honours and promotion to many, but for me it had nothing but misfortune and disaster. I was struck on the shoulder by a bullet which shattered the bone and grazed the artery. I should have fallen into the hands of the murderous enemy had it not been for the devotion and courage shown by Murray, my orderly, who threw me across a pack horse and succeeded in bringing me safely to the British lines. Worn with pain, and weak from the prolonged hardships which I had undergone, I was removed with a great train of wounded sufferers to the base hospital at Peshawar.`
   },
 };
 
-// ── WORD LISTS ────────────────────────────────────────────────────────────────
+// ── WORD LISTS (FREE MODE) ──────────────────────────────────────────────────────
 const EASY_WORDS = `the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us`.split(' ');
 
 const MEDIUM_WORDS = [
@@ -532,7 +575,7 @@ function getWordList(diff) {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const S = {
-  screen:'menu', gameMode:'words', storyId:'pigs',
+  screen:'menu', gameMode:'free', storyId:'pigs',
   duration:15, difficulty:'easy',
   soundOn:true, theme:'dark',
   useNumbers:false, usePunctuation:false, stopOnError:false,
@@ -545,6 +588,10 @@ const S = {
   combo:0, maxCombo:0, score:0,
   wpmSamples:[], perKeyErrors:{},
   afkTimer:null, afkPaused:false,
+
+  // story mode
+  fullText:'', pos:0, elapsed:0, startTime:0, pauseAt:0,
+  raceIdx:{}, raceTime:0, _curEl:null, _lastSample:0,
 
   // persisted
   xp:0, level:1, bests:{}, achievements:{}, totalRuns:0,
@@ -649,6 +696,12 @@ function showScreen(name){
   document.getElementById(name+'-screen').classList.add('active');
   S.screen=name;
 }
+function quitToMenu(){
+  clearInterval(S.timerId);S.timerId=null;
+  clearTimeout(S.afkTimer);
+  S.afkPaused=false;
+  showScreen('menu');refreshMenu();
+}
 
 // ── LEVEL / XP ────────────────────────────────────────────────────────────────
 function xpFor(lvl){return lvl*200;}
@@ -678,9 +731,9 @@ const ACHIEVEMENTS=[
   {id:'wpm80',icon:'🚀',title:'80 WPM Blazer',sub:'Hit 80+ WPM.',check:(s,r)=>r.wpm>=80},
   {id:'wpm100',icon:'⚡',title:'100 WPM Legend',sub:'Hit 100+ WPM.',check:(s,r)=>r.wpm>=100},
   {id:'perfect',icon:'💎',title:'Perfect Accuracy',sub:'100% accuracy run.',check:(s,r)=>r.accuracy===100},
-  {id:'combo25',icon:'🔥',title:'On Fire! 25×',sub:'25-word combo streak.',check:(s,r)=>r.maxCombo>=25},
-  {id:'combo50',icon:'🌋',title:'Unstoppable! 50×',sub:'50-word combo streak.',check:(s,r)=>r.maxCombo>=50},
-  {id:'story1',icon:'📖',title:'Storyteller',sub:'Completed a story run.',check:(s,r)=>r.isStory},
+  {id:'combo25',icon:'🔥',title:'On Fire! 25×',sub:'25 in a row.',check:(s,r)=>r.maxCombo>=25},
+  {id:'combo50',icon:'🌋',title:'Unstoppable! 50×',sub:'50 in a row.',check:(s,r)=>r.maxCombo>=50},
+  {id:'story1',icon:'📖',title:'Storyteller',sub:'Finished a story passage.',check:(s,r)=>r.isStory},
   {id:'runs10',icon:'🎯',title:'10 Runs Done',sub:'10 tests completed.',check:(s,r)=>s.totalRuns>=10},
   {id:'runs50',icon:'🏆',title:'50 Runs Veteran',sub:'50 tests completed.',check:(s,r)=>s.totalRuns>=50},
 ];
@@ -693,7 +746,7 @@ function checkAchievements(results){
   });
 }
 
-// ── WORD GENERATION ───────────────────────────────────────────────────────────
+// ── WORD GENERATION (FREE MODE) ─────────────────────────────────────────────────
 function generateWords(count,recentSeed=[]){
   const list=getWordList(S.difficulty);
   const words=[],ws=Math.min(8,Math.floor(list.length/2));
@@ -710,15 +763,44 @@ function generateWords(count,recentSeed=[]){
   return words;
 }
 
-function getStoryWords(id){
-  const story=STORIES[id];
-  if(!story) return generateWords(200);
-  return story.text.split(/\s+/).filter(Boolean);
+// ── STORY RACES (TYPERACER STYLE) ───────────────────────────────────────────────
+// Split a story into sentence-complete excerpts (~260 chars) so each race
+// reads as grammatically complete, coherent prose.
+const ABBREV=/\b(Mr|Mrs|Ms|Dr|St|Jr|Sr|vs|etc)\.$/;
+function splitSentences(text){
+  const raw=text.match(/[^.!?]+[.!?]+(?:\s|$)/g)||[text];
+  const out=[];
+  raw.forEach(s=>{
+    s=s.trim();if(!s)return;
+    if(out.length&&ABBREV.test(out[out.length-1])) out[out.length-1]+=' '+s;
+    else out.push(s);
+  });
+  return out;
+}
+function getStoryRaces(id){
+  const st=STORIES[id];
+  if(st._races) return st._races;
+  const sents=splitSentences(st.text);
+  const races=[];let cur='';
+  sents.forEach(s=>{
+    if(cur && (cur.length+1+s.length)>260){races.push(cur);cur=s;}
+    else cur=cur?cur+' '+s:s;
+  });
+  if(cur)races.push(cur);
+  st._races=races;return races;
+}
+function getStoryRace(id){
+  const races=getStoryRaces(id);
+  const i=(S.raceIdx[id]||0)%races.length;
+  S.raceIdx[id]=i+1;
+  return races[i];
 }
 
-// ── WORD DOM ──────────────────────────────────────────────────────────────────
+// ── WORD DOM (FREE MODE) ────────────────────────────────────────────────────────
 const wContainer=document.getElementById('words-container');
 const wordArea=document.getElementById('word-area');
+const storyArea=document.getElementById('story-area');
+const storyTextEl=document.getElementById('story-text');
 const hiddenInput=document.getElementById('hidden-input');
 
 function makeWordEl(word,wi){
@@ -732,7 +814,7 @@ function buildWordDom(){
 }
 function getWordEl(wi){return wContainer.querySelector(`.word[data-wi="${wi}"]`);}
 
-// ── 3-ROW SCROLL ──────────────────────────────────────────────────────────────
+// ── 3-ROW SCROLL (FREE MODE) ────────────────────────────────────────────────────
 function getRowH(){
   for(const w of wContainer.querySelectorAll('.word')){if(w.offsetTop>0)return w.offsetTop;}
   return null;
@@ -745,8 +827,6 @@ function scrollWords(){
   wContainer.style.transform=`translateY(-${scroll}px)`;
   updateRowHighlight(row,lh,scroll);
 }
-
-// ── ROW HIGHLIGHT ─────────────────────────────────────────────────────────────
 function updateRowHighlight(currentRow,lineH,scrolled){
   const hl=document.getElementById('row-highlight');
   if(!hl||!lineH)return;
@@ -756,10 +836,10 @@ function updateRowHighlight(currentRow,lineH,scrolled){
   hl.style.height=lineH+'px';
 }
 
-// ── SMOOTH CARET ──────────────────────────────────────────────────────────────
+// ── SMOOTH CARET (FREE MODE) ─────────────────────────────────────────────────────
 function updateCaret(){
   const caret=document.getElementById('smooth-caret');
-  if(!caret||S.screen!=='game') return;
+  if(!caret||S.screen!=='game'||S.gameMode!=='free') return;
   const wordEl=getWordEl(S.wordIndex);
   if(!wordEl){caret.style.opacity='0';return;}
   const chars=wordEl.querySelectorAll('.char');
@@ -774,6 +854,39 @@ function updateCaret(){
   caret.style.height=tr.height+'px';
 }
 
+// ── STORY DOM (STORY MODE) ───────────────────────────────────────────────────────
+let storyCharEls=[];
+function buildStoryDom(){
+  storyTextEl.innerHTML='';
+  storyCharEls=[];
+  const frag=document.createDocumentFragment();
+  for(const ch of S.fullText){
+    const sp=document.createElement('span');sp.className='char';sp.textContent=ch;
+    frag.appendChild(sp);storyCharEls.push(sp);
+  }
+  storyTextEl.appendChild(frag);
+  storyTextEl.scrollTop=0;
+}
+function setStoryCurrent(){
+  if(S._curEl)S._curEl.classList.remove('current');
+  const el=storyCharEls[S.pos];
+  if(el){el.classList.add('current');S._curEl=el;scrollStory(el);}
+  else S._curEl=null;
+}
+function scrollStory(el){
+  const top=el.offsetTop;
+  if(top<storyTextEl.scrollTop+20 || top>storyTextEl.scrollTop+storyTextEl.clientHeight-44){
+    storyTextEl.scrollTop=Math.max(0,top-storyTextEl.clientHeight/2+el.offsetHeight/2);
+  }
+}
+function updateProgress(){
+  const len=S.fullText?S.fullText.length:1;
+  const frac=Math.min(1,S.pos/len);
+  document.getElementById('story-progress-fill').style.width=(frac*100)+'%';
+  document.getElementById('story-progress-pct').textContent=Math.round(frac*100)+'%';
+  setProgressRing(frac);
+}
+
 // ── AFK ───────────────────────────────────────────────────────────────────────
 function resetAfk(){
   clearTimeout(S.afkTimer);
@@ -781,66 +894,86 @@ function resetAfk(){
   if(S.started&&!S.finished){
     S.afkTimer=setTimeout(()=>{
       S.afkPaused=true;
-      clearInterval(S.timerId);
+      if(S.gameMode==='story') S.pauseAt=performance.now();
+      else clearInterval(S.timerId);
       showOverlay('💤','AFK — click to resume');
     },6000);
   }
 }
 function resumeAfk(){
   if(!S.afkPaused)return;
-  S.afkPaused=false;
-  hideOverlay();
-  S.timerId=setInterval(timerTick,1000);
+  S.afkPaused=false;hideOverlay();
+  if(S.gameMode==='story') S.startTime+=performance.now()-S.pauseAt;
+  else S.timerId=setInterval(timerTick,1000);
 }
-
 function showOverlay(icon,text){
-  document.getElementById('fo-icon').textContent=icon;
-  document.getElementById('fo-text').textContent=text;
-  document.getElementById('focus-overlay').classList.add('visible');
+  document.querySelectorAll('.fo-icon').forEach(e=>e.textContent=icon);
+  document.querySelectorAll('.fo-text').forEach(e=>e.textContent=text);
+  document.querySelectorAll('.focus-overlay').forEach(e=>e.classList.add('visible'));
 }
-function hideOverlay(){document.getElementById('focus-overlay').classList.remove('visible');}
+function hideOverlay(){document.querySelectorAll('.focus-overlay').forEach(e=>e.classList.remove('visible'));}
 
 // ── GAME FLOW ─────────────────────────────────────────────────────────────────
 function initGame(){
   S.started=false;S.finished=false;
-  S.timeLeft=S.duration;
-  S.wordIndex=0;S.charIndex=0;
+  S.wordIndex=0;S.charIndex=0;S.pos=0;
   S.typedChars=Array(2000).fill('');
   S.submittedWords=[];
   S.correctChars=0;S.rawChars=0;S.totalTyped=0;
   S.combo=0;S.maxCombo=0;S.score=0;
   S.wpmSamples=[];S.perKeyErrors={};
-  S.afkPaused=false;
-  clearTimeout(S.afkTimer);
+  S.elapsed=0;S._curEl=null;S._lastSample=0;
+  S.afkPaused=false;clearTimeout(S.afkTimer);
   clearInterval(S.timerId);S.timerId=null;
 
-  S.words=S.gameMode==='story'?getStoryWords(S.storyId):generateWords(200);
+  const comboArea=document.getElementById('combo-area');
+  document.getElementById('caps-notice').classList.remove('visible');
 
-  buildWordDom();
-  wContainer.style.transform='';
-  // init row highlight position
-  setTimeout(()=>{const lh=getRowH();updateRowHighlight(1,lh||40,0);},50);
+  if(S.gameMode==='story'){
+    S.fullText=getStoryRace(S.storyId);
+    buildStoryDom();
+    wordArea.classList.remove('active');
+    storyArea.classList.add('active');
+    comboArea.style.display='none';
+    document.getElementById('strict-notice').classList.remove('visible');
+    const st=STORIES[S.storyId];
+    document.getElementById('story-name').textContent=`${st.icon} ${st.title} — ${st.author}`;
+    document.getElementById('timer-label').textContent='elapsed';
+    updateProgress();
+    document.getElementById('timer-text').textContent='0';
+    setStoryCurrent();
+    updateStoryHUD();
+  } else {
+    S.timeLeft=S.duration;
+    S.words=generateWords(200);
+    buildWordDom();
+    wContainer.style.transform='';
+    storyArea.classList.remove('active');
+    wordArea.classList.add('active');
+    comboArea.style.display='';
+    document.getElementById('timer-label').textContent='time left';
+    setTimeout(()=>{const lh=getRowH();updateRowHighlight(1,lh||40,0);},50);
+    updateHUD();updateCombo();
+    setTimerRing(S.duration,S.duration);
+    document.getElementById('timer-text').textContent=S.duration;
+    document.getElementById('strict-notice').classList.toggle('visible',S.stopOnError);
+    const caret=document.getElementById('smooth-caret');
+    if(caret){caret.classList.add('instant');caret.style.opacity='0';setTimeout(()=>caret.classList.remove('instant'),50);}
+  }
 
   const live=document.getElementById('game-live');
   const res=document.getElementById('game-results');
   live.classList.remove('fading');live.style.display='';
   res.classList.remove('show');
-
   document.querySelectorAll('.word.strict-error').forEach(e=>e.classList.remove('strict-error'));
-
-  updateHUD();updateCombo();
-  setTimerRing(S.duration,S.duration);
-  document.getElementById('timer-text').textContent=S.duration;
-  document.getElementById('strict-notice').classList.toggle('visible',S.stopOnError);
-
-  const caret=document.getElementById('smooth-caret');
-  if(caret){caret.classList.add('instant');caret.style.opacity='0';setTimeout(()=>{caret.classList.remove('instant');},50);}
 
   hiddenInput.value='';hiddenInput.focus();
   wordArea.classList.remove('glow','shake');
+  storyTextEl.classList.remove('shake');
   hideOverlay();
 }
 
+// FREE MODE countdown
 function timerTick(){
   S.timeLeft--;
   updateHUD();
@@ -852,45 +985,68 @@ function timerTick(){
   }
   if(S.timeLeft<=0)endGame();
 }
-
 function startTimer(){
   S.started=true;
   S.timerId=setInterval(timerTick,1000);
   resetAfk();
 }
 
+// STORY MODE count-up
+function startStoryTimer(){
+  S.started=true;
+  S.startTime=performance.now();
+  S._lastSample=0;
+  S.timerId=setInterval(()=>{
+    if(S.afkPaused)return;
+    S.elapsed=(performance.now()-S.startTime)/1000;
+    updateStoryHUD();
+    if(S.elapsed-S._lastSample>=1){
+      S._lastSample=S.elapsed;
+      const wpm=Math.round((S.correctChars/5)/(S.elapsed/60))||0;
+      S.wpmSamples.push({t:S.elapsed,wpm});
+    }
+  },150);
+  resetAfk();
+}
+
 function endGame(){
+  if(S.finished)return;
   clearInterval(S.timerId);S.timerId=null;
   clearTimeout(S.afkTimer);
   S.finished=true;
-  const el=S.duration;
-  const wpm=Math.round((S.correctChars/5)/(el/60));
-  const rawWpm=Math.round((S.rawChars/5)/(el/60));
+  const isStory=S.gameMode==='story';
+  const elapsed=isStory?Math.max(S.elapsed,0.001):S.duration;
+  const min=elapsed/60;
+  const wpm=Math.round((S.correctChars/5)/min);
+  const rawWpm=Math.round((S.rawChars/5)/min);
   const accuracy=S.totalTyped>0?Math.round((S.correctChars/S.totalTyped)*100):100;
-  const bestKey=`${S.duration}-${S.gameMode==='story'?S.storyId:S.difficulty}`;
+  const bestKey=isStory?`story-${S.storyId}`:`${S.duration}-${S.difficulty}`;
   const isNew=!S.bests[bestKey]||wpm>S.bests[bestKey].wpm;
   if(isNew) S.bests[bestKey]={wpm,acc:accuracy,score:S.score};
   S.totalRuns++;
   S.history.unshift({wpm,acc:accuracy,ts:Date.now()});
   if(S.history.length>20)S.history.pop();
+  S.raceTime=elapsed;
   const xpGained=Math.round(S.score/10)+wpm*2;
   awardXP(xpGained);
-  checkAchievements({wpm,accuracy,maxCombo:S.maxCombo,isStory:S.gameMode==='story'});
+  checkAchievements({wpm,accuracy,maxCombo:S.maxCombo,isStory});
   savePersisted();
-  showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained});
+  showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained,elapsed,isStory});
 }
 
 // ── INPUT ─────────────────────────────────────────────────────────────────────
 hiddenInput.addEventListener('keydown',e=>{
   if(S.finished)return;
   if(e.key==='Tab'){e.preventDefault();initGame();return;}
-  if(e.key==='Escape'){e.preventDefault();clearInterval(S.timerId);showScreen('menu');refreshMenu();return;}
+  if(e.key==='Escape'){e.preventDefault();quitToMenu();return;}
 
   // Caps lock badge
   const caps=e.getModifierState&&e.getModifierState('CapsLock');
   document.getElementById('caps-notice').classList.toggle('visible',!!caps);
 
-  // Backspace to previous word
+  if(S.gameMode==='story'){handleStoryKey(e);return;}
+
+  // FREE MODE: Backspace to previous word
   if(e.key==='Backspace'&&hiddenInput.value===''&&S.wordIndex>0&&S.started){
     e.preventDefault();
     const prev=S.submittedWords.pop();
@@ -900,7 +1056,6 @@ hiddenInput.addEventListener('keydown',e=>{
     S.charIndex=prev.typed.length;
     if(prev.correct) S.correctChars=Math.max(0,S.correctChars-(prev.expected.length+1));
     S.totalTyped=Math.max(0,S.totalTyped-prev.typed.length);
-    // re-render prev word chars
     const wordEl=getWordEl(S.wordIndex);
     if(wordEl){
       const prevWord=S.words[S.wordIndex];
@@ -917,8 +1072,53 @@ hiddenInput.addEventListener('keydown',e=>{
   resetAfk();
 });
 
+// STORY MODE key handling — TypeRacer-style char-by-char with forced correction
+function handleStoryKey(e){
+  if(e.key==='Backspace'){
+    e.preventDefault();
+    if(S.pos>0){
+      S.pos--;
+      const el=storyCharEls[S.pos];
+      if(el.classList.contains('correct')){S.correctChars--;S.totalTyped=Math.max(0,S.totalTyped-1);}
+      el.classList.remove('correct','wrong','flash');
+      setStoryCurrent();updateStoryHUD();updateProgress();
+    }
+    resetAfk();return;
+  }
+  if(e.key.length!==1)return;          // ignore Shift, arrows, etc.
+  e.preventDefault();
+  if(!S.started)startStoryTimer();
+  const expected=S.fullText[S.pos];
+  const el=storyCharEls[S.pos];
+  if(!el)return;
+  S.rawChars++;
+  if(e.key===expected){
+    S.totalTyped++;S.correctChars++;
+    el.classList.remove('wrong','flash');el.classList.add('correct');
+    S.combo++;if(S.combo>S.maxCombo)S.maxCombo=S.combo;
+    S.score+=Math.round(comboMult()*5);
+    if(expected===' '){const r=el.getBoundingClientRect();spawnParts(r.left,r.top+r.height/2,'#4ecca3');}
+    playClick(expected===' '?'word':'key');
+    S.pos++;
+    setStoryCurrent();updateStoryHUD();updateProgress();
+    if(S.pos>=S.fullText.length){endGame();return;}
+  } else {
+    // forced correction: don't advance, flag the error
+    S.totalTyped++;
+    S.perKeyErrors[expected]=(S.perKeyErrors[expected]||0)+1;
+    S.combo=Math.floor(S.combo/2);
+    el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),180);
+    storyTextEl.classList.add('shake');setTimeout(()=>storyTextEl.classList.remove('shake'),250);
+    playClick('error');
+    updateStoryHUD();
+  }
+  resetAfk();
+}
+
+// FREE MODE typing via input event
 hiddenInput.addEventListener('input',()=>{
   if(S.finished)return;
+  if(S.gameMode==='story'){hiddenInput.value='';return;}
   const val=hiddenInput.value;
   const curWord=S.words[S.wordIndex];
   if(!curWord)return;
@@ -958,7 +1158,7 @@ hiddenInput.addEventListener('input',()=>{
   updateCaret();playClick('key');resetAfk();
 });
 
-// ── SUBMIT WORD ───────────────────────────────────────────────────────────────
+// ── SUBMIT WORD (FREE MODE) ──────────────────────────────────────────────────────
 function submitWord(typed){
   const expected=S.words[S.wordIndex];
   const isCorrect=typed===expected;
@@ -967,7 +1167,6 @@ function submitWord(typed){
 
   if(isCorrect){
     S.correctChars+=expected.length+1;
-    // combo decay on half (not zero) — already not wrong here, just increment
     S.combo++;
     if(S.combo>S.maxCombo)S.maxCombo=S.combo;
     const mult=comboMult();
@@ -983,13 +1182,11 @@ function submitWord(typed){
   } else {
     for(let i=0;i<expected.length;i++)
       if((typed[i]||'')!==expected[i]) S.perKeyErrors[expected[i]]=(S.perKeyErrors[expected[i]]||0)+1;
-    // combo HALVED (not zeroed) — more forgiving
     S.combo=Math.floor(S.combo/2);
     wordArea.classList.add('shake');setTimeout(()=>wordArea.classList.remove('shake'),300);
     playClick('error');
   }
 
-  // mark word done in DOM
   const we=getWordEl(S.wordIndex);
   if(we) we.querySelectorAll('.char').forEach((ch,ci)=>{
     ch.classList.remove('correct','wrong');
@@ -998,11 +1195,7 @@ function submitWord(typed){
 
   S.wordIndex++;S.charIndex=0;
 
-  // story mode: end when all words typed
-  if(S.gameMode==='story'&&S.wordIndex>=S.words.length){endGame();return;}
-
-  // extend random word list
-  if(S.gameMode==='words'&&S.wordIndex+20>S.words.length){
+  if(S.wordIndex+20>S.words.length){
     const extra=generateWords(50,S.words.slice(-8));
     const base=S.words.length;S.words.push(...extra);
     extra.forEach((w,i)=>wContainer.appendChild(makeWordEl(w,base+i)));
@@ -1031,11 +1224,30 @@ function updateHUD(){
   document.getElementById('chars-val').textContent=S.correctChars;
 }
 
+function updateStoryHUD(){
+  const min=S.elapsed/60;
+  const warmup=S.elapsed<2;
+  const wpm=(!warmup&&min>0)?Math.round((S.correctChars/5)/min):null;
+  const raw=(!warmup&&min>0)?Math.round((S.rawChars/5)/min):null;
+  const acc=S.totalTyped>0?Math.round((S.correctChars/S.totalTyped)*100):null;
+  document.getElementById('wpm-val').textContent=wpm!==null?wpm:'---';
+  document.getElementById('raw-wpm-sub').textContent=raw!==null?`raw ${raw}`:'raw ---';
+  document.getElementById('acc-val').textContent=acc!==null?acc:'---';
+  document.getElementById('timer-text').textContent=Math.floor(S.elapsed);
+  document.getElementById('score-val').textContent=S.score;
+  document.getElementById('chars-val').textContent=S.correctChars;
+}
+
 const ARC=2*Math.PI*31;
 function setTimerRing(left,total){
   const arc=document.getElementById('timer-arc'),pct=left/total;
   arc.style.strokeDashoffset=ARC*(1-pct);
   arc.style.stroke=pct<.25?'var(--accent3)':pct<.5?'#ffa84c':'var(--accent2)';
+}
+function setProgressRing(frac){
+  const arc=document.getElementById('timer-arc');
+  arc.style.strokeDashoffset=ARC*(1-frac);
+  arc.style.stroke=frac>=1?'var(--correct)':'var(--accent2)';
 }
 function updateCombo(){
   const el=document.getElementById('combo-val');
@@ -1045,25 +1257,27 @@ function updateCombo(){
 }
 
 // ── INLINE RESULTS ────────────────────────────────────────────────────────────
-function showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained}){
+function showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained,elapsed,isStory}){
   const live=document.getElementById('game-live');
   const res=document.getElementById('game-results');
   live.classList.add('fading');
   setTimeout(()=>{
     live.style.display='none';
     if(isNew)toast('🏆','New Personal Best!',`${wpm} WPM`);
-    document.getElementById('results-headline').textContent=isNew?'🏆 New Personal Best!':'Results';
+    document.getElementById('results-headline').textContent=isNew?'🏆 New Personal Best!':(isStory?'📖 Passage Complete!':'Results');
     const con=calcConsistency();
     const grid=document.getElementById('results-grid');grid.innerHTML='';
-    [
+    const cards=[
       {label:'WPM',val:wpm,unit:'words/min',hi:true},
       {label:'Raw WPM',val:rawWpm,unit:'incl. errors'},
       {label:'Accuracy',val:accuracy,unit:'%'},
       {label:'Consistency',val:con,unit:'%'},
-      {label:'Score',val:S.score,unit:'pts'},
-      {label:'Best Combo',val:S.maxCombo,unit:'words'},
-      {label:'XP Gained',val:xpGained,unit:'xp'},
-    ].forEach(s=>{
+    ];
+    if(isStory) cards.push({label:'Time',val:Math.round(elapsed),unit:'seconds'});
+    cards.push({label:'Score',val:S.score,unit:'pts'});
+    cards.push({label:isStory?'Best Streak':'Best Combo',val:S.maxCombo,unit:isStory?'chars':'words'});
+    cards.push({label:'XP Gained',val:xpGained,unit:'xp'});
+    cards.forEach(s=>{
       const c=document.createElement('div');
       c.className='result-card'+(s.hi?' highlight':'');
       c.innerHTML=`<div class="r-label">${s.label}</div><div class="r-val" data-target="${s.val}">0</div><div class="r-unit">${s.unit}</div>`;
@@ -1076,8 +1290,6 @@ function showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained}){
       requestAnimationFrame(step);
     });
     drawChart();renderTroubleKeys();
-
-    // wire share button with current stats
     document.getElementById('share-btn').onclick=()=>shareScore(wpm,accuracy);
     res.classList.add('show');
   },320);
@@ -1097,13 +1309,14 @@ function drawChart(){
   const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
   const s=S.wpmSamples,pad={t:14,r:14,b:26,l:40},cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
   const dk=document.body.dataset.theme==='dark';
+  const T=S.raceTime||S.duration||1;
   ctx.fillStyle=dk?'#1f1f2e':'#e8e8f8';ctx.roundRect(0,0,W,H,10);ctx.fill();
   if(s.length<2){ctx.fillStyle=dk?'#6b6b8a':'#7070a0';ctx.font='12px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('Not enough data',W/2,H/2);return;}
   const mx=Math.max(...s.map(x=>x.wpm),1),mn=Math.max(0,Math.min(...s.map(x=>x.wpm))-5);
-  const tx=t=>pad.l+(t/S.duration)*cw,ty=w=>pad.t+ch-((w-mn)/(mx-mn+1))*ch;
+  const tx=t=>pad.l+(t/T)*cw,ty=w=>pad.t+ch-((w-mn)/(mx-mn+1))*ch;
   ctx.strokeStyle=dk?'#2d2d45':'#c0c0e0';ctx.lineWidth=1;
   for(let i=0;i<=4;i++){const y=pad.t+(ch/4)*i;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();ctx.fillStyle=dk?'#6b6b8a':'#7070a0';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='right';ctx.fillText(Math.round(mx-(mx-mn)*(i/4)),pad.l-5,y+3);}
-  [0,S.duration/2,S.duration].forEach(t=>{ctx.fillStyle=dk?'#6b6b8a':'#7070a0';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText(t+'s',tx(t),H-7);});
+  [0,T/2,T].forEach(t=>{ctx.fillStyle=dk?'#6b6b8a':'#7070a0';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText(Math.round(t)+'s',tx(t),H-7);});
   const g=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);g.addColorStop(0,'rgba(168,124,255,.4)');g.addColorStop(1,'rgba(168,124,255,0)');
   ctx.beginPath();ctx.moveTo(tx(s[0].t),ty(s[0].wpm));s.forEach(x=>ctx.lineTo(tx(x.t),ty(x.wpm)));ctx.lineTo(tx(s.at(-1).t),pad.t+ch);ctx.lineTo(tx(s[0].t),pad.t+ch);ctx.closePath();ctx.fillStyle=g;ctx.fill();
   ctx.beginPath();ctx.moveTo(tx(s[0].t),ty(s[0].wpm));s.forEach(x=>ctx.lineTo(tx(x.t),ty(x.wpm)));ctx.strokeStyle='#a87cff';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();
@@ -1119,8 +1332,8 @@ function renderTroubleKeys(){
 
 // ── SHARE ─────────────────────────────────────────────────────────────────────
 function shareScore(wpm,accuracy){
-  const mode=S.gameMode==='story'?STORIES[S.storyId]?.title:S.difficulty;
-  const text=`I typed ${wpm} WPM with ${accuracy}% accuracy on TypeRush! (${S.duration}s · ${mode}) 🚀 typerush`;
+  const mode=S.gameMode==='story'?STORIES[S.storyId]?.title:`${S.duration}s ${S.difficulty}`;
+  const text=`I typed ${wpm} WPM with ${accuracy}% accuracy on TypeRush! (${mode}) 🚀`;
   navigator.clipboard?.writeText(text).then(()=>toast('📋','Copied to clipboard!',text)).catch(()=>toast('📋','Your score:',text));
 }
 
@@ -1143,7 +1356,6 @@ function drawSparkline(){
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(168,124,255,.3)');g.addColorStop(1,'rgba(168,124,255,0)');
   ctx.beginPath();ctx.moveTo(tx(0),ty(vals[0]));vals.forEach((v,i)=>ctx.lineTo(tx(i),ty(v)));ctx.lineTo(tx(vals.length-1),H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
   ctx.beginPath();ctx.moveTo(tx(0),ty(vals[0]));vals.forEach((v,i)=>ctx.lineTo(tx(i),ty(v)));ctx.strokeStyle='#a87cff';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
-  // first and last label
   ctx.fillStyle=dk?'#a87cff':'#8060d0';ctx.font='bold 10px JetBrains Mono,monospace';ctx.textAlign='left';ctx.fillText(vals[0]+' WPM',4,12);
   ctx.textAlign='right';ctx.fillText(vals[vals.length-1]+' WPM',W-4,12);
 }
@@ -1166,13 +1378,17 @@ function buildStoryGrid(){
 
 function refreshMenu(){
   const grid=document.getElementById('scores-grid');grid.innerHTML='';
-  const keys=[...Object.keys(STORIES).map(id=>[15,30,60,120].map(d=>`${d}-${id}`)).flat(),
-              ...['easy','medium','hard'].map(d=>[15,30,60].map(t=>`${t}-${d}`)).flat()];
+  const keys=[
+    ...['easy','medium','hard'].flatMap(d=>[15,30,60].map(t=>`${t}-${d}`)),
+    ...Object.keys(STORIES).map(id=>`story-${id}`),
+  ];
   keys.forEach(k=>{
     const b=S.bests[k];if(!b)return;
-    const [dur,...rest]=k.split('-');const label=rest.join('-');
+    let label;
+    if(k.startsWith('story-')){label=STORIES[k.slice(6)]?.title||k;}
+    else{const [dur,diff]=k.split('-');label=`${dur}s · ${diff}`;}
     const c=document.createElement('div');c.className='score-card';
-    c.innerHTML=`<div class="sc-label">${dur}s · ${label}</div><div class="sc-val">${b.wpm}</div><div class="sc-sub">WPM · ${b.acc}% acc</div>`;
+    c.innerHTML=`<div class="sc-label">${label}</div><div class="sc-val">${b.wpm}</div><div class="sc-sub">WPM · ${b.acc}% acc</div>`;
     grid.appendChild(c);
   });
   if(!grid.children.length) grid.innerHTML='<p style="color:var(--text-dim);font-size:.82rem;text-align:center;width:100%">No records yet — play a game!</p>';
@@ -1180,7 +1396,6 @@ function refreshMenu(){
 }
 
 // ── EVENTS ────────────────────────────────────────────────────────────────────
-// Mode tabs
 document.querySelectorAll('.mode-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
@@ -1191,25 +1406,16 @@ document.querySelectorAll('.mode-tab').forEach(btn=>{
   });
 });
 
-// Duration (words)
 document.getElementById('duration-opts').addEventListener('click',e=>{
   const b=e.target.closest('.opt-btn');if(!b)return;
   document.querySelectorAll('#duration-opts .opt-btn').forEach(x=>x.classList.remove('selected'));
   b.classList.add('selected');S.duration=parseInt(b.dataset.val);
 });
-// Duration (stories)
-document.getElementById('story-duration-opts').addEventListener('click',e=>{
-  const b=e.target.closest('.opt-btn');if(!b)return;
-  document.querySelectorAll('#story-duration-opts .opt-btn').forEach(x=>x.classList.remove('selected'));
-  b.classList.add('selected');S.duration=parseInt(b.dataset.val);
-});
-// Difficulty
 document.getElementById('difficulty-opts').addEventListener('click',e=>{
   const b=e.target.closest('.opt-btn');if(!b)return;
   document.querySelectorAll('#difficulty-opts .opt-btn').forEach(x=>x.classList.remove('selected'));
   b.classList.add('selected');S.difficulty=b.dataset.val;
 });
-// Toggles
 function setupToggle(id,key){
   const b=document.getElementById(id);
   b.addEventListener('click',()=>{S[key]=!S[key];b.classList.toggle('on',S[key]);savePersisted();});
@@ -1221,26 +1427,25 @@ setupToggle('strict-btn','stopOnError');
 
 document.getElementById('play-btn').addEventListener('click',()=>{showScreen('game');initGame();});
 document.getElementById('retry-btn').addEventListener('click',()=>initGame());
-document.getElementById('menu-btn').addEventListener('click',()=>{showScreen('menu');refreshMenu();});
+document.getElementById('menu-btn').addEventListener('click',()=>quitToMenu());
 document.getElementById('restart-btn').addEventListener('click',()=>initGame());
-document.getElementById('focus-overlay').addEventListener('click',()=>{
+document.querySelectorAll('.focus-overlay').forEach(o=>o.addEventListener('click',()=>{
   if(S.afkPaused){resumeAfk();}else{hideOverlay();}
   hiddenInput.focus();
-});
+}));
 
-// Global keyboard
 document.addEventListener('keydown',e=>{
   if(S.screen==='game'&&S.finished){
     if(e.key==='Tab'||e.key==='Enter'){e.preventDefault();initGame();}
-    if(e.key==='Escape'){showScreen('menu');refreshMenu();}
+    if(e.key==='Escape'){quitToMenu();}
   }
   if(S.screen==='game'&&document.activeElement!==hiddenInput&&!S.finished){
     hiddenInput.focus();
   }
 });
 wordArea.addEventListener('click',()=>hiddenInput.focus());
+storyArea.addEventListener('click',()=>hiddenInput.focus());
 
-// Focus/blur for overlay
 hiddenInput.addEventListener('blur',()=>{
   if(S.started&&!S.finished&&!S.afkPaused){
     setTimeout(()=>{
@@ -1254,14 +1459,12 @@ hiddenInput.addEventListener('focus',()=>{
   if(!S.afkPaused)hideOverlay();
 });
 
-// Theme
 document.getElementById('theme-btn').addEventListener('click',()=>{
   S.theme=S.theme==='dark'?'light':'dark';
   document.body.dataset.theme=S.theme;
   document.getElementById('theme-btn').textContent=S.theme==='dark'?'☀️':'🌙';
   savePersisted();
 });
-// Sound
 document.getElementById('sound-btn').addEventListener('click',()=>{
   S.soundOn=!S.soundOn;
   const b=document.getElementById('sound-btn');
