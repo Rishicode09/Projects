@@ -61,10 +61,17 @@
   }
 
   /* ─── NAV ─── */
+  #bg-canvas {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
   nav {
     width: 100%; max-width: 860px;
     padding: 16px 24px;
     display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 2;
   }
   .logo {
     font-size: 1.4rem; font-weight: 700;
@@ -88,6 +95,7 @@
     padding: 0 24px 8px;
     display: flex; align-items: center; gap: 10px;
     font-size: 0.78rem; color: var(--text-dim);
+    position: relative; z-index: 2;
   }
   #level-label { font-weight: 700; color: var(--accent2); min-width: 60px; }
   .bar-track {
@@ -105,6 +113,7 @@
   .screen {
     display: none; width: 100%; max-width: 860px;
     padding: 0 24px 40px;
+    position: relative; z-index: 2;
   }
   .screen.active { display: block; }
 
@@ -400,6 +409,7 @@
 </head>
 <body data-theme="dark">
 
+<canvas id="bg-canvas"></canvas>
 <canvas id="particle-canvas"></canvas>
 <div id="levelup-flash"></div>
 <div id="toast-area"></div>
@@ -634,6 +644,66 @@ function playClick(type='key') {
   } catch(e) {}
 }
 
+// ─── BACKGROUND ORBS ─────────────────────────────────────────────────────────
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+let bgOrbs = [];
+
+function resizeBgCanvas() {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeBgCanvas);
+resizeBgCanvas();
+
+function initBgOrbs() {
+  bgOrbs = [];
+  for (let i = 0; i < 18; i++) {
+    bgOrbs.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: 80 + Math.random() * 130,
+      opacity: 0.05 + Math.random() * 0.09,
+      colorIdx: Math.floor(Math.random() * 3),
+      pulsePhase: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.005 + Math.random() * 0.01,
+    });
+  }
+}
+initBgOrbs();
+
+function drawBgOrbs() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  const isDark = document.body.dataset.theme === 'dark';
+  const orbColors = isDark
+    ? ['168,124,255', '255,107,157', '78,204,163']
+    : ['96,64,176',   '208,64,128',  '26,154,112'];
+
+  for (const orb of bgOrbs) {
+    orb.x += orb.vx;
+    orb.y += orb.vy;
+    // wrap edges
+    if (orb.x < -orb.r) orb.x = bgCanvas.width + orb.r;
+    if (orb.x > bgCanvas.width  + orb.r) orb.x = -orb.r;
+    if (orb.y < -orb.r) orb.y = bgCanvas.height + orb.r;
+    if (orb.y > bgCanvas.height + orb.r) orb.y = -orb.r;
+
+    orb.pulsePhase += orb.pulseSpeed;
+    const scale = 1 + 0.12 * Math.sin(orb.pulsePhase);
+    const r = orb.r * scale;
+
+    const grad = bgCtx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r);
+    grad.addColorStop(0, `rgba(${orbColors[orb.colorIdx]},${orb.opacity})`);
+    grad.addColorStop(1, `rgba(${orbColors[orb.colorIdx]},0)`);
+    bgCtx.beginPath();
+    bgCtx.arc(orb.x, orb.y, r, 0, Math.PI * 2);
+    bgCtx.fillStyle = grad;
+    bgCtx.fill();
+  }
+}
+
 // ─── PARTICLES ───────────────────────────────────────────────────────────────
 const pCanvas = document.getElementById('particle-canvas');
 const pCtx = pCanvas.getContext('2d');
@@ -663,6 +733,7 @@ function spawnParticles(x, y, color) {
 }
 
 function animateParticles() {
+  drawBgOrbs();
   pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
   particles = particles.filter(p => p.life > 0);
   for (const p of particles) {
@@ -751,11 +822,21 @@ function checkAchievements(results) {
 // ─── WORD STREAM ──────────────────────────────────────────────────────────────
 const wordsContainer = document.getElementById('words-container');
 
-function generateWords(count) {
+function generateWords(count, recentSeed = []) {
   const list = getWordList(STATE.difficulty);
   const words = [];
+  const windowSize = Math.min(8, Math.floor(list.length / 2));
+  const recent = recentSeed.slice(-windowSize);
+
   for (let i = 0; i < count; i++) {
-    words.push(list[Math.floor(Math.random() * list.length)]);
+    let word, attempts = 0;
+    do {
+      word = list[Math.floor(Math.random() * list.length)];
+      attempts++;
+    } while (recent.includes(word) && attempts < 30);
+    words.push(word);
+    recent.push(word);
+    if (recent.length > windowSize) recent.shift();
   }
   return words;
 }
@@ -1000,7 +1081,7 @@ function submitWord(typed) {
 
   // extend word list if needed
   if (STATE.wordIndex + 20 > STATE.words.length) {
-    const extra = generateWords(50);
+    const extra = generateWords(50, STATE.words.slice(-8));
     STATE.words.push(...extra);
     extra.forEach((word, idx) => {
       const wi = STATE.wordIndex + 20 + idx - (extra.length - extra.length); // append DOM
