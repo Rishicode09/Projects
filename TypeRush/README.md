@@ -1,6 +1,23 @@
 # TypeRush
 
-A gamified speed-typing trainer — one self-contained HTML file, zero dependencies.
+A gamified speed-typing trainer — a self-contained static site (no build step, no
+backend, no third-party requests). The font is bundled locally and all state lives
+in your browser's `localStorage`.
+
+To run locally, just open `TypeRush/index.html` in any browser. To publish it
+online securely (Cloudflare Pages, strict CSP, self-hosted font), see
+[`DEPLOY.md`](DEPLOY.md).
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `index.html` | Markup |
+| `styles.css` | All styling + local `@font-face` |
+| `app.js` | Game logic |
+| `fonts/` | Self-hosted JetBrains Mono (OFL) |
+| `_headers` | Cloudflare Pages security headers (CSP, HSTS, etc.) |
+| `DEPLOY.md` | Deployment guide |
 
 ## Two modes
 
