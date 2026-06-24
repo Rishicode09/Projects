@@ -20,6 +20,14 @@ const STORIES = {
     title:'Sherlock Holmes', author:'Arthur Conan Doyle, 1887', icon:'🔍',
     text:`In the year 1878 I took my degree of Doctor of Medicine of the University of London, and proceeded to go through the course prescribed for surgeons in the army. Having completed my studies there, I was duly attached to the Fifth Northumberland Fusiliers as assistant surgeon. The regiment had barely reached India before the second Afghan war broke out. I followed with many other officers who were in the same situation as myself, and succeeded in reaching Candahar in safety, where I found my regiment and at once entered upon my duties. The campaign brought honours and promotion to many, but for me it had nothing but misfortune and disaster. I was struck on the shoulder by a bullet which shattered the bone and grazed the artery. I should have fallen into the hands of the murderous enemy had it not been for the devotion and courage shown by Murray, my orderly, who threw me across a pack horse and succeeded in bringing me safely to the British lines. Worn with pain, and weak from the prolonged hardships which I had undergone, I was removed with a great train of wounded sufferers to the base hospital at Peshawar.`
   },
+  pride: {
+    title:'Pride and Prejudice', author:'Jane Austen, 1813', icon:'💍',
+    text:`It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters. My dear Mr Bennet, said his lady to him one day, have you heard that Netherfield Park is let at last? Mr Bennet replied that he had not. But it is, returned she; for Mrs Long has just been here, and she told me all about it. Mr Bennet made no answer. Do you not want to know who has taken it? cried his wife impatiently. You want to tell me, and I have no objection to hearing it. This was invitation enough. Why, my dear, you must know, Mrs Long says that Netherfield is taken by a young man of large fortune from the north of England; that he came down on Monday to see the place, and was so much delighted with it that he agreed to take it immediately. He is a single man of large fortune; four or five thousand a year. What a fine thing for our girls! How so? How can it affect them? My dear Mr Bennet, replied his wife, how can you be so tiresome! You must know that I am thinking of his marrying one of them.`
+  },
+  carol: {
+    title:'A Christmas Carol', author:'Charles Dickens, 1843', icon:'🎄',
+    text:`Marley was dead, to begin with. There is no doubt whatever about that. The register of his burial was signed by the clergyman, the clerk, the undertaker, and the chief mourner. Old Marley was as dead as a door nail. Scrooge knew he was dead? Of course he did. How could it be otherwise? Scrooge and he were partners for I do not know how many years. Scrooge was his sole executor, his sole administrator, his sole assign, his sole residuary legatee, his sole friend, and his sole mourner. Oh, but he was a tight fisted hand at the grindstone, Scrooge! a squeezing, wrenching, grasping, scraping, clutching, covetous old sinner! Hard and sharp as flint, from which no steel had ever struck out generous fire; secret, and self contained, and solitary as an oyster. The cold within him froze his old features, nipped his pointed nose, shrivelled his cheek, stiffened his gait, made his eyes red, his thin lips blue, and spoke out shrewdly in his grating voice. Nobody ever stopped him in the street to say, with gladsome looks, my dear Scrooge, how are you? But what did Scrooge care? It was the very thing he liked.`
+  },
 };
 
 // ── WORD LISTS (FREE MODE) ──────────────────────────────────────────────────────
@@ -519,7 +527,7 @@ function endGame(){
   const min=elapsed/60;
   const wpm=Math.round((S.correctChars/5)/min);
   const rawWpm=Math.round((S.rawChars/5)/min);
-  const accuracy=S.totalTyped>0?Math.round((S.correctChars/S.totalTyped)*100):100;
+  const accuracy=S.totalTyped>0?Math.min(100,Math.round((S.correctChars/S.totalTyped)*100)):100;
   const bestKey=isStory?`story-${S.storyId}`:`${S.duration}-${S.difficulty}`;
   const isNew=!S.bests[bestKey]||wpm>S.bests[bestKey].wpm;
   if(isNew) S.bests[bestKey]={wpm,acc:accuracy,score:S.score};
@@ -656,7 +664,7 @@ hiddenInput.addEventListener('input',()=>{
 function submitWord(typed){
   const expected=S.words[S.wordIndex];
   const isCorrect=typed===expected;
-  S.totalTyped+=typed.length;
+  S.totalTyped+=typed.length+1; // +1 for the space, so a clean run is exactly 100%
   S.submittedWords.push({typed,expected,correct:isCorrect});
 
   if(isCorrect){
@@ -709,7 +717,7 @@ function updateHUD(){
   const warmup=el<3;
   const wpm=(!warmup&&el>0)?Math.round((S.correctChars/5)/(el/60)):null;
   const raw=(!warmup&&el>0)?Math.round((S.rawChars/5)/(el/60)):null;
-  const acc=S.totalTyped>0?Math.round((S.correctChars/S.totalTyped)*100):null;
+  const acc=S.totalTyped>0?Math.min(100,Math.round((S.correctChars/S.totalTyped)*100)):null;
   document.getElementById('wpm-val').textContent=wpm!==null?wpm:'---';
   document.getElementById('raw-wpm-sub').textContent=raw!==null?`raw ${raw}`:'raw ---';
   document.getElementById('acc-val').textContent=acc!==null?acc:'---';
@@ -723,7 +731,7 @@ function updateStoryHUD(){
   const warmup=S.elapsed<2;
   const wpm=(!warmup&&min>0)?Math.round((S.correctChars/5)/min):null;
   const raw=(!warmup&&min>0)?Math.round((S.rawChars/5)/min):null;
-  const acc=S.totalTyped>0?Math.round((S.correctChars/S.totalTyped)*100):null;
+  const acc=S.totalTyped>0?Math.min(100,Math.round((S.correctChars/S.totalTyped)*100)):null;
   document.getElementById('wpm-val').textContent=wpm!==null?wpm:'---';
   document.getElementById('raw-wpm-sub').textContent=raw!==null?`raw ${raw}`:'raw ---';
   document.getElementById('acc-val').textContent=acc!==null?acc:'---';
