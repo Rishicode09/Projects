@@ -334,3 +334,28 @@
   .ol-bests{display:block;text-align:center;margin-bottom:10px;margin-top:6px;}
   .empty-msg{color:var(--text-dim);font-size:.82rem;text-align:center;width:100%;}
   .tk-clear{color:var(--correct);font-size:.85rem;}
+
+  /* LOGIN / PROFILES */
+  #login-screen{text-align:center;}
+  .login-box{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:24px 0 18px;}
+  #login-input{
+    background:var(--card);border:2px solid var(--border);color:var(--text);
+    border-radius:10px;padding:12px 16px;font-family:var(--font);font-size:1rem;
+    width:min(280px,70vw);transition:border-color .2s,box-shadow .2s;
+  }
+  #login-input:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 12px var(--glow);}
+  #login-btn{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;
+    font-family:var(--font);font-size:.95rem;font-weight:700;letter-spacing:.5px;
+    padding:12px 24px;border-radius:10px;cursor:pointer;transition:transform .15s,box-shadow .2s;
+    box-shadow:0 4px 16px rgba(124,92,191,.4);
+  }
+  #login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,92,191,.55);}
+  #profile-list{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .profile-chip{
+    background:var(--card);border:1px solid var(--border);color:var(--text);
+    border-radius:99px;padding:8px 20px;cursor:pointer;font-family:var(--font);
+    font-size:.9rem;transition:all .2s;min-width:160px;
+  }
+  .profile-chip:hover{border-color:var(--accent2);color:var(--accent2);box-shadow:0 0 10px var(--glow);}
+  #profile-btn{font-weight:600;}

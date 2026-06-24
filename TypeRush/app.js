@@ -102,24 +102,57 @@ const S = {
   history:[], // [{wpm,acc,ts}] last 20 runs
 };
 
-function loadPersisted() {
+// Settings are global to the device; progress is saved per signed-in profile.
+const SETTINGS_KEY='typerush_settings';
+const USER_KEY='typerush_user';
+const PROFILE_PREFIX='typerush_profile_';
+const PROGRESS_KEYS='xp level bests achievements totalRuns history'.split(' ');
+const SETTINGS_FIELDS='soundOn theme useNumbers usePunctuation stopOnError'.split(' ');
+
+function loadSettings() {
   try {
-    const d = JSON.parse(localStorage.getItem('typerush2')||'{}');
-    'xp level bests achievements totalRuns history soundOn theme useNumbers usePunctuation stopOnError'
-      .split(' ').forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
-    if(!S.history) S.history=[];
+    const d = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
+    SETTINGS_FIELDS.forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
   } catch(e){}
 }
-function savePersisted() {
+function saveSettings() {
   try {
-    localStorage.setItem('typerush2', JSON.stringify({
-      xp:S.xp, level:S.level, bests:S.bests,
-      achievements:S.achievements, totalRuns:S.totalRuns, history:S.history,
-      soundOn:S.soundOn, theme:S.theme,
-      useNumbers:S.useNumbers, usePunctuation:S.usePunctuation, stopOnError:S.stopOnError,
-    }));
+    const o={}; SETTINGS_FIELDS.forEach(k=>o[k]=S[k]);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(o));
   } catch(e){}
 }
+
+function listProfiles() {
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith(PROFILE_PREFIX)) out.push(k.slice(PROFILE_PREFIX.length));
+  }
+  return out.sort();
+}
+function resetProgress(){ S.xp=0;S.level=1;S.bests={};S.achievements={};S.totalRuns=0;S.history=[]; }
+function loadProfile(name) {
+  resetProgress();
+  try {
+    let raw=localStorage.getItem(PROFILE_PREFIX+name);
+    // First-ever profile inherits any pre-login (legacy) local save so progress isn't lost.
+    if(!raw && listProfiles().length===0){ raw=localStorage.getItem('typerush2'); }
+    if(raw){
+      const d=JSON.parse(raw);
+      PROGRESS_KEYS.forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+      if(!S.history) S.history=[];
+    }
+  } catch(e){}
+}
+function saveProfile() {
+  if(!S.user) return;
+  try {
+    const o={}; PROGRESS_KEYS.forEach(k=>o[k]=S[k]);
+    localStorage.setItem(PROFILE_PREFIX+S.user, JSON.stringify(o));
+  } catch(e){}
+}
+// Single entry point used throughout the app: persist both settings and progress.
+function savePersisted(){ saveSettings(); saveProfile(); }
 
 // ── AUDIO ─────────────────────────────────────────────────────────────────────
 let _actx=null;
@@ -205,6 +238,45 @@ function quitToMenu(){
   clearTimeout(S.afkTimer);
   S.afkPaused=false;
   showScreen('menu');refreshMenu();
+}
+
+// ── PROFILES / LOGIN ──────────────────────────────────────────────────────────
+function updateProfileChip(){
+  const b=document.getElementById('profile-btn');
+  if(b) b.textContent='👤 '+(S.user||'Guest');
+}
+function signIn(name){
+  name=(name||'').trim().replace(/\s+/g,' ').slice(0,20);
+  if(!name) return;
+  loadProfile(name);            // existing profile, legacy migration, or fresh
+  S.user=name;
+  try{ localStorage.setItem(USER_KEY,name); }catch(e){}
+  saveProfile();                // ensure the profile key exists
+  updateProfileChip();
+  updateLevelBar();
+  showScreen('menu');
+  refreshMenu();
+}
+function signOut(){
+  saveProfile();
+  S.user=null;
+  try{ localStorage.removeItem(USER_KEY); }catch(e){}
+  buildLoginScreen();
+  showScreen('login');
+}
+function buildLoginScreen(){
+  const wrap=document.getElementById('profile-list');
+  const profs=listProfiles();
+  wrap.innerHTML = profs.length ? '<span class="option-label ol-center">or continue as</span>' : '';
+  profs.forEach(n=>{
+    const b=document.createElement('button');
+    b.className='profile-chip';
+    b.textContent='👤 '+n;
+    b.addEventListener('click',()=>signIn(n));
+    wrap.appendChild(b);
+  });
+  const inp=document.getElementById('login-input');
+  if(inp){ inp.value=''; setTimeout(()=>inp.focus(),50); }
 }
 
 // ── LEVEL / XP ────────────────────────────────────────────────────────────────
@@ -974,9 +1046,13 @@ document.getElementById('sound-btn').addEventListener('click',()=>{
   savePersisted();
 });
 
+// Login events
+document.getElementById('login-btn').addEventListener('click',()=>signIn(document.getElementById('login-input').value));
+document.getElementById('login-input').addEventListener('keydown',e=>{ if(e.key==='Enter') signIn(e.target.value); });
+document.getElementById('profile-btn').addEventListener('click',()=>signOut());
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadPersisted();
-updateLevelBar();
+loadSettings();
 document.body.dataset.theme=S.theme;
 document.getElementById('theme-btn').textContent=S.theme==='dark'?'☀️':'🌙';
 document.getElementById('sound-btn').textContent=S.soundOn?'🔊':'🔇';
@@ -986,4 +1062,14 @@ document.getElementById('sound-btn').classList.toggle('active',S.soundOn);
   document.getElementById(id).classList.toggle('on',S[key]);
 });
 buildStoryGrid();
-refreshMenu();
+
+// Resume the last signed-in profile, or show the login screen.
+const _savedUser=(()=>{ try{ return localStorage.getItem(USER_KEY); }catch(e){ return null; } })();
+if(_savedUser){
+  signIn(_savedUser);
+} else {
+  updateProfileChip();
+  updateLevelBar();
+  buildLoginScreen();
+  showScreen('login');
+}

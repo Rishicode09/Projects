@@ -15,6 +15,7 @@
 <nav>
   <div class="logo">Type<span>Rush</span></div>
   <div class="nav-btns">
+    <button class="icon-btn" id="profile-btn" title="Switch profile">👤 Guest</button>
     <button class="icon-btn" id="theme-btn">☀️</button>
     <button class="icon-btn active" id="sound-btn">🔊</button>
   </div>
@@ -24,6 +25,19 @@
   <span id="level-label">Lvl 1</span>
   <div class="bar-track"><div id="level-fill"></div></div>
   <span id="xp-label">0 XP</span>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen" class="screen">
+  <div class="menu-title">TypeRushgame</div>
+  <div class="menu-sub">Sign in to save your progress on this device</div>
+  <div class="login-box">
+    <input id="login-input" type="text" maxlength="20" autocomplete="off"
+           autocorrect="off" autocapitalize="off" spellcheck="false"
+           placeholder="Enter a username">
+    <button id="login-btn">Sign In →</button>
+  </div>
+  <div id="profile-list"></div>
 </div>
 
 <!-- ══ MENU ══ -->
