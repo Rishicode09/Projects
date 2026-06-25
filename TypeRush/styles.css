@@ -359,3 +359,15 @@
   }
   .profile-chip:hover{border-color:var(--accent2);color:var(--accent2);box-shadow:0 0 10px var(--glow);}
   #profile-btn{font-weight:600;}
+
+  /* STORY-MODE TYPING RANK */
+  #rank-banner{
+    display:none;text-align:center;margin-bottom:16px;padding:16px;
+    background:linear-gradient(135deg,rgba(124,92,191,.18),rgba(255,107,157,.14));
+    border:1px solid var(--accent2);border-radius:var(--radius);box-shadow:0 0 18px var(--glow);
+  }
+  #rank-banner .rank-label{font-size:.66rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;}
+  #rank-banner .rank-title{font-size:1.9rem;font-weight:700;margin:4px 0 2px;
+    background:linear-gradient(135deg,var(--accent2),var(--accent3));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  #rank-banner .rank-sub{font-size:.8rem;color:var(--text-dim);}

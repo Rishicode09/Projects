@@ -831,6 +831,19 @@ function updateCombo(){
 }
 
 // ── INLINE RESULTS ────────────────────────────────────────────────────────────
+// Story-mode typing rank from WPM. The requested bands overlapped (e.g. 40-55
+// and 50-65 both covered 50-55); these are the cleaned, contiguous equivalents
+// using the same lower bounds (30/40/50/65/80/100).
+function typerRank(wpm){
+  if(wpm>=100) return {title:'Master Typer',  icon:'👑'};
+  if(wpm>=80)  return {title:'Ultra Advanced', icon:'⚡'};
+  if(wpm>=65)  return {title:'Advanced',       icon:'🚀'};
+  if(wpm>=50)  return {title:'Intermediate',   icon:'⌨️'};
+  if(wpm>=40)  return {title:'Novice',         icon:'📗'};
+  if(wpm>=30)  return {title:'Beginner',       icon:'🌱'};
+  return {title:'Child', icon:'🐣'};
+}
+
 function showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained,elapsed,isStory}){
   const live=document.getElementById('game-live');
   const res=document.getElementById('game-results');
@@ -839,6 +852,17 @@ function showResultsInline({wpm,rawWpm,accuracy,isNew,xpGained,elapsed,isStory})
     live.style.display='none';
     if(isNew)toast('🏆','New Personal Best!',`${wpm} WPM`);
     document.getElementById('results-headline').textContent=isNew?'🏆 New Personal Best!':(isStory?'📖 Passage Complete!':'Results');
+    // Story-mode typing rank (TypeRacer-style title from WPM)
+    const rb=document.getElementById('rank-banner');
+    if(rb){
+      if(isStory){
+        const r=typerRank(wpm);
+        rb.style.display='block';
+        rb.innerHTML=`<div class="rank-label">Your Typing Rank</div><div class="rank-title">${r.icon} ${r.title}</div><div class="rank-sub">${wpm} WPM</div>`;
+      } else {
+        rb.style.display='none';
+      }
+    }
     const con=calcConsistency();
     const grid=document.getElementById('results-grid');grid.innerHTML='';
     const cards=[
