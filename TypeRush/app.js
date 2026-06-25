@@ -151,8 +151,9 @@ function saveProfile() {
     localStorage.setItem(PROFILE_PREFIX+S.user, JSON.stringify(o));
   } catch(e){}
 }
-// Single entry point used throughout the app: persist both settings and progress.
-function savePersisted(){ saveSettings(); saveProfile(); }
+// Single entry point used throughout the app: persist settings + progress, and
+// (if signed into a cloud account) push progress to the server.
+function savePersisted(){ saveSettings(); saveProfile(); syncUp(); }
 
 // ── AUDIO ─────────────────────────────────────────────────────────────────────
 let _actx=null;
@@ -259,8 +260,8 @@ function signIn(name){
 }
 function signOut(){
   saveProfile();
-  S.user=null;
-  try{ localStorage.removeItem(USER_KEY); }catch(e){}
+  S.user=null; S.token=null;
+  try{ localStorage.removeItem(USER_KEY); localStorage.removeItem('typerush_token'); localStorage.removeItem('typerush_email'); }catch(e){}
   buildLoginScreen();
   showScreen('login');
 }
@@ -275,8 +276,50 @@ function buildLoginScreen(){
     b.addEventListener('click',()=>signIn(n));
     wrap.appendChild(b);
   });
-  const inp=document.getElementById('login-input');
-  if(inp){ inp.value=''; setTimeout(()=>inp.focus(),50); }
+  ['email-input','password-input','local-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const a=document.getElementById('auth-msg'); if(a){a.textContent='';a.className='';}
+  setTimeout(()=>{const x=document.getElementById('email-input');if(x)x.focus();},50);
+}
+
+// ── CLOUD ACCOUNTS (email + password, progress sync) ───────────────────────────
+let _syncTimer=null;
+function progressBlob(){ const o={}; PROGRESS_KEYS.forEach(k=>o[k]=S[k]); return o; }
+function applyProgress(d){ if(!d)return; PROGRESS_KEYS.forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; }); if(!S.history)S.history=[]; }
+function bestStoryWpm(){ let m=0; for(const k in S.bests){ if(k.indexOf('story-')===0){ const w=(S.bests[k]&&S.bests[k].wpm)||0; if(w>m)m=w; } } return m; }
+async function apiCall(path,method,body){
+  const headers={'content-type':'application/json'};
+  if(S.token) headers['Authorization']='Bearer '+S.token;
+  const res=await fetch(path,{method,headers,body:body?JSON.stringify(body):undefined});
+  let data={}; try{ data=await res.json(); }catch(e){}
+  if(!res.ok) throw new Error(data.error||('Request failed ('+res.status+')'));
+  return data;
+}
+function syncUp(){
+  if(!S.token) return;
+  clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(()=>{
+    const best=bestStoryWpm();
+    apiCall('/api/sync','POST',{progress:progressBlob(),best_wpm:best,rank:typerRank(best).title}).catch(()=>{});
+  },800);
+}
+async function doAuth(mode){
+  const email=(document.getElementById('email-input').value||'').trim();
+  const pw=document.getElementById('password-input').value||'';
+  const msg=document.getElementById('auth-msg');
+  msg.className=''; msg.textContent = mode==='signup' ? 'Creating account…' : 'Signing in…';
+  try{
+    const data=await apiCall('/api/'+mode,'POST',{email,password:pw});
+    S.token=data.token; S.user=data.email;
+    try{ localStorage.setItem('typerush_token',data.token); localStorage.setItem('typerush_email',data.email); localStorage.setItem(USER_KEY,data.email); }catch(e){}
+    if(data.progress){ resetProgress(); applyProgress(data.progress); }
+    else { loadProfile(data.email); } // new account keeps any local cache, then pushes it up
+    saveProfile(); syncUp();
+    updateProfileChip(); updateLevelBar();
+    showScreen('menu'); refreshMenu();
+  }catch(err){
+    msg.className='err';
+    msg.textContent = (err&&err.message) ? err.message : 'Could not reach the server. You can still play offline below.';
+  }
 }
 
 // ── LEVEL / XP ────────────────────────────────────────────────────────────────
@@ -1071,8 +1114,11 @@ document.getElementById('sound-btn').addEventListener('click',()=>{
 });
 
 // Login events
-document.getElementById('login-btn').addEventListener('click',()=>signIn(document.getElementById('login-input').value));
-document.getElementById('login-input').addEventListener('keydown',e=>{ if(e.key==='Enter') signIn(e.target.value); });
+document.getElementById('login-btn').addEventListener('click',()=>doAuth('login'));
+document.getElementById('signup-btn').addEventListener('click',()=>doAuth('signup'));
+document.getElementById('password-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doAuth('login'); });
+document.getElementById('local-btn').addEventListener('click',()=>signIn(document.getElementById('local-input').value));
+document.getElementById('local-input').addEventListener('keydown',e=>{ if(e.key==='Enter') signIn(e.target.value); });
 document.getElementById('profile-btn').addEventListener('click',()=>signOut());
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -1087,10 +1133,18 @@ document.getElementById('sound-btn').classList.toggle('active',S.soundOn);
 });
 buildStoryGrid();
 
-// Resume the last signed-in profile, or show the login screen.
-const _savedUser=(()=>{ try{ return localStorage.getItem(USER_KEY); }catch(e){ return null; } })();
-if(_savedUser){
-  signIn(_savedUser);
+// Resume a cloud account (token) or a local profile, else show login.
+const _lsGet=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const _tok=_lsGet('typerush_token'), _email=_lsGet('typerush_email'), _savedUser=_lsGet(USER_KEY);
+if(_tok && _email){
+  // Show cached progress immediately, then pull the latest from the server.
+  S.token=_tok; S.user=_email; loadProfile(_email);
+  updateProfileChip(); updateLevelBar(); showScreen('menu'); refreshMenu();
+  apiCall('/api/sync','GET')
+    .then(d=>{ if(d&&d.progress){ applyProgress(d.progress); saveProfile(); updateLevelBar(); refreshMenu(); } })
+    .catch(()=>{}); // offline / expired token → stay on cached local data
+} else if(_savedUser){
+  signIn(_savedUser); // local-only profile
 } else {
   updateProfileChip();
   updateLevelBar();

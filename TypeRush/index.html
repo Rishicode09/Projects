@@ -30,12 +30,26 @@
 <!-- ══ LOGIN ══ -->
 <div id="login-screen" class="screen">
   <div class="menu-title">TypeRushgame</div>
-  <div class="menu-sub">Sign in to save your progress on this device</div>
+  <div class="menu-sub">Create an account to save your progress across devices</div>
+
   <div class="login-box">
-    <input id="login-input" type="text" maxlength="20" autocomplete="off"
+    <input id="email-input" type="email" autocomplete="email" spellcheck="false"
+           maxlength="160" placeholder="Email">
+    <input id="password-input" type="password" autocomplete="current-password"
+           maxlength="100" placeholder="Password (min 6 characters)">
+  </div>
+  <div class="login-actions">
+    <button id="login-btn">Log in</button>
+    <button id="signup-btn">Sign up</button>
+  </div>
+  <div id="auth-msg"></div>
+
+  <div class="login-divider"><span>or play offline</span></div>
+  <div class="login-box">
+    <input id="local-input" type="text" maxlength="20" autocomplete="off"
            autocorrect="off" autocapitalize="off" spellcheck="false"
-           placeholder="Enter a username">
-    <button id="login-btn">Sign In →</button>
+           placeholder="Username (saved on this device)">
+    <button id="local-btn">Continue offline</button>
   </div>
   <div id="profile-list"></div>
 </div>
