@@ -718,7 +718,6 @@ function handleStoryKey(e){
     S.perKeyErrors[expected]=(S.perKeyErrors[expected]||0)+1;
     S.combo=Math.floor(S.combo/2);
     el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),180);
-    storyTextEl.classList.add('shake');setTimeout(()=>storyTextEl.classList.remove('shake'),250);
     playClick('error');
     updateStoryHUD();
   }
@@ -748,10 +747,9 @@ hiddenInput.addEventListener('input',()=>{
     const typed=val.trimEnd();
     if(S.stopOnError&&typed!==curWord){
       hiddenInput.value=typed;
-      wordArea.classList.add('shake');playClick('error');
+      playClick('error');
       const we=getWordEl(S.wordIndex);
       if(we)we.classList.add('strict-error');
-      setTimeout(()=>wordArea.classList.remove('shake'),300);
       return;
     }
     const we=getWordEl(S.wordIndex);
@@ -800,7 +798,6 @@ function submitWord(typed){
     for(let i=0;i<expected.length;i++)
       if((typed[i]||'')!==expected[i]) S.perKeyErrors[expected[i]]=(S.perKeyErrors[expected[i]]||0)+1;
     S.combo=Math.floor(S.combo/2);
-    wordArea.classList.add('shake');setTimeout(()=>wordArea.classList.remove('shake'),300);
     playClick('error');
   }
 
