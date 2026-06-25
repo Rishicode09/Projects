@@ -161,6 +161,10 @@ function actx(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioConte
 function playClick(type='key'){
   if(!S.soundOn) return;
   try{
+    // Browsers can auto-suspend the AudioContext after inactivity, which silences
+    // all later sounds — resume it so every keystroke/mistake keeps playing.
+    const _ctx=actx();
+    if(_ctx.state==='suspended') _ctx.resume();
     if(type==='levelup'){
       [500,650,820].forEach((f,i)=>{
         const o=actx().createOscillator(),g=actx().createGain();
@@ -421,6 +425,7 @@ const wordArea=document.getElementById('word-area');
 const storyArea=document.getElementById('story-area');
 const storyTextEl=document.getElementById('story-text');
 const hiddenInput=document.getElementById('hidden-input');
+const smoothCaret=document.getElementById('smooth-caret'); // kept as a stable ref (survives container clears)
 
 function makeWordEl(word,wi){
   const el=document.createElement('span');el.className='word';el.dataset.wi=wi;
@@ -432,8 +437,7 @@ function buildWordDom(){
   S.words.forEach((w,i)=>wContainer.appendChild(makeWordEl(w,i)));
   // Keep the smooth caret INSIDE the words container so its coordinates are
   // measured against the same (transformed) box and it scrolls with the words.
-  const sc=document.getElementById('smooth-caret');
-  if(sc) wContainer.appendChild(sc);
+  if(smoothCaret) wContainer.appendChild(smoothCaret); // re-attach the same element each rebuild
 }
 function getWordEl(wi){return wContainer.querySelector(`.word[data-wi="${wi}"]`);}
 
@@ -461,7 +465,7 @@ function updateRowHighlight(currentRow,lineH,scrolled){
 
 // ── SMOOTH CARET (FREE MODE) ─────────────────────────────────────────────────────
 function updateCaret(){
-  const caret=document.getElementById('smooth-caret');
+  const caret=smoothCaret;
   if(!caret||S.screen!=='game'||S.gameMode!=='free') return;
   const wordEl=getWordEl(S.wordIndex);
   if(!wordEl){caret.style.opacity='0';return;}
@@ -601,8 +605,10 @@ function initGame(){
     setTimerRing(S.duration,S.duration);
     document.getElementById('timer-text').textContent=S.duration;
     document.getElementById('strict-notice').classList.toggle('visible',S.stopOnError);
-    const caret=document.getElementById('smooth-caret');
-    if(caret){caret.classList.add('instant');caret.style.opacity='0';setTimeout(()=>caret.classList.remove('instant'),50);}
+    if(smoothCaret){
+      smoothCaret.classList.add('instant');
+      setTimeout(()=>{ updateCaret(); smoothCaret.classList.remove('instant'); },30); // show caret at the start position
+    }
   }
 
   const live=document.getElementById('game-live');
@@ -791,7 +797,11 @@ hiddenInput.addEventListener('input',()=>{
       if(!ok&&val[ci]!==undefined) S.perKeyErrors[curWord[ci]]=(S.perKeyErrors[curWord[ci]]||0)+1;
     }
   });
-  updateCaret();playClick('key');resetAfk();
+  // Play a distinct error sound whenever the newly typed character is wrong.
+  const _added=val.length>prevLen;
+  const _li=val.length-1;
+  const _wrong=_added && (_li>=curWord.length || val[_li]!==curWord[_li]);
+  updateCaret();playClick(_added?(_wrong?'error':'key'):'key');resetAfk();
 });
 
 // ── SUBMIT WORD (FREE MODE) ──────────────────────────────────────────────────────
