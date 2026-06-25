@@ -488,13 +488,31 @@ function buildStoryDom(){
     frag.appendChild(sp);storyCharEls.push(sp);
   }
   storyTextEl.appendChild(frag);
+  // Single gliding caret that smoothly flows along the passage (CSS-transitioned).
+  let caret=document.getElementById('story-caret');
+  if(!caret){ caret=document.createElement('div'); caret.id='story-caret'; }
+  storyTextEl.appendChild(caret);
   storyTextEl.scrollTop=0;
 }
 function setStoryCurrent(){
-  if(S._curEl)S._curEl.classList.remove('current');
+  const caret=document.getElementById('story-caret');
+  if(!caret) return;
   const el=storyCharEls[S.pos];
-  if(el){el.classList.add('current');S._curEl=el;scrollStory(el);}
-  else S._curEl=null;
+  if(el){
+    caret.style.opacity='1';
+    caret.style.left=el.offsetLeft+'px';
+    caret.style.top=el.offsetTop+'px';
+    caret.style.height=el.offsetHeight+'px';
+    scrollStory(el);
+  } else {
+    const last=storyCharEls[storyCharEls.length-1];
+    if(last){
+      caret.style.opacity='1';
+      caret.style.left=(last.offsetLeft+last.offsetWidth)+'px';
+      caret.style.top=last.offsetTop+'px';
+      caret.style.height=last.offsetHeight+'px';
+    }
+  }
 }
 function scrollStory(el){
   const top=el.offsetTop;
@@ -564,7 +582,10 @@ function initGame(){
     document.getElementById('timer-label').textContent='elapsed';
     updateProgress();
     document.getElementById('timer-text').textContent='0';
+    const _sc=document.getElementById('story-caret');
+    if(_sc){ _sc.classList.add('instant'); }      // no glide for the initial placement
     setStoryCurrent();
+    if(_sc){ setTimeout(()=>_sc.classList.remove('instant'),50); }
     updateStoryHUD();
   } else {
     S.timeLeft=S.duration;
