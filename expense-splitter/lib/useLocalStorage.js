@@ -2,37 +2,36 @@
 
 import { useState, useEffect } from "react";
 
-// useLocalStorage — a custom "hook" (reusable function that plugs into React).
-// It behaves exactly like useState, but it also SAVES the value into the
-// browser's built-in storage box (localStorage), so the data survives a refresh.
-//
-// Usage:  const [people, setPeople] = useLocalStorage("people", ["Alex"]);
+// useLocalStorage — like useState, but also saves to the browser so data
+// survives refreshes. Returns [value, setValue, hydrated].
+//   hydrated = false until we've finished reading any saved value, so the
+//   page can avoid briefly flashing the default data.
 export function useLocalStorage(key, initialValue) {
-  // The live value, kept in React's memory.
   const [value, setValue] = useState(initialValue);
+  const [hydrated, setHydrated] = useState(false);
 
-  // On first load, try to read a previously saved value from the browser.
+  // On first load, read any previously saved value.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(key);
-      if (saved !== null) {
-        setValue(JSON.parse(saved)); // JSON.parse turns saved text back into data
-      }
+      if (saved !== null) setValue(JSON.parse(saved));
     } catch {
-      // If anything goes wrong (e.g. corrupted data), we just keep the default.
+      // ignore corrupted/unavailable storage
     }
-    // We only want this to run once, for this key.
+    setHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  // Whenever the value changes, write it back into the browser's storage.
+  // Save on change — but only AFTER we've loaded, so we never overwrite
+  // saved data with the default value during the very first render.
   useEffect(() => {
+    if (!hydrated) return;
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch {
-      // Ignore write errors (e.g. storage full or disabled).
+      // ignore write errors
     }
-  }, [key, value]);
+  }, [key, value, hydrated]);
 
-  return [value, setValue];
+  return [value, setValue, hydrated];
 }

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { motion, useSpring, useTransform } from "framer-motion";
 
-// A white "card" container with padding and a soft shadow.
+// A white "card" container.
 export function Card({ children, className = "" }) {
   return (
     <section
@@ -14,13 +14,13 @@ export function Card({ children, className = "" }) {
   );
 }
 
-// A numbered section heading.
-export function SectionTitle({ step, title, right }) {
+// A section heading with a consistent emoji "badge" and optional right-side slot.
+export function SectionTitle({ icon, title, right }) {
   return (
-    <div className="mb-3 flex items-center justify-between">
+    <div className="mb-3 flex items-center justify-between gap-2">
       <h2 className="flex items-center gap-2 text-lg font-semibold">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs text-white">
-          {step}
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-base">
+          {icon}
         </span>
         {title}
       </h2>
@@ -29,8 +29,7 @@ export function SectionTitle({ step, title, right }) {
   );
 }
 
-// A styled text input that gently lifts while you type in it.
-// whileFocus animates ONLY transform (scale) — cheap for the GPU, so it stays smooth.
+// A text input that gently lifts while you type (animates transform only = 60fps).
 export function Input(props) {
   const { className = "", ...rest } = props;
   return (
@@ -43,8 +42,8 @@ export function Input(props) {
   );
 }
 
-// A styled button that presses down when tapped.
-export function Button({ children, onClick, type = "button", variant = "dark", className = "" }) {
+// A button that presses down when tapped.
+export function Button({ children, onClick, type = "button", variant = "dark", className = "", title }) {
   const styles = {
     dark: "bg-slate-900 text-white hover:bg-slate-700",
     green: "bg-green-600 text-white hover:bg-green-700",
@@ -54,6 +53,7 @@ export function Button({ children, onClick, type = "button", variant = "dark", c
     <motion.button
       type={type}
       onClick={onClick}
+      title={title}
       whileTap={{ scale: 0.95 }}
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -81,16 +81,14 @@ export function Avatar({ name, tone = "slate" }) {
   );
 }
 
-// A dollar number that smoothly "counts up/down" to its new value using a spring.
-// useSpring gives physics-based motion (60fps); useTransform formats it as money.
-export function AnimatedMoney({ value, className = "" }) {
-  const spring = useSpring(value, { stiffness: 120, damping: 20 });
-  const text = useTransform(spring, (v) => `$${v.toFixed(2)}`);
+// A money figure (given in CENTS) that smoothly counts to its new value.
+export function AnimatedMoney({ cents, className = "" }) {
+  const spring = useSpring(cents, { stiffness: 120, damping: 20 });
+  const text = useTransform(spring, (v) => `$${(v / 100).toFixed(2)}`);
 
-  // Whenever the target value changes, tell the spring to glide to it.
   useEffect(() => {
-    spring.set(value);
-  }, [spring, value]);
+    spring.set(cents);
+  }, [spring, cents]);
 
   return <motion.span className={className}>{text}</motion.span>;
 }

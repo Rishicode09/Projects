@@ -1,56 +1,47 @@
-// settle.js — the "who owes whom" brain of the app.
+// settle.js — the "who owes whom" brain. Everything here is in integer CENTS.
 //
-// It takes:
-//   people      = array of names, e.g. ["Alex", "Sam"]
-//   expenses    = array of expense objects. Each one looks like:
-//                 {
-//                   description: "Taxi",
-//                   amount: 30,
-//                   paidBy: "Alex",
-//                   shares: { Alex: 15, Sam: 15 }  // how much each owes for THIS expense
-//                 }
-//   settlements = array of debts already paid off, e.g.
-//                 [{ from: "Sam", to: "Alex", amount: 15 }]
+//   people      = ["Alex", "Sam"]
+//   expenses    = [{ description, amount, paidBy, shares: { Alex: 1500, Sam: 1500 } }]
+//                 (amount and every share are in cents)
+//   settlements = [{ from: "Sam", to: "Alex", amount: 1500 }]
 //
-// It returns: the total, each person's net balance, and the payments to settle up.
+// Returns: { total, balances, transactions } — all amounts in cents.
 
 export function settleUp(people, expenses, settlements = []) {
-  // --- Total spent ---
+  // Total spent (cents).
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  // --- Each person's balance ---
-  // balance = (money they paid out) minus (their share of every expense).
-  //   positive => the household OWES them ;  negative => THEY owe.
+  // Each person's balance: (money paid out) minus (their share of every expense).
+  //   positive => household owes them ;  negative => they owe.
   const balances = {};
   people.forEach((name) => {
     balances[name] = 0;
   });
 
   expenses.forEach((e) => {
-    // The person who paid is credited the full amount they laid out.
     if (balances[e.paidBy] !== undefined) {
-      balances[e.paidBy] += e.amount;
+      balances[e.paidBy] += e.amount; // payer is credited what they laid out
     }
-    // Each person is debited their personal share of this expense.
     const shares = e.shares || {};
     Object.keys(shares).forEach((name) => {
       if (balances[name] !== undefined) {
-        balances[name] -= shares[name];
+        balances[name] -= shares[name]; // each person owes their share
       }
     });
   });
 
-  // --- Apply settlements (debts already paid in real life) ---
+  // Debts already paid off in real life.
   settlements.forEach((s) => {
     if (balances[s.from] !== undefined) balances[s.from] += s.amount;
     if (balances[s.to] !== undefined) balances[s.to] -= s.amount;
   });
 
-  // --- Turn balances into actual payments ---
+  // Match people who owe (debtors) to people who are owed (creditors),
+  // producing the fewest payments. All integers, so no rounding needed.
   const debtors = [];
   const creditors = [];
   people.forEach((name) => {
-    const b = round(balances[name]);
+    const b = balances[name];
     if (b < 0) debtors.push({ name, amount: -b });
     else if (b > 0) creditors.push({ name, amount: b });
   });
@@ -60,21 +51,14 @@ export function settleUp(people, expenses, settlements = []) {
   let j = 0;
   while (i < debtors.length && j < creditors.length) {
     const pay = Math.min(debtors[i].amount, creditors[j].amount);
-    transactions.push({
-      from: debtors[i].name,
-      to: creditors[j].name,
-      amount: round(pay),
-    });
+    if (pay > 0) {
+      transactions.push({ from: debtors[i].name, to: creditors[j].name, amount: pay });
+    }
     debtors[i].amount -= pay;
     creditors[j].amount -= pay;
-    if (debtors[i].amount <= 0.001) i++;
-    if (creditors[j].amount <= 0.001) j++;
+    if (debtors[i].amount === 0) i++;
+    if (creditors[j].amount === 0) j++;
   }
 
   return { total, balances, transactions };
-}
-
-// Round money to 2 decimal places so we never show $12.333333.
-function round(n) {
-  return Math.round(n * 100) / 100;
 }
