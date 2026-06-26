@@ -1,0 +1,4 @@
+/* These three lines pull in Tailwind's ready-made styling utilities. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
