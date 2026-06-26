@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Input, Button } from "@/components/ui";
-import { toCents, splitCents, formatCents } from "@/lib/money";
+import { toCents, splitCents, formatCents, CATEGORIES } from "@/lib/money";
+
+// Today's date as a yyyy-mm-dd string (what an <input type="date"> expects).
+const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // ExpenseForm — collects (or edits) an expense and computes each person's share
 // in CENTS. Hands the result to onAddExpense / onUpdateExpense.
 export function ExpenseForm({
   people,
+  symbol = "$",
   onAddExpense,
   onSaveTemplate,
   editing,        // an expense being edited, or null
@@ -17,6 +21,8 @@ export function ExpenseForm({
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(""); // dollar string the user types
   const [paidBy, setPaidBy] = useState("");
+  const [category, setCategory] = useState("general");
+  const [date, setDate] = useState(todayStr());
   const [mode, setMode] = useState("equal"); // "equal" | "amounts" | "percent"
 
   // For equal mode we track who's EXCLUDED, so newly added people are
@@ -33,6 +39,8 @@ export function ExpenseForm({
     setDesc(editing.description);
     setAmount((editing.amount / 100).toFixed(2));
     setPaidBy(editing.paidBy);
+    setCategory(editing.category || "general");
+    setDate((editing.date || new Date().toISOString()).slice(0, 10));
     setMode("amounts");
     const filled = {};
     Object.keys(editing.shares).forEach((n) => {
@@ -78,7 +86,7 @@ export function ExpenseForm({
       });
       const off = amountCents - sum;
       if (off !== 0)
-        return { shares, problem: `Amounts must total ${formatCents(amountCents)} (off by ${formatCents(off)}).` };
+        return { shares, problem: `Amounts must total ${formatCents(amountCents, symbol)} (off by ${formatCents(off, symbol)}).` };
       return { shares, problem: "" };
     }
 
@@ -103,7 +111,9 @@ export function ExpenseForm({
     const { shares, problem } = computeShares();
     if (problem) return setError(problem);
 
-    const data = { description: desc.trim(), amount: amountCents, paidBy, shares };
+    // Store the date at noon so it never slips to the previous day across time zones.
+    const dateISO = new Date(`${date}T12:00:00`).toISOString();
+    const data = { description: desc.trim(), amount: amountCents, paidBy, category, date: dateISO, shares };
 
     if (editing) {
       onUpdateExpense({ ...editing, ...data });
@@ -118,6 +128,8 @@ export function ExpenseForm({
     setDesc("");
     setAmount("");
     setPaidBy("");
+    setCategory("general");
+    setDate(todayStr());
     setMode("equal");
     setCustom({});
     setExcluded(new Set());
@@ -129,11 +141,11 @@ export function ExpenseForm({
     if (amountCents <= 0) return null;
     if (mode === "equal") {
       const n = people.filter((p) => !excluded.has(p)).length || 1;
-      return `Splitting ${formatCents(amountCents)} evenly ≈ ${formatCents(Math.round(amountCents / n))} each`;
+      return `Splitting ${formatCents(amountCents, symbol)} evenly ≈ ${formatCents(Math.round(amountCents / n), symbol)} each`;
     }
     if (mode === "amounts") {
       const sum = people.reduce((s, n) => s + toCents(custom[n]), 0);
-      return `Assigned ${formatCents(sum)} of ${formatCents(amountCents)}`;
+      return `Assigned ${formatCents(sum, symbol)} of ${formatCents(amountCents, symbol)}`;
     }
     const sumPct = people.reduce((s, n) => s + (parseFloat(custom[n]) || 0), 0);
     return `Assigned ${sumPct}% of 100%`;
@@ -166,7 +178,7 @@ export function ExpenseForm({
           aria-label="Who paid"
           value={paidBy}
           onChange={(e) => setPaidBy(e.target.value)}
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         >
           <option value="">Paid by…</option>
           {people.map((name) => (
@@ -175,6 +187,23 @@ export function ExpenseForm({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Category + date */}
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <select
+          aria-label="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.emoji} {c.label}
+            </option>
+          ))}
+        </select>
+        <Input type="date" aria-label="Date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
 
       {/* Accessible split-mode selector (announced as a radio group) */}

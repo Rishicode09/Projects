@@ -10,8 +10,33 @@ export function toCents(input) {
 }
 
 // Turn integer cents (1250) into a display string ("$12.50").
-export function formatCents(cents) {
-  return `$${(cents / 100).toFixed(2)}`;
+// Pass a currency symbol to show e.g. "€12.50" or "₹12.50".
+export function formatCents(cents, symbol = "$") {
+  return `${symbol}${(cents / 100).toFixed(2)}`;
+}
+
+// The currencies the user can choose from (symbol used everywhere for display).
+export const CURRENCIES = [
+  { code: "USD", symbol: "$" },
+  { code: "EUR", symbol: "€" },
+  { code: "GBP", symbol: "£" },
+  { code: "INR", symbol: "₹" },
+  { code: "JPY", symbol: "¥" },
+];
+
+// Expense categories (the emoji is just a friendly visual label).
+export const CATEGORIES = [
+  { id: "general", label: "General", emoji: "🧾" },
+  { id: "food", label: "Food & Drink", emoji: "🍕" },
+  { id: "rent", label: "Rent", emoji: "🏠" },
+  { id: "utilities", label: "Utilities", emoji: "💡" },
+  { id: "transport", label: "Transport", emoji: "🚕" },
+  { id: "fun", label: "Entertainment", emoji: "🎉" },
+  { id: "other", label: "Other", emoji: "📦" },
+];
+
+export function categoryOf(id) {
+  return CATEGORIES.find((c) => c.id === id) || CATEGORIES[0];
 }
 
 // Split a total (in cents) across some weights, sharing leftover pennies fairly
