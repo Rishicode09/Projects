@@ -1,0 +1,19 @@
+# .gitignore — files git should pretend don't exist.
+# Rule of thumb: commit CODE, never commit things code can REGENERATE.
+
+# Generated data and plots — anyone can recreate them with `generate`.
+# Committing them bloats the repo and goes stale the moment code changes.
+data/
+
+# Python bytecode caches — machine-specific junk.
+__pycache__/
+*.pyc
+
+# Packaging build artifacts
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
