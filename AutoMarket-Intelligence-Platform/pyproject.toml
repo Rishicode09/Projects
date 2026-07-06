@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "automarket-intelligence"
 version = "0.1.0"
-description = "AutoMarket Intelligence Platform - market analytics, ML price prediction and an AI analyst for the used-car market."
+description = "AutoMarket Intelligence Platform - used-car market analytics with ML price prediction."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Rishi Mehta" }]
@@ -38,27 +38,20 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort (import sorting)
-    "B",   # flake8-bugbear (likely bugs)
-    "UP",  # pyupgrade (modern syntax)
-    "N",   # pep8-naming
-    "SIM", # flake8-simplify
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes (undefined names, unused imports)
+    "I",  # import sorting
+    "B",  # bugbear (likely bugs)
+    "UP", # pyupgrade (modern syntax)
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers -q"
-markers = [
-    "unit: fast, isolated tests with no external dependencies",
-    "integration: tests that require a database or other services",
-]
+addopts = "-q"
 
 [tool.coverage.run]
 source = ["app"]
-omit = ["app/main.py"]
 
 [tool.coverage.report]
 show_missing = true

@@ -1,67 +1,57 @@
 # AutoMarket Intelligence Platform
 
-Market analytics, ML price prediction and an AI market analyst for the used-car market.
+A used-car market analytics platform: browse and filter listings through a REST API,
+explore market statistics on an interactive dashboard, and get ML-powered price estimates.
 
-> 🚧 Under active development, built module by module. This README will grow with the project.
+> 🚧 Built incrementally, module by module — see the build log below.
 
-## Why
+## The problem
 
-Thousands of used-car listings appear daily, but buyers and sellers have no intelligent way to
-answer: *Is this car overpriced? How fast will it depreciate? How long will it take to sell?
-When is the best time to buy?* This platform collects listing data, runs it through an ETL
-pipeline, and serves analytics, ML predictions and RAG-grounded AI recommendations on top.
+Thousands of used cars are listed every day, but buyers and sellers have no easy way to
+answer basic questions: *Is this car overpriced? What does a fair price look like for this
+model, year and mileage? Which models hold their value?* This project collects listing data,
+stores it in a database, analyses it, and trains a machine-learning model to estimate fair
+prices.
 
 ## Tech stack
 
-FastAPI · PostgreSQL · SQLAlchemy · Alembic · Redis · Celery · Docker ·
-Pandas · Scikit-Learn · XGBoost · LightGBM · Prophet · LangChain · FAISS · Streamlit
+| Area | Tools |
+|---|---|
+| API | Python, FastAPI, Pydantic |
+| Database | SQLite, SQLAlchemy |
+| Data & ML | Pandas, scikit-learn |
+| Dashboard | Streamlit, Plotly |
+| Quality | pytest, black, ruff, GitHub Actions CI |
 
-## Quickstart (current state)
+## Quickstart
 
 ```bash
 cd AutoMarket-Intelligence-Platform
 python -m venv .venv && source .venv/bin/activate
-make install          # pip install -e ".[dev]"
-cp .env.example .env
-make run              # http://localhost:8000/docs
-make test             # unit tests
-make lint             # black + ruff
+make install        # pip install -e ".[dev]"
+make run            # API at http://localhost:8000/docs
+make test           # run the test suite
+make lint           # check formatting and lint rules
 ```
 
 ## Project layout
 
 ```
 app/
-├── main.py          # FastAPI application factory
-├── core/            # config, logging, exceptions (cross-cutting)
-├── api/v1/          # HTTP layer, versioned routers
-├── schemas/         # Pydantic request/response contracts
-├── models/          # SQLAlchemy ORM models
-├── repositories/    # all database access (Repository pattern)
-├── services/        # business logic
-├── ml/              # training, registry, inference
-├── analytics/       # market statistics & aggregations
-├── workers/         # Celery background jobs (scraping, ETL, retraining)
-└── utils/           # shared helpers
-tests/               # unit + integration suites
-data/                # raw / processed datasets (git-ignored)
-docs/                # architecture docs & diagrams
+├── main.py       # FastAPI app: wires everything together
+├── config.py     # typed settings loaded from environment variables
+└── routes/       # API endpoints, one file per feature
+tests/            # pytest suite (runs in CI on every push)
 ```
+
+Coming as the project grows: `app/database.py`, `app/models.py`, `app/schemas.py`,
+`app/ml/` (model training and prediction) and `dashboard/` (Streamlit app).
 
 ## Build log
 
-- [x] **Module 1 — Foundation**: app factory, typed settings, logging, error hierarchy, health endpoint, tooling (black/ruff/pytest), CI
-- [ ] Module 2 — Database schema & migrations
-- [ ] Module 3 — Repository + service layers
-- [ ] Module 4 — Authentication (JWT)
-- [ ] Module 5 — Core listings API
-- [ ] Module 6 — Data collection pipelines
-- [ ] Module 7 — ETL & feature engineering
-- [ ] Module 8 — Analytics engine
-- [ ] Module 9 — ML models & evaluation
-- [ ] Module 10 — Forecasting & anomaly detection
-- [ ] Module 11 — AI market analyst (RAG)
-- [ ] Module 12 — Streamlit dashboard
-- [ ] Module 13 — Caching, rate limiting, hardening
-- [ ] Module 14 — Docker & deployment
-- [ ] Module 15 — Documentation & diagrams
+- [x] **Module 1 — Foundation**: FastAPI app, typed settings, health endpoint, tests, CI
+- [ ] **Module 2 — Database & data**: SQLAlchemy model for listings, realistic seed dataset
+- [ ] **Module 3 — Listings API**: browse, filter and paginate listings; market statistics endpoint
+- [ ] **Module 4 — ML price prediction**: compare models, evaluate (MAE/R²), serve via the API
+- [ ] **Module 5 — Streamlit dashboard**: market overview charts, listing explorer, price estimator
+- [ ] **Module 6 — Polish**: README with screenshots, final test pass, stretch goals

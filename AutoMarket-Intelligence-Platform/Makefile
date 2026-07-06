@@ -6,8 +6,8 @@ install:  ## Install the app with dev dependencies
 run:  ## Run the API locally with hot reload
 	uvicorn app.main:app --reload --port 8000
 
-test:  ## Run the fast unit test suite
-	pytest -m unit
+test:  ## Run the test suite
+	pytest
 
 test-cov:  ## Run all tests with a coverage report
 	pytest --cov
