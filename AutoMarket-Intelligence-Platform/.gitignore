@@ -24,7 +24,7 @@ data/processed/
 *.db
 
 # ML artifacts
-models/artifacts/
+app/ml/artifacts/
 mlruns/
 
 # IDE / OS
