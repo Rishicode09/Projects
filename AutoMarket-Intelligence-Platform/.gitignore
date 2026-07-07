@@ -1,0 +1,33 @@
+# Environments & secrets
+.env
+.venv/
+venv/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Data (raw scraped data never belongs in git)
+data/raw/
+data/processed/
+*.parquet
+*.db
+
+# ML artifacts
+app/ml/artifacts/
+mlruns/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
