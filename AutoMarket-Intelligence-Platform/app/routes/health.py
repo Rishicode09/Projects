@@ -1,8 +1,4 @@
-"""Health check endpoint.
-
-Used to confirm the API is up -- by humans, by tests, and later by any
-hosting platform that pings the service to check it is alive.
-"""
+"""Health check and app info endpoints."""
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -18,7 +14,18 @@ class HealthResponse(BaseModel):
     version: str
 
 
+class VersionResponse(BaseModel):
+    version: str
+    app_name: str
+
+
 @router.get("/health", response_model=HealthResponse)
 def health_check() -> HealthResponse:
     settings = get_settings()
     return HealthResponse(status="ok", app=settings.app_name, version=settings.app_version)
+
+
+@router.get("/version", response_model=VersionResponse)
+def version_info() -> VersionResponse:
+    settings = get_settings()
+    return VersionResponse(version=settings.app_version, app_name=settings.app_name)
