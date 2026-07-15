@@ -1,0 +1,8 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+# Anchored to the project root: src/fleetpulse/data is a package, not output.
+/data/
+/artifacts/
