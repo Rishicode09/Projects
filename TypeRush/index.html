@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeRushgame</title><link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+
+<!--
+  Page structure: three ".screen" panels (login / menu / game) share one nav +
+  level bar. Only one screen has ".active" at a time (toggled by app.js). All
+  behaviour lives in app.js; styling in styles.css. data-theme on <body> flips
+  the dark/light CSS variables.
+-->
+
+<!-- Full-viewport canvas layers behind everything: drifting background orbs and
+     the particle bursts that fire on correct words. -->
+<canvas id="bg-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
+<div id="levelup-flash"></div>   <!-- brief glow flashed on level-up -->
+<div id="toast-area"></div>      <!-- stack of achievement / combo toasts -->
+
+<!-- Top bar: profile switch, theme toggle, sound toggle -->
+
+
+<nav>
+  <div class="logo">Type<span>Rush</span></div>
+  <div class="nav-btns">
+    <button class="icon-btn" id="profile-btn" title="Switch profile">👤 Guest</button>
+    <button class="icon-btn" id="theme-btn">☀️</button>
+    <button class="icon-btn active" id="sound-btn">🔊</button>
+  </div>
+</nav>
+
+<!-- XP / level progress bar (filled by updateLevelBar) -->
+<div id="level-bar-wrap">
+  <span id="level-label">Lvl 1</span>
+  <div class="bar-track"><div id="level-fill"></div></div>
+  <span id="xp-label">0 XP</span>
+</div>
+
+<!-- ══ LOGIN ══  first screen when signed out: email+password cloud account,
+     or a local "play offline" username. Handlers: doAuth / signIn in app.js -->
+<div id="login-screen" class="screen">
+  <div class="menu-title">TypeRushgame</div>
+  <div class="menu-sub">Create an account to save your progress across devices</div>
+
+  <div class="login-box">
+    <input id="email-input" type="email" autocomplete="email" spellcheck="false"
+           maxlength="160" placeholder="Email">
+    <input id="password-input" type="password" autocomplete="current-password"
+           maxlength="100" placeholder="Password (min 6 characters)">
+  </div>
+  <div class="login-actions">
+    <button id="login-btn">Log in</button>
+    <button id="signup-btn">Sign up</button>
+  </div>
+  <div id="auth-msg"></div>
+
+  <div class="login-divider"><span>or play offline</span></div>
+  <div class="login-box">
+    <input id="local-input" type="text" maxlength="20" autocomplete="off"
+           autocorrect="off" autocapitalize="off" spellcheck="false"
+           placeholder="Username (saved on this device)">
+    <button id="local-btn">Continue offline</button>
+  </div>
+  <div id="profile-list"></div>
+</div>
+
+<!-- ══ MENU ══  mode tabs switch between the two config panels below; PLAY starts
+     a run. Personal bests + recent-WPM sparkline render underneath. -->
+<div id="menu-screen" class="screen active">
+  <div class="menu-title">TypeRush</div>
+  <div class="menu-sub">Train your fingers. Break your records.</div>
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="free">⌨️ Free Mode</button>
+    <button class="mode-tab" data-mode="story">📖 Story Mode</button>
+  </div>
+
+  <!-- FREE MODE CONFIG -->
+  <div id="words-panel">
+    <div class="panel-hint">Race a stream of words against the clock — pure speed, like a typing test.</div>
+    <span class="option-label">Duration</span>
+    <div class="option-row" id="duration-opts">
+      <button class="opt-btn selected" data-val="15">15s</button>
+      <button class="opt-btn" data-val="30">30s</button>
+      <button class="opt-btn" data-val="60">60s</button>
+    </div>
+    <span class="option-label">Difficulty</span>
+    <div class="option-row" id="difficulty-opts">
+      <button class="opt-btn selected" data-val="easy">Easy</button>
+      <button class="opt-btn" data-val="medium">Medium</button>
+      <button class="opt-btn" data-val="hard">Hard</button>
+    </div>
+    <span class="option-label">Modifiers</span>
+    <div class="option-row">
+      <button class="opt-btn toggle" id="numbers-btn">123 Numbers</button>
+      <button class="opt-btn toggle" id="punct-btn">., Punctuation</button>
+      <button class="opt-btn toggle" id="strict-btn">⚠ Strict</button>
+    </div>
+  </div>
+
+  <!-- STORY MODE CONFIG -->
+  <div id="story-panel">
+    <div class="panel-hint">Type a real passage of classic literature — race to the end. Each replay gives you the next excerpt.</div>
+    <span class="option-label">Choose a Story</span>
+    <div class="story-grid" id="story-grid"></div>
+  </div>
+
+  <button id="play-btn">▶  PLAY</button>
+
+  <div id="history-wrap" class="hidden-init">
+    <span class="option-label ol-center">Recent WPM</span>
+    <canvas id="sparkline-canvas"></canvas>
+  </div>
+
+  <span class="option-label ol-bests">Personal Bests</span>
+  <div class="scores-grid" id="scores-grid"></div>
+</div>
+
+<!-- ══ GAME ══  #game-live (HUD + typing area) is shown while playing, then fades
+     out and #game-results fades in — no screen change. Only one of #word-area
+     (Free) / #story-area (Story) is ".active" at a time. -->
+<div id="game-screen" class="screen">
+
+  <div id="game-live">
+    <div class="hud">
+      <div class="hud-stat">
+        <span class="hud-val" id="wpm-val">---</span>
+        <span class="hud-sub" id="raw-wpm-sub">raw ---</span>
+        <span class="hud-label">WPM</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-val" id="acc-val">---</span>
+        <span class="hud-label">Accuracy %</span>
+      </div>
+      <div id="timer-ring-wrap">
+        <svg id="timer-ring" viewBox="0 0 72 72">
+          <circle id="timer-bg" cx="36" cy="36" r="31"/>
+          <circle id="timer-arc" cx="36" cy="36" r="31" stroke-dasharray="194.78" stroke-dashoffset="0"/>
+        </svg>
+        <span id="timer-text">--</span>
+        <span id="timer-label">time</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-val" id="score-val">0</span>
+        <span class="hud-label">Score</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-val" id="chars-val">0</span>
+        <span class="hud-label">Chars</span>
+      </div>
+    </div>
+
+    <div id="combo-area">
+      <div id="combo-label">Combo</div>
+      <div id="combo-val">×1</div>
+      <div class="combo-bar-track"><div id="combo-bar-fill"></div></div>
+    </div>
+
+    <div class="game-notices">
+      <span class="notice" id="caps-notice">⇪ CAPS LOCK ON</span>
+      <span class="notice" id="strict-notice">⚠ Strict Mode</span>
+    </div>
+
+    <!-- FREE MODE TYPING AREA -->
+    <div id="word-area">
+      <div id="row-highlight"></div>
+      <div id="words-container"></div>
+      <div id="smooth-caret"></div>
+      <div class="focus-overlay">
+        <div class="fo-icon">⌨️</div>
+        <div class="fo-text">Click to focus</div>
+      </div>
+    </div>
+
+    <!-- STORY MODE TYPING AREA -->
+    <div id="story-area">
+      <div id="story-meta">
+        <span id="story-name"></span>
+        <span id="story-progress-pct">0%</span>
+      </div>
+      <div id="story-progress-track"><div id="story-progress-fill"></div></div>
+      <div id="story-text"></div>
+      <div class="focus-overlay">
+        <div class="fo-icon">⌨️</div>
+        <div class="fo-text">Click to focus</div>
+      </div>
+    </div>
+
+    <!-- Off-screen input that actually receives typing (kept focused during play) -->
+    <input id="hidden-input" type="text" autocomplete="off"
+           autocorrect="off" autocapitalize="off" spellcheck="false"
+           inputmode="text">
+
+    <div class="game-footer">
+      <div id="restart-hint"><kbd>Tab</kbd> restart · <kbd>Esc</kbd> menu</div>
+      <button id="restart-btn" title="Restart (Tab)">↻</button>
+    </div>
+  </div>
+
+  <!-- Inline results -->
+  <div id="game-results">
+    <div class="results-title" id="results-headline">Results</div>
+    <div id="rank-banner"></div>
+    <div class="results-grid" id="results-grid"></div>
+    <canvas id="chart-canvas"></canvas>
+    <div class="trouble-section">
+      <h3>Trouble Keys</h3>
+      <div id="trouble-keys"></div>
+    </div>
+    <div class="results-actions">
+      <button class="action-btn primary" id="retry-btn">↻ Retry</button>
+      <button class="action-btn share"   id="share-btn">⎘ Share</button>
+      <button class="action-btn secondary" id="menu-btn">⌂ Menu</button>
+    </div>
+  </div>
+
+</div><!-- /game-screen -->
+
+<footer id="privacy-note">🔒 Your email is never shared with anyone or sold. Play offline and nothing leaves your device; with an account it's stored only to sync your own progress.</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
