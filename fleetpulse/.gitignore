@@ -3,5 +3,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .coverage
-data/
-artifacts/
+# Anchored to the project root: src/fleetpulse/data is a package, not output.
+/data/
+/artifacts/
