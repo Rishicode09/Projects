@@ -1,4 +1,35 @@
+/* ============================================================================
+ * TypeRush — app.js  (all client-side game logic)
+ * ============================================================================
+ * A single-page typing game with two modes:
+ *   • Free Mode  — a stream of random words against a countdown (Monkeytype-style)
+ *   • Story Mode — type a real literary passage end-to-end (TypeRacer-style)
+ *
+ * There is no framework and no build step. The page is index.html + styles.css +
+ * this file + a self-hosted font. State lives in one plain object `S`. Progress
+ * is saved in three layers:
+ *   1. Settings (theme/sound/modifiers) — global to the browser (localStorage).
+ *   2. Local profiles — per-username progress in localStorage ("play offline").
+ *   3. Cloud accounts — optional email+password sync via /api/* (Pages Function
+ *      + D1). Everything degrades gracefully to local-only if the API is absent.
+ *
+ * Reading order (each banner "// ── NAME ──" marks a section):
+ *   STORIES / WORD LISTS      → the text content typed in each mode
+ *   STATE                     → the single mutable state object `S`
+ *   persistence               → loadSettings / profiles / savePersisted
+ *   AUDIO / ORBS / PARTICLES  → WebAudio + canvas juice
+ *   SCREENS / PROFILES / ACCOUNTS → navigation, login, cloud sync
+ *   LEVEL/XP / ACHIEVEMENTS    → gamification
+ *   WORD GENERATION / STORY RACES → building the text to type
+ *   WORD DOM / CARET / STORY DOM → rendering + the gliding cursor
+ *   GAME FLOW / INPUT / SUBMIT  → the actual typing loop and scoring
+ *   HUD / RESULTS / chart       → live stats and the end screen
+ *   MENU / EVENTS / INIT        → wiring and startup
+ * ==========================================================================*/
+
 // ── STORIES ───────────────────────────────────────────────────────────────────
+// Each entry is a public-domain passage. `text` is one long string; Story Mode
+// slices it into sentence-complete "races" at runtime (see getStoryRaces).
 const STORIES = {
   pigs: {
     title:'Three Little Pigs', author:'Traditional', icon:'🐷',
@@ -31,6 +62,10 @@ const STORIES = {
 };
 
 // ── WORD LISTS (FREE MODE) ──────────────────────────────────────────────────────
+// Easy = the 200 most common English words. Medium = the same with some words
+// capitalised plus short sentences. Hard = long, spelling-challenging vocabulary.
+// getWordList() picks the list for the current difficulty; generateWords() draws
+// from it.
 const EASY_WORDS = `the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us`.split(' ');
 
 const MEDIUM_WORDS = [
@@ -78,31 +113,41 @@ function getWordList(diff) {
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
+// One mutable object holds the entire app state — no framework, no store. Grouped
+// by concern below. `S.user`/`S.token` (set at sign-in) are added dynamically.
 const S = {
+  // Config chosen on the menu:
   screen:'menu', gameMode:'free', storyId:'pigs',
   duration:15, difficulty:'easy',
   soundOn:true, theme:'dark',
   useNumbers:false, usePunctuation:false, stopOnError:false,
 
-  started:false, finished:false,
-  timeLeft:15, timerId:null,
-  words:[], wordIndex:0, charIndex:0,
-  typedChars:[], submittedWords:[],
-  correctChars:0, rawChars:0, totalTyped:0,
-  combo:0, maxCombo:0, score:0,
-  wpmSamples:[], perKeyErrors:{},
-  afkTimer:null, afkPaused:false,
+  // Live run state (reset by initGame each round):
+  started:false, finished:false,        // started = clock running; finished = results shown
+  timeLeft:15, timerId:null,            // Free Mode countdown
+  words:[], wordIndex:0, charIndex:0,   // Free Mode: the word stream + cursor position
+  typedChars:[], submittedWords:[],     // per-word typed text history
+  correctChars:0, rawChars:0, totalTyped:0, // for WPM (correct/raw) and accuracy
+  combo:0, maxCombo:0, score:0,         // streak multiplier + score
+  wpmSamples:[], perKeyErrors:{},       // {t,wpm} points for the chart; mistakes per key
+  afkTimer:null, afkPaused:false,       // idle auto-pause
 
-  // story mode
-  fullText:'', pos:0, elapsed:0, startTime:0, pauseAt:0,
-  raceIdx:{}, raceTime:0, _curEl:null, _lastSample:0,
+  // Story Mode:
+  fullText:'', pos:0,                   // the passage + index of the character to type next
+  elapsed:0, startTime:0, pauseAt:0,    // count-up timer (no countdown in Story Mode)
+  raceIdx:{}, raceTime:0, _curEl:null, _lastSample:0, // which excerpt per story; sampling bookkeeping
 
-  // persisted
+  // Persisted progress (saved per profile / synced to a cloud account):
   xp:0, level:1, bests:{}, achievements:{}, totalRuns:0,
   history:[], // [{wpm,acc,ts}] last 20 runs
 };
 
-// Settings are global to the device; progress is saved per signed-in profile.
+// ── PERSISTENCE ───────────────────────────────────────────────────────────────
+// Settings (theme/sound/modifiers) are global to the device. Progress (XP, bests,
+// history…) is saved per signed-in profile under `typerush_profile_<name>`.
+// savePersisted() writes both and also pushes to the cloud when logged in.
+// A first-ever profile inherits the old single-blob save ("typerush2") so early
+// local progress isn't lost when accounts were introduced.
 const SETTINGS_KEY='typerush_settings';
 const USER_KEY='typerush_user';
 const PROFILE_PREFIX='typerush_profile_';
@@ -156,6 +201,9 @@ function saveProfile() {
 function savePersisted(){ saveSettings(); saveProfile(); syncUp(); }
 
 // ── AUDIO ─────────────────────────────────────────────────────────────────────
+// Keypress/word/error/level-up tones are synthesised on the fly with WebAudio
+// (one oscillator + gain envelope per sound) — no audio files. The AudioContext
+// is created lazily on first use and resumed if the browser auto-suspended it.
 let _actx=null;
 function actx(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
 function playClick(type='key'){
@@ -246,6 +294,9 @@ function quitToMenu(){
 }
 
 // ── PROFILES / LOGIN ──────────────────────────────────────────────────────────
+// "Play offline" profiles: a username maps to a local progress blob. signIn loads
+// that profile (or migrates a legacy save / starts fresh); signOut returns to the
+// login screen; buildLoginScreen lists existing local profiles as quick chips.
 function updateProfileChip(){
   const b=document.getElementById('profile-btn');
   if(b) b.textContent='👤 '+(S.user||'Guest');
@@ -286,6 +337,11 @@ function buildLoginScreen(){
 }
 
 // ── CLOUD ACCOUNTS (email + password, progress sync) ───────────────────────────
+// doAuth() posts to /api/signup or /api/login; on success it stores a session
+// token and either loads the server's progress or pushes the local progress up.
+// syncUp() debounces a POST of the progress blob after any save. bestStoryWpm()
+// derives the account's headline number (best Story-Mode WPM → rank title). Every
+// call is best-effort — failures are swallowed so offline play keeps working.
 let _syncTimer=null;
 function progressBlob(){ const o={}; PROGRESS_KEYS.forEach(k=>o[k]=S[k]); return o; }
 function applyProgress(d){ if(!d)return; PROGRESS_KEYS.forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; }); if(!S.history)S.history=[]; }
@@ -327,6 +383,8 @@ async function doAuth(mode){
 }
 
 // ── LEVEL / XP ────────────────────────────────────────────────────────────────
+// XP is awarded at the end of each run; filling the bar (level*200 XP) levels up
+// with a flash + sound. Level/XP persist with the profile.
 function xpFor(lvl){return lvl*200;}
 function awardXP(n){
   S.xp+=n;let up=false;
@@ -370,6 +428,9 @@ function checkAchievements(results){
 }
 
 // ── WORD GENERATION (FREE MODE) ─────────────────────────────────────────────────
+// Draw `count` random words, avoiding repeats within a small rolling window so the
+// same word doesn't appear twice in view. Optional modifiers sprinkle in numbers
+// or trailing punctuation. The stream is topped up as you approach its end.
 function generateWords(count,recentSeed=[]){
   const list=getWordList(S.difficulty);
   const words=[],ws=Math.min(8,Math.floor(list.length/2));
@@ -420,6 +481,10 @@ function getStoryRace(id){
 }
 
 // ── WORD DOM (FREE MODE) ────────────────────────────────────────────────────────
+// Each word is a <span class="word"> of per-character <span class="char">s so we
+// can colour correct/wrong letters individually. The smooth caret is kept as a
+// stable JS reference and re-appended into the container on every rebuild — a
+// getElementById lookup would return null right after innerHTML='' cleared it.
 const wContainer=document.getElementById('words-container');
 const wordArea=document.getElementById('word-area');
 const storyArea=document.getElementById('story-area');
@@ -442,6 +507,9 @@ function buildWordDom(){
 function getWordEl(wi){return wContainer.querySelector(`.word[data-wi="${wi}"]`);}
 
 // ── 3-ROW SCROLL (FREE MODE) ────────────────────────────────────────────────────
+// The word area shows ~3 rows. As you advance, translateY() slides the container
+// up so the current word stays on the second row (getRowH measures a row's height
+// from the first word that wrapped to a new line).
 function getRowH(){
   for(const w of wContainer.querySelectorAll('.word')){if(w.offsetTop>0)return w.offsetTop;}
   return null;
@@ -464,6 +532,10 @@ function updateRowHighlight(currentRow,lineH,scrolled){
 }
 
 // ── SMOOTH CARET (FREE MODE) ─────────────────────────────────────────────────────
+// Positions the caret over the current character. Because the caret lives INSIDE
+// the words container, getBoundingClientRect of the container and the target char
+// are in the same space — subtracting them gives the caret's local x/y (and it
+// scrolls with the words automatically). CSS transitions make it glide.
 function updateCaret(){
   const caret=smoothCaret;
   if(!caret||S.screen!=='game'||S.gameMode!=='free') return;
@@ -482,6 +554,9 @@ function updateCaret(){
 }
 
 // ── STORY DOM (STORY MODE) ───────────────────────────────────────────────────────
+// The whole passage is rendered as per-character spans inside a scroll box. A
+// single #story-caret glides to the current character using offsetLeft/offsetTop
+// (content coordinates), so it flows along the sentence and scrolls with the text.
 let storyCharEls=[];
 function buildStoryDom(){
   storyTextEl.innerHTML='';
@@ -559,6 +634,11 @@ function showOverlay(icon,text){
 function hideOverlay(){document.querySelectorAll('.focus-overlay').forEach(e=>e.classList.remove('visible'));}
 
 // ── GAME FLOW ─────────────────────────────────────────────────────────────────
+// initGame resets all run state and builds the DOM for the chosen mode. The two
+// branches differ mainly in: which typing area is shown, countdown vs count-up
+// timer, and which caret is set up. The clock does not start here — it starts on
+// the first keystroke (startTimer / startStoryTimer), and endGame() computes the
+// final stats. Tab or the ↻ button call initGame again to retry.
 function initGame(){
   S.started=false;S.finished=false;
   S.wordIndex=0;S.charIndex=0;S.pos=0;
@@ -685,6 +765,10 @@ function endGame(){
 }
 
 // ── INPUT ─────────────────────────────────────────────────────────────────────
+// All typing goes through one off-screen <input>. keydown handles Tab/Esc, the
+// caps-lock badge, and mode routing: Story Mode is fully handled per-key in
+// handleStoryKey (forced correction), while Free Mode reads the input's value in
+// the 'input' listener below (space submits a word).
 hiddenInput.addEventListener('keydown',e=>{
   if(S.finished)return;
   if(e.key==='Tab'){e.preventDefault();initGame();return;}
@@ -805,6 +889,10 @@ hiddenInput.addEventListener('input',()=>{
 });
 
 // ── SUBMIT WORD (FREE MODE) ──────────────────────────────────────────────────────
+// Called when space is pressed. Scores the word, updates the combo (grows on a
+// correct word, halves on a wrong one), spawns particles, and advances. The word's
+// trailing space is counted in BOTH correctChars and totalTyped so a mistake-free
+// run computes to exactly 100% accuracy and standard (chars/5) WPM.
 function submitWord(typed){
   const expected=S.words[S.wordIndex];
   const isCorrect=typed===expected;
@@ -855,6 +943,9 @@ function comboMult(){
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
+// Live stats. WPM = (correct chars / 5) / minutes; a short warmup shows "---" so
+// the first second doesn't read a wild number. The timer ring is an SVG circle
+// whose stroke-dashoffset encodes remaining time (Free) or progress (Story).
 function updateHUD(){
   const el=S.duration-S.timeLeft;
   const warmup=el<3;
@@ -902,6 +993,10 @@ function updateCombo(){
 }
 
 // ── INLINE RESULTS ────────────────────────────────────────────────────────────
+// The results replace the live view in place (fade out #game-live, show
+// #game-results). Cards count up, the WPM-over-time chart and trouble keys render,
+// and Story Mode adds the typing-rank banner. typerRank maps WPM → title/icon.
+//
 // Story-mode typing rank from WPM. The requested bands overlapped (e.g. 40-55
 // and 50-65 both covered 50-55); these are the cleaned, contiguous equivalents
 // using the same lower bounds (30/40/50/65/80/100).
@@ -1030,6 +1125,9 @@ function drawSparkline(){
 }
 
 // ── MENU ──────────────────────────────────────────────────────────────────────
+// buildStoryGrid renders the story picker cards; refreshMenu renders the saved
+// personal bests (per Free duration×difficulty and per story) and the recent-WPM
+// sparkline. Both are data-driven from STORIES and S.bests.
 function buildStoryGrid(){
   const grid=document.getElementById('story-grid');grid.innerHTML='';
   Object.entries(STORIES).forEach(([id,story])=>{
@@ -1065,6 +1163,8 @@ function refreshMenu(){
 }
 
 // ── EVENTS ────────────────────────────────────────────────────────────────────
+// Wire up all the menu controls, game buttons, focus handling, theme/sound
+// toggles, and the login/signup/offline buttons.
 document.querySelectorAll('.mode-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
@@ -1150,6 +1250,10 @@ document.getElementById('local-input').addEventListener('keydown',e=>{ if(e.key=
 document.getElementById('profile-btn').addEventListener('click',()=>signOut());
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+// Runs once at startup: apply saved settings to the UI, build the story grid,
+// then decide the first screen — resume a cloud account if a saved token exists
+// (show cached progress instantly, refresh from the server in the background),
+// else resume the last local profile, else show the login screen.
 loadSettings();
 document.body.dataset.theme=S.theme;
 document.getElementById('theme-btn').textContent=S.theme==='dark'?'☀️':'🌙';

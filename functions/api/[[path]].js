@@ -26,6 +26,9 @@ function fromHex(h) { const a = new Uint8Array(h.length / 2); for (let i = 0; i 
 function b64url(bytes) { return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 function b64urlDecode(s) { return atob(s.replace(/-/g, '+').replace(/_/g, '/')); }
 
+// Password hashing: PBKDF2-SHA256, 100k iterations, per-user random salt. We only
+// ever store {salt, hash} — never the plain password. verifyPassword re-derives
+// and compares in length-safe constant-ish time.
 async function pbkdf2(password, saltBytes) {
   const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
@@ -45,6 +48,9 @@ async function verifyPassword(pw, saltHex, hashHex) {
   return diff === 0;
 }
 
+// Stateless session token: base64url(JSON {email, exp}) + "." + HMAC-SHA256 of
+// that payload with AUTH_SECRET. No sessions table — verifyToken just recomputes
+// the HMAC and checks expiry, so a valid signature proves we issued it.
 async function hmac(data, secret) {
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));

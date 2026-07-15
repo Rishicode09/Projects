@@ -7,10 +7,22 @@
 </head>
 <body data-theme="dark">
 
+<!--
+  Page structure: three ".screen" panels (login / menu / game) share one nav +
+  level bar. Only one screen has ".active" at a time (toggled by app.js). All
+  behaviour lives in app.js; styling in styles.css. data-theme on <body> flips
+  the dark/light CSS variables.
+-->
+
+<!-- Full-viewport canvas layers behind everything: drifting background orbs and
+     the particle bursts that fire on correct words. -->
 <canvas id="bg-canvas"></canvas>
 <canvas id="particle-canvas"></canvas>
-<div id="levelup-flash"></div>
-<div id="toast-area"></div>
+<div id="levelup-flash"></div>   <!-- brief glow flashed on level-up -->
+<div id="toast-area"></div>      <!-- stack of achievement / combo toasts -->
+
+<!-- Top bar: profile switch, theme toggle, sound toggle -->
+
 
 <nav>
   <div class="logo">Type<span>Rush</span></div>
@@ -21,13 +33,15 @@
   </div>
 </nav>
 
+<!-- XP / level progress bar (filled by updateLevelBar) -->
 <div id="level-bar-wrap">
   <span id="level-label">Lvl 1</span>
   <div class="bar-track"><div id="level-fill"></div></div>
   <span id="xp-label">0 XP</span>
 </div>
 
-<!-- ══ LOGIN ══ -->
+<!-- ══ LOGIN ══  first screen when signed out: email+password cloud account,
+     or a local "play offline" username. Handlers: doAuth / signIn in app.js -->
 <div id="login-screen" class="screen">
   <div class="menu-title">TypeRushgame</div>
   <div class="menu-sub">Create an account to save your progress across devices</div>
@@ -54,7 +68,8 @@
   <div id="profile-list"></div>
 </div>
 
-<!-- ══ MENU ══ -->
+<!-- ══ MENU ══  mode tabs switch between the two config panels below; PLAY starts
+     a run. Personal bests + recent-WPM sparkline render underneath. -->
 <div id="menu-screen" class="screen active">
   <div class="menu-title">TypeRush</div>
   <div class="menu-sub">Train your fingers. Break your records.</div>
@@ -105,7 +120,9 @@
   <div class="scores-grid" id="scores-grid"></div>
 </div>
 
-<!-- ══ GAME ══ -->
+<!-- ══ GAME ══  #game-live (HUD + typing area) is shown while playing, then fades
+     out and #game-results fades in — no screen change. Only one of #word-area
+     (Free) / #story-area (Story) is ".active" at a time. -->
 <div id="game-screen" class="screen">
 
   <div id="game-live">
@@ -173,6 +190,7 @@
       </div>
     </div>
 
+    <!-- Off-screen input that actually receives typing (kept focused during play) -->
     <input id="hidden-input" type="text" autocomplete="off"
            autocorrect="off" autocapitalize="off" spellcheck="false"
            inputmode="text">

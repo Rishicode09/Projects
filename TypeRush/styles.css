@@ -1,3 +1,15 @@
+/* ============================================================================
+ * TypeRush — styles.css
+ * ----------------------------------------------------------------------------
+ * Theming is driven by CSS custom properties defined on :root (dark) and
+ * overridden by [data-theme="light"]; app.js flips data-theme on <body>. Colours,
+ * radii and the mono font are all variables so both themes stay consistent.
+ * The font below is self-hosted (no third-party request) to satisfy the strict
+ * Content-Security-Policy. Notable custom bits are commented at their rules:
+ * the 3-row word window, the two carets, the SVG timer ring, and the utility
+ * classes that replaced inline styles (again for the CSP).
+ * ==========================================================================*/
+
 /* Self-hosted JetBrains Mono (OFL) — see fonts/LICENSE */
 @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");}
 @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/jetbrains-mono-latin-600-normal.woff2") format("woff2");}
@@ -147,6 +159,8 @@
   #timer-ring{position:absolute;inset:0;transform:rotate(-90deg);}
   #timer-ring circle{fill:none;}
   #timer-bg{stroke:var(--bg3);stroke-width:5;}
+  /* Timer ring: a circle whose visible arc length is controlled from JS via
+     stroke-dashoffset (setTimerRing = remaining time; setProgressRing = progress). */
   #timer-arc{stroke:var(--accent2);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
   #timer-text{font-size:1.3rem;font-weight:700;color:var(--accent2);z-index:1;}
   #timer-label{position:absolute;bottom:-14px;font-size:.55rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;}
@@ -168,6 +182,8 @@
   #strict-notice{background:rgba(255,107,157,.1);color:var(--accent3);border:1px solid rgba(255,107,157,.25);}
 
   /* WORD AREA — 3-row window (FREE MODE) */
+  /* Free-mode typing area: a fixed ~3-row window. Height is pinned to 3 lines and
+     overflow is hidden; #words-container is translated up (in JS) to scroll rows. */
   #word-area{
     display:none;
     background:var(--card);border:1px solid var(--border);
@@ -207,6 +223,8 @@
   .char.wrong{color:var(--wrong);}
 
   /* Smooth caret (free mode) */
+  /* Solid caret; the left/top transition makes it glide between characters.
+     .instant disables the glide for the initial placement each round. */
   #smooth-caret{
     position:absolute;width:2px;
     background:var(--caret);border-radius:1px;
@@ -214,7 +232,7 @@
     transition:left .1s linear,top .13s ease;
   }
   #smooth-caret.instant{transition:none;}
-  @keyframes caretBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  @keyframes caretBlink{0%,49%{opacity:1}50%,100%{opacity:0}} /* kept for reference; carets no longer blink */
 
   /* STORY AREA — TypeRacer-style passage (STORY MODE) */
   #story-area{display:none;position:relative;}
@@ -224,6 +242,9 @@
   #story-progress-pct{color:var(--text-dim);font-size:.85rem;font-weight:700;}
   #story-progress-track{height:7px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-bottom:14px;}
   #story-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--correct));border-radius:99px;transition:width .15s ease;}
+  /* Story passage box: white-space:pre-wrap keeps the real spacing/line wrapping;
+     position:relative anchors the absolute #story-caret; JS sets scrollTop to keep
+     the current line in view (scroll-behavior:smooth animates it). */
   #story-text{
     background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
     padding:24px 26px;font-size:1.35rem;line-height:2.15rem;

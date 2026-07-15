@@ -1,8 +1,9 @@
 # TypeRush
 
-A gamified speed-typing trainer — a self-contained static site (no build step, no
-backend, no third-party requests). The font is bundled locally and all state lives
-in your browser's `localStorage`.
+A gamified speed-typing trainer — a static site with no build step. The font is
+bundled locally and there are no third-party requests. Progress is saved in your
+browser's `localStorage`, with an **optional** email+password account for
+cross-device sync (a small Cloudflare Pages Function + D1 — see `BACKEND.md`).
 
 To run locally, just open `TypeRush/index.html` in any browser. To publish it
 online securely (Cloudflare Pages, strict CSP, self-hosted font), see
@@ -12,12 +13,35 @@ online securely (Cloudflare Pages, strict CSP, self-hosted font), see
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Markup |
-| `styles.css` | All styling + local `@font-face` |
-| `app.js` | Game logic |
+| `index.html` | Markup — three screens (login / menu / game) + shared nav |
+| `styles.css` | All styling + local `@font-face` (theming via CSS variables) |
+| `app.js` | All game logic (state, both modes, rendering, scoring, accounts) |
+| `functions/api/[[path]].js` | Optional accounts backend (Cloudflare Pages Function + D1) — lives at the **repo root**, not in `TypeRush/` |
 | `fonts/` | Self-hosted JetBrains Mono (OFL) |
 | `_headers` | Cloudflare Pages security headers (CSP, HSTS, etc.) |
 | `DEPLOY.md` | Deployment guide |
+| `BACKEND.md` | How to enable email+password accounts (D1 + `AUTH_SECRET`) |
+
+## Code map
+
+The source is heavily commented — every file opens with an overview block and each
+section is marked with a banner comment, so you can read top-to-bottom or jump to a
+part. Where to look:
+
+- **`app.js`** — the bulk. Search for the `// ── NAME ──` banners:
+  `STORIES` / `WORD LISTS` (text content) → `STATE` (the one `S` object) →
+  persistence → `AUDIO`/`ORBS`/`PARTICLES` (WebAudio + canvas juice) →
+  `SCREENS`/`PROFILES`/`ACCOUNTS` (navigation, login, cloud sync) →
+  `WORD GENERATION`/`STORY RACES` → `WORD DOM`/`CARET`/`STORY DOM` (rendering +
+  gliding cursor) → `GAME FLOW`/`INPUT`/`SUBMIT` (the typing loop) →
+  `HUD`/`RESULTS` → `MENU`/`EVENTS`/`INIT` (wiring + startup).
+- **`index.html`** — comments mark each region (canvas layers, nav, login, menu,
+  game HUD, the Free vs Story typing areas, results, footer).
+- **`styles.css`** — a header explains the CSS-variable theming; the tricky rules
+  (3-row word window, the two carets, the SVG timer ring, CSP utility classes) are
+  commented at their definitions.
+- **`functions/api/[[path]].js`** — the accounts API: PBKDF2 password hashing,
+  HMAC session tokens, and the `signup` / `login` / `sync` routes.
 
 ## Two modes
 
@@ -67,4 +91,4 @@ before you can continue, so what you type always matches the text.
 - Achievements (First 40 WPM, 100% accuracy, 50× combo, etc.).
 - Dark / light theme toggle.
 - Optional keypress sounds (WebAudio, fully client-side).
-- Fully offline — no network requests.
+- Works fully offline in local mode; the only optional network use is cloud account sync.
