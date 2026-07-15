@@ -1,13 +1,15 @@
 # Projects
 
-## Featured: [FleetPulse — Predictive Maintenance for Vehicle Fleets](fleetpulse/)
+## Featured: [FleetPulse — Predicting Vehicle Breakdowns Before They Happen](fleetpulse/)
 
-An end-to-end automotive ML system: physics-informed telemetry simulation, a
-leakage-safe training pipeline with baseline-anchored model selection, a FastAPI
-inference service with anomaly detection, and PSI-based drift monitoring.
-31 tests, 98% coverage, CI, Docker. Start with the
-[README](fleetpulse/README.md) and the
-[code analysis](fleetpulse/docs/CODE_ANALYSIS.md).
+A complete machine learning project for the automotive industry. It simulates a year of
+sensor data from a 60-vehicle fleet, trains a model that predicts which vehicles will
+break down within 30 days, and serves those predictions through a small web service —
+with automated tests (98% coverage), continuous integration, and Docker.
+
+Start with the [README](fleetpulse/README.md) (written in plain English, with a
+glossary) — the deep technical walkthrough is in
+[docs/CODE_ANALYSIS.md](fleetpulse/docs/CODE_ANALYSIS.md).
 
 ## Other projects
 
