@@ -45,14 +45,32 @@ python3 -m portfolio_accountant.cli refusals      # what it will not do
 python3 -m unittest discover -s tests             # 91 tests
 ```
 
-For a real portfolio:
+For a real portfolio, **copy the whole example folder** rather than the single
+config file. Paths inside `engagement.json` resolve relative to the folder that
+file sits in, so a config separated from its data fails with "file not found".
 
 ```bash
-cp data/example/engagement.json my-portfolio.json
-# edit entities, properties, and point `sources` at your bank CSV exports
-python3 -m portfolio_accountant.cli close --config my-portfolio.json --output report.txt
-python3 -m portfolio_accountant.cli calendar --config my-portfolio.json
+cp -r data/example data/mine
+rm data/mine/generate_example_data.py        # only needed for the demo data
 ```
+
+Then, in `data/mine/`: replace the two CSVs with your own bank exports, and edit
+`engagement.json` — entities, properties, and `sources` pointing at your CSV
+filenames. Adapt `rules.json` to your own transaction descriptions.
+
+```bash
+python3 -m portfolio_accountant.cli close --config data/mine/engagement.json --output report.txt
+python3 -m portfolio_accountant.cli calendar --config data/mine/engagement.json
+```
+
+Your CSVs need a **date** column, a **description** column, and either a single
+**amount** column or separate **paid in** / **paid out** columns; most UK bank
+exports work unmodified. Optional but worth having: `counterparty`, `property`,
+and `document` (the invoice reference — without it, expenses are flagged as
+unevidenced, which is what HMRC does on an enquiry).
+
+On Windows use `python` rather than `python3`, and in Command Prompt use
+`xcopy /E /I data\example data\mine` in place of `cp -r`.
 
 **Before the first real use**, work through `config/uk_2025_26.json` and check
 each rate against current HMRC guidance, setting `verified_on` as you go. Until
