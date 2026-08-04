@@ -34,16 +34,39 @@ So the design pushes back in specific places:
 
 ## Running it
 
-Python 3.9+. **No dependencies** — standard library only.
+Python 3.8+. **No dependencies** — standard library only, so there is no
+`pip install` step and nothing to go wrong before you start.
 
-```bash
-cd PortfolioAccountant
+All commands run from **inside** the `PortfolioAccountant` folder. From anywhere
+else you get `No module named 'portfolio_accountant'`.
 
-python3 -m portfolio_accountant.cli demo          # full worked example
-python3 -m portfolio_accountant.cli verify-rates  # what needs human checking
-python3 -m portfolio_accountant.cli refusals      # what it will not do
-python3 -m unittest discover -s tests             # 91 tests
+### In a browser
+
 ```
+cd PortfolioAccountant
+python -m portfolio_accountant.cli web
+```
+
+A browser opens on `http://127.0.0.1:8000` with the whole report laid out —
+statements, per-property performance, the Section 24 gap, forensic findings,
+tax workings, and the compliance calendar. Use the browser's print function to
+save it as a PDF. `Ctrl+C` in the console stops it.
+
+The server **binds to `127.0.0.1` only, and that is not configurable**. It
+renders a complete picture of someone's finances with no authentication, which
+is fine on loopback and would not be on a shared network. Add `--port 8001` if
+8000 is taken.
+
+### In the terminal
+
+```
+python -m portfolio_accountant.cli demo          # full worked example
+python -m portfolio_accountant.cli verify-rates  # what needs human checking
+python -m portfolio_accountant.cli refusals      # what it will not do
+python -m unittest discover -s tests             # 112 tests
+```
+
+On macOS and Linux use `python3` in place of `python`.
 
 For a real portfolio, **copy the whole example folder** rather than the single
 config file. Paths inside `engagement.json` resolve relative to the folder that
@@ -58,9 +81,12 @@ Then, in `data/mine/`: replace the two CSVs with your own bank exports, and edit
 `engagement.json` — entities, properties, and `sources` pointing at your CSV
 filenames. Adapt `rules.json` to your own transaction descriptions.
 
-```bash
-python3 -m portfolio_accountant.cli close --config data/mine/engagement.json --output report.txt
-python3 -m portfolio_accountant.cli calendar --config data/mine/engagement.json
+Then either refresh the browser interface, where the new folder appears with a
+**Run close** button, or use the terminal:
+
+```
+python -m portfolio_accountant.cli close --config data\mine\engagement.json --output report.txt
+python -m portfolio_accountant.cli calendar --config data\mine\engagement.json
 ```
 
 Your CSVs need a **date** column, a **description** column, and either a single

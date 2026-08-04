@@ -153,11 +153,24 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
 
     portfolio = build_portfolio(engagement)
 
+    # Structured results, so the web UI can render the same run without
+    # re-parsing the text report. The text and the page are two views of one
+    # computation, never two computations that might disagree.
+    sections: Dict[str, object] = {
+        "jurisdiction": jur,
+        "portfolio": portfolio,
+        "period": (start, end),
+        "period_label": period_label,
+        "engagement": engagement,
+        "statements": [],
+    }
+
     # -- 1. Import ------------------------------------------------------
     out.append("\n1. IMPORT")
     result = import_many(engagement.get("sources", []))
     out.append(result.summary())
     portfolio.transactions = result.transactions
+    sections["import"] = result
 
     # -- 2. Classify ----------------------------------------------------
     out.append("\n2. CLASSIFY")
@@ -165,6 +178,7 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
     rules = load_rules(load_json(rules_path)["rules"]) if rules_path else []
     report = classify(portfolio.transactions, rules)
     out.append(report.summary())
+    sections["classification"] = report
 
     # -- 3. Post to the ledger -------------------------------------------
     out.append("\n3. LEDGER")
@@ -180,12 +194,7 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
     out.append(f"  trial balance difference: {difference.quantize()}")
     out.append(f"  ledger integrity hash: {ledger.integrity_hash()[:24]}")
 
-    sections: Dict[str, object] = {
-        "jurisdiction": jur,
-        "portfolio": portfolio,
-        "ledger": ledger,
-        "period": (start, end),
-    }
+    sections["ledger"] = ledger
 
     # -- 4. Statements per entity ----------------------------------------
     out.append("\n4. STATEMENTS")
@@ -193,10 +202,12 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
         pl = build_profit_and_loss(ledger, entity.id, start, end)
         if pl.total_income.is_zero and pl.total_expenses.is_zero:
             continue
+        bs = build_balance_sheet(ledger, entity.id, end, start)
+        sections["statements"].append((entity, pl, bs))
         out.append("")
         out.append(pl.render())
         out.append("")
-        out.append(build_balance_sheet(ledger, entity.id, end, start).render())
+        out.append(bs.render())
 
     # -- 5. Property performance -----------------------------------------
     out.append("\n5. PROPERTY PERFORMANCE")
@@ -217,6 +228,7 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
         period_label=period_label,
     )
     out.append(forensic.render())
+    sections["forensic"] = forensic
 
     # -- 7. Controls review ----------------------------------------------
     out.append("\n7. CONTROLS REVIEW")
@@ -235,6 +247,7 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
         reviewed_by=engagement.get("reviewed_by", ""),
     )
     out.append(review.render())
+    sections["review"] = review
 
     # -- 8. Tax computations ---------------------------------------------
     out.append("\n8. TAX COMPUTATIONS")
@@ -253,6 +266,7 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
         trading_income=Money(engagement.get("trading_income", 0)),
     )
     out.append(planning.render())
+    sections["planning"] = planning
 
     # -- 10. Calendar -----------------------------------------------------
     out.append("\n10. COMPLIANCE CALENDAR")
@@ -260,11 +274,14 @@ def run_close(engagement: Dict, out: List[str]) -> Dict:
     out.append(calendar.render())
     out.append("")
     out.append(record_retention_note(jur))
+    sections["calendar"] = calendar
 
     # -- 11. Gate ---------------------------------------------------------
     out.append("\n11. READINESS")
-    out.append(_readiness_gate(review, report, portfolio.transactions, forensic))
+    blockers = _readiness_blockers(review, portfolio.transactions, forensic)
+    out.append(_render_readiness(blockers))
     out.append(scope_banner())
+    sections["blockers"] = blockers
     return sections
 
 
@@ -384,8 +401,8 @@ def _run_tax(
     return computations
 
 
-def _readiness_gate(review, classification, transactions, forensic) -> str:
-    """State plainly whether this work is fit to be used."""
+def _readiness_blockers(review, transactions, forensic) -> List[str]:
+    """Everything standing between this work and being fit to use."""
     blockers = []
 
     for check in review.failures:
@@ -398,10 +415,15 @@ def _readiness_gate(review, classification, transactions, forensic) -> str:
             f"{unclassified} unclassified, above materiality of {review.materiality}"
         )
 
-    high_findings = [f for f in forensic.findings if f.severity == "high"]
-    for finding in high_findings:
-        blockers.append(f"unexplained indicator: {finding.summary}")
+    for finding in forensic.findings:
+        if finding.severity == "high":
+            blockers.append(f"unexplained indicator: {finding.summary}")
 
+    return blockers
+
+
+def _render_readiness(blockers: List[str]) -> str:
+    """State plainly whether this work is fit to be used."""
     if not blockers:
         return (
             "  No blocking issues found by the automated checks.\n"
@@ -485,6 +507,13 @@ def cmd_refusals(args) -> int:
     return 0
 
 
+def cmd_web(args) -> int:
+    from .web import serve
+
+    serve(port=args.port, open_browser=not args.no_browser)
+    return 0
+
+
 def cmd_demo(args) -> int:
     config_path = PACKAGE_ROOT / "data" / "example" / "engagement.json"
     if not config_path.exists():
@@ -531,6 +560,15 @@ def build_parser() -> argparse.ArgumentParser:
         "refusals", help="show what this package will not do"
     )
     p_ref.set_defaults(func=cmd_refusals)
+
+    p_web = subparsers.add_parser(
+        "web", help="open the browser interface (local machine only)"
+    )
+    p_web.add_argument("--port", type=int, default=8000)
+    p_web.add_argument(
+        "--no-browser", action="store_true", help="do not open a browser window"
+    )
+    p_web.set_defaults(func=cmd_web)
 
     p_demo = subparsers.add_parser("demo", help="run against the bundled example data")
     p_demo.add_argument("--output")
