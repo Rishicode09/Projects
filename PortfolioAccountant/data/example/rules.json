@@ -1,0 +1,95 @@
+{
+  "note": "Classification rules, evaluated in order - first match wins, so specific rules go above general ones. Every rule ID appears in the audit trail against the transactions it classified, so IDs must be stable and meaningful. Anything no rule matches goes to suspense (9000) for a person to decide; that queue is the work, not a failure.",
+
+  "rules": [
+    {
+      "id": "R001-rent-residential",
+      "account": "4000",
+      "description_pattern": "^RENT |RENT RECEIVED|TENANT PAYMENT",
+      "direction": "in",
+      "note": "Residential rent - property income, exempt for VAT"
+    },
+    {
+      "id": "R002-rent-commercial",
+      "account": "4010",
+      "description_pattern": "COMMERCIAL RENT",
+      "direction": "in",
+      "note": "Commercial rent - check whether the option to tax has been exercised"
+    },
+    {
+      "id": "R010-mortgage-interest-commercial",
+      "account": "5110",
+      "description_pattern": "COMMERCIAL MORTGAGE INTEREST",
+      "direction": "out",
+      "note": "Deductible in full - s.24 applies only to residential. MUST be evaluated before the general mortgage interest rule below, because the first match wins and 'COMMERCIAL MORTGAGE INTEREST' also contains 'MORTGAGE INTEREST'. Ordering these the other way round silently posts commercial interest to the restricted account and overstates the tax."
+    },
+    {
+      "id": "R011-mortgage-interest-residential",
+      "account": "5100",
+      "description_pattern": "MORTGAGE INTEREST",
+      "direction": "out",
+      "note": "RESTRICTED under s.24 - relief is a 20% tax reducer, not a deduction"
+    },
+    {
+      "id": "R020-agent-fees",
+      "account": "5020",
+      "description_pattern": "MANAGEMENT FEE|MANAGING AGENT|LETTING AGENT",
+      "direction": "out",
+      "requires_evidence": true
+    },
+    {
+      "id": "R030-insurance",
+      "account": "5040",
+      "description_pattern": "INSURANCE",
+      "direction": "out"
+    },
+    {
+      "id": "R040-safety-certificates",
+      "account": "5060",
+      "description_pattern": "GAS SAFETY|EICR|EPC|SAFETY CERTIFICATE",
+      "direction": "out"
+    },
+    {
+      "id": "R050-capital-improvement",
+      "account": "1710",
+      "description_pattern": "LOFT CONVERSION|EXTENSION|NEW KITCHEN|CONSERVATORY|REBUILD",
+      "direction": "out",
+      "note": "CAPITAL - improves the property beyond its previous condition. Not deductible against rent; increases the CGT base cost. Keep the invoice permanently."
+    },
+    {
+      "id": "R051-repairs",
+      "account": "5000",
+      "description_pattern": "REPAIR|PLUMBING|ELECTRICAL|ROOFING|DECOR|BOILER SERVICE",
+      "direction": "out",
+      "requires_evidence": true,
+      "note": "Revenue repair - restores rather than improves. Query anything large."
+    },
+    {
+      "id": "R060-accountancy",
+      "account": "5090",
+      "description_pattern": "ACCOUNTANCY|ACCOUNTING FEES|BOOKKEEPING",
+      "direction": "out"
+    },
+    {
+      "id": "R061-software",
+      "account": "5230",
+      "description_pattern": "SUBSCRIPTION|SOFTWARE",
+      "direction": "out"
+    },
+    {
+      "id": "R070-directors-remuneration",
+      "account": "5250",
+      "description_pattern": "DIRECTORS REMUNERATION|SALARY|PAYROLL",
+      "direction": "out",
+      "note": "PAYE and NIC must have been operated on this"
+    },
+    {
+      "id": "R080-bank-charges",
+      "account": "5900",
+      "description_pattern": "BANK CHARGE|OVERDRAFT FEE|ACCOUNT FEE",
+      "direction": "out"
+    }
+  ],
+
+  "deliberately_unmatched": "There is no rule for 'TRANSFER MAINTENANCE SERVICES', 'COUNTER CREDIT CASH' or 'PAYMENT R MEHRA CONSULTANCY' in the example data. That is intentional. Each needs a human decision - is it an expense, drawings, a related-party payment requiring disclosure, or unrecorded income? Writing a rule to sweep them into a category would make the books look finished while making them wrong."
+}
