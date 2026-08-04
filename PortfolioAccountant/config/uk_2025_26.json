@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "jurisdiction": "United Kingdom (England & Northern Ireland)",
+    "tax_year": "2025/26",
+    "year_start": "2025-04-06",
+    "year_end": "2026-04-05",
+    "currency": "GBP",
+    "verification_status": "UNVERIFIED_DRAFT",
+    "verified_on": null,
+    "source": "Populated from general knowledge of UK tax law. NOT independently verified.",
+    "warning": "Every figure below must be checked against the current HMRC rates and thresholds page and the relevant Finance Act before it is used in any computation that informs a filing, a lender, or a decision. Rates change at Budgets, sometimes retrospectively. Set verified_on per parameter as you confirm each one.",
+    "scope_note": "Scotland and Wales set their own income tax rates / land transaction taxes (LBTT, LTT). This file covers England & NI only; see the 'unsupported' list."
+  },
+
+  "parameters": {
+    "income_tax": {
+      "personal_allowance": {
+        "value": 12570,
+        "legislation": "ITA 2007 s.35",
+        "source": "HMRC: Income Tax rates and Personal Allowances",
+        "note": "Frozen until at least April 2028 under announced policy - confirm."
+      },
+      "pa_taper_threshold": {
+        "value": 100000,
+        "legislation": "ITA 2007 s.35(2)-(3)",
+        "note": "Allowance reduced by £1 for every £2 of adjusted net income above this."
+      },
+      "pa_taper_divisor": {
+        "value": 2,
+        "legislation": "ITA 2007 s.35(2)"
+      },
+      "basic_rate_limit": {
+        "value": 37700,
+        "legislation": "ITA 2007 s.10",
+        "note": "Taxable income above the personal allowance."
+      },
+      "higher_rate_limit": {
+        "value": 125140,
+        "legislation": "ITA 2007 s.10",
+        "note": "Point at which the additional rate begins."
+      },
+      "bands": {
+        "value": [
+          {"name": "basic", "upper": 37700, "rate": "0.20"},
+          {"name": "higher", "upper": 125140, "rate": "0.40"},
+          {"name": "additional", "upper": null, "rate": "0.45"}
+        ],
+        "legislation": "ITA 2007 s.6, s.10",
+        "note": "Upper bounds are cumulative taxable income after allowances."
+      },
+      "dividend_allowance": {
+        "value": 500,
+        "legislation": "ITA 2007 s.13A",
+        "note": "A nil-rate band, not a true allowance - it still uses up band."
+      },
+      "dividend_rates": {
+        "ordinary": {"value": "0.0875", "legislation": "ITA 2007 s.8"},
+        "upper": {"value": "0.3375", "legislation": "ITA 2007 s.8"},
+        "additional": {"value": "0.3935", "legislation": "ITA 2007 s.8"}
+      },
+      "savings_allowance": {
+        "basic": {"value": 1000, "legislation": "ITA 2007 s.12B"},
+        "higher": {"value": 500, "legislation": "ITA 2007 s.12B"},
+        "additional": {"value": 0, "legislation": "ITA 2007 s.12B"}
+      },
+      "starting_rate_for_savings": {
+        "limit": {"value": 5000, "legislation": "ITA 2007 s.12"},
+        "rate": {"value": "0.00", "legislation": "ITA 2007 s.7"}
+      },
+      "finance_cost_relief_rate": {
+        "value": "0.20",
+        "legislation": "ITTOIA 2005 s.274A ('Section 24')",
+        "note": "Residential landlord finance costs are not deductible; relief is a basic-rate tax reducer. This is the single largest driver of tax on personally-held geared residential property."
+      },
+      "property_allowance": {
+        "value": 1000,
+        "legislation": "ITTOIA 2005 Part 6A Ch.1"
+      },
+      "rent_a_room_limit": {
+        "value": 7500,
+        "legislation": "ITTOIA 2005 Part 7 Ch.1"
+      },
+      "trading_allowance": {
+        "value": 1000,
+        "legislation": "ITTOIA 2005 Part 6A Ch.1"
+      },
+      "cash_basis_property_threshold": {
+        "value": 150000,
+        "legislation": "ITTOIA 2005 s.271A",
+        "note": "Cash basis is the default for property businesses below this; election available to use accruals."
+      }
+    },
+
+    "capital_gains_tax": {
+      "annual_exempt_amount": {
+        "value": 3000,
+        "legislation": "TCGA 1992 s.1K",
+        "note": "Reduced from £6,000 (2023/24) and £12,300 (2022/23). Confirm current year."
+      },
+      "rates": {
+        "residential_basic": {"value": "0.18", "legislation": "TCGA 1992 s.1H"},
+        "residential_higher": {"value": "0.24", "legislation": "TCGA 1992 s.1H"},
+        "other_basic": {"value": "0.18", "legislation": "TCGA 1992 s.1H"},
+        "other_higher": {"value": "0.24", "legislation": "TCGA 1992 s.1H"}
+      },
+      "badr_rate": {
+        "value": "0.14",
+        "legislation": "TCGA 1992 s.169H-169V",
+        "note": "Business Asset Disposal Relief. Rate was legislated to rise in steps - verify the rate for the actual disposal date, not the filing date."
+      },
+      "badr_lifetime_limit": {
+        "value": 1000000,
+        "legislation": "TCGA 1992 s.169N(4)"
+      },
+      "residential_reporting_days": {
+        "value": 60,
+        "legislation": "TCGA 1992 Sch.2 para 3",
+        "note": "UK residential property disposals need a standalone CGT return AND payment on account within 60 days of completion. Missing this is one of the most common penalties in a property portfolio."
+      }
+    },
+
+    "corporation_tax": {
+      "small_profits_rate": {
+        "value": "0.19",
+        "legislation": "CTA 2010 s.18A-18N"
+      },
+      "main_rate": {
+        "value": "0.25",
+        "legislation": "Finance Act 2021 s.6"
+      },
+      "lower_limit": {
+        "value": 50000,
+        "legislation": "CTA 2010 s.18D",
+        "note": "Divided by the number of associated companies plus one."
+      },
+      "upper_limit": {
+        "value": 250000,
+        "legislation": "CTA 2010 s.18D"
+      },
+      "marginal_relief_fraction": {
+        "value": "0.015",
+        "legislation": "CTA 2010 s.19",
+        "note": "3/200. Applies between the lower and upper limits, giving a ~26.5% effective marginal rate in that band."
+      },
+      "payment_due_months": {
+        "value": 9,
+        "legislation": "TMA 1970 / CTA 2010",
+        "note": "9 months and 1 day after the end of the accounting period for companies not in quarterly instalments."
+      },
+      "return_due_months": {
+        "value": 12,
+        "note": "CT600 due 12 months after the period end - later than the payment date."
+      }
+    },
+
+    "national_insurance": {
+      "class4_lower_profits_limit": {"value": 12570, "legislation": "SSCBA 1992 s.15"},
+      "class4_upper_profits_limit": {"value": 50270, "legislation": "SSCBA 1992 s.15"},
+      "class4_main_rate": {"value": "0.06", "legislation": "SSCBA 1992 s.15"},
+      "class4_additional_rate": {"value": "0.02", "legislation": "SSCBA 1992 s.15"},
+      "class2_weekly_voluntary": {
+        "value": "3.50",
+        "note": "Class 2 liability was removed for most; voluntary payment may still protect the State Pension record. Check before advising anyone to stop paying."
+      },
+      "class1_secondary_threshold": {"value": 5000, "note": "Employer NI threshold."},
+      "class1_secondary_rate": {"value": "0.15", "note": "Employer NI rate."},
+      "employment_allowance": {"value": 10500, "legislation": "NICA 2014"},
+      "property_income_note": {
+        "value": 0,
+        "note": "Property income is NOT subject to Class 4 NIC unless the activity amounts to a trade (e.g. serviced accommodation with substantial services). This distinction is fact-specific."
+      }
+    },
+
+    "vat": {
+      "registration_threshold": {
+        "value": 90000,
+        "legislation": "VATA 1994 Sch.1",
+        "note": "Rolling 12-month test AND a forward 30-day test. Residential letting is exempt, so it usually does not count towards this - but commercial rent (if opted to tax) and serviced accommodation do."
+      },
+      "deregistration_threshold": {"value": 88000, "legislation": "VATA 1994 Sch.1"},
+      "standard_rate": {"value": "0.20", "legislation": "VATA 1994 s.2"},
+      "reduced_rate": {"value": "0.05", "legislation": "VATA 1994 s.29A"},
+      "residential_letting_treatment": {
+        "value": "exempt",
+        "legislation": "VATA 1994 Sch.9 Group 1",
+        "note": "Exempt supply - input VAT on related costs is generally irrecoverable."
+      }
+    },
+
+    "sdlt": {
+      "residential_standard_bands": {
+        "value": [
+          {"upper": 125000, "rate": "0.00"},
+          {"upper": 250000, "rate": "0.02"},
+          {"upper": 925000, "rate": "0.05"},
+          {"upper": 1500000, "rate": "0.10"},
+          {"upper": null, "rate": "0.12"}
+        ],
+        "legislation": "FA 2003 s.55 / Sch.4ZA",
+        "note": "Thresholds changed on 1 April 2025. Rates depend on the EFFECTIVE DATE of the transaction (usually completion), not the exchange date."
+      },
+      "additional_dwelling_surcharge": {
+        "value": "0.05",
+        "legislation": "FA 2003 Sch.4ZA",
+        "note": "Higher rates for additional dwellings, added to every band including the nil band. Increased from 3% to 5% on 31 October 2024. A replacement of a main residence may be exempt, with a refund route if the old home sells within 3 years."
+      },
+      "non_resident_surcharge": {
+        "value": "0.02",
+        "legislation": "FA 2003 Sch.9A",
+        "note": "Non-UK residents. The SDLT residence test differs from the statutory residence test for income tax."
+      },
+      "corporate_flat_rate": {
+        "value": "0.17",
+        "legislation": "FA 2003 Sch.4A",
+        "note": "Flat rate where a company or other non-natural person buys a single dwelling above the threshold, unless a relief (e.g. property rental business) applies and is claimed."
+      },
+      "corporate_flat_rate_threshold": {"value": 500000, "legislation": "FA 2003 Sch.4A"},
+      "non_residential_bands": {
+        "value": [
+          {"upper": 150000, "rate": "0.00"},
+          {"upper": 250000, "rate": "0.02"},
+          {"upper": null, "rate": "0.05"}
+        ],
+        "legislation": "FA 2003 s.55",
+        "note": "Also applies to mixed-use property. HMRC challenges weak mixed-use claims aggressively - the non-residential element must be genuine."
+      },
+      "first_time_buyer_relief": {
+        "nil_band": {"value": 300000, "legislation": "FA 2003 Sch.6ZA"},
+        "second_band_upper": {"value": 500000},
+        "second_band_rate": {"value": "0.05"},
+        "max_price": {
+          "value": 500000,
+          "note": "No relief at all if the price exceeds this."
+        }
+      },
+      "filing_days": {
+        "value": 14,
+        "legislation": "FA 2003 s.76",
+        "note": "SDLT return and payment due within 14 days of the effective date."
+      },
+      "mdr_abolished": {
+        "value": true,
+        "note": "Multiple Dwellings Relief was abolished for transactions with an effective date on or after 1 June 2024. Treat any adviser recommending MDR on a current purchase as a red flag."
+      }
+    },
+
+    "capital_allowances": {
+      "annual_investment_allowance": {
+        "value": 1000000,
+        "legislation": "CAA 2001 s.51A"
+      },
+      "wda_main_pool": {"value": "0.18", "legislation": "CAA 2001 s.56"},
+      "wda_special_rate_pool": {"value": "0.06", "legislation": "CAA 2001 s.104D"},
+      "structures_and_buildings_allowance": {
+        "value": "0.03",
+        "legislation": "CAA 2001 Part 2A",
+        "note": "Straight line. Reduces CGT base cost on disposal - claiming it is not free."
+      },
+      "dwelling_house_restriction": {
+        "value": true,
+        "legislation": "CAA 2001 s.35",
+        "note": "No plant and machinery allowances for a dwelling house let residentially. Common and expensive error. Replacement of Domestic Items relief (ITTOIA 2005 s.311A) is the route instead."
+      }
+    },
+
+    "deadlines": {
+      "self_assessment_online": {"value": "31 January following the end of the tax year"},
+      "self_assessment_paper": {"value": "31 October following the end of the tax year"},
+      "payments_on_account": {"value": "31 January and 31 July"},
+      "cgt_property_return": {"value": "60 days from completion"},
+      "sdlt_return": {"value": "14 days from effective date"},
+      "company_accounts_first": {"value": "21 months from incorporation"},
+      "company_accounts_subsequent": {"value": "9 months from period end"},
+      "confirmation_statement": {"value": "14 days after the review period"},
+      "ct600": {"value": "12 months from the end of the accounting period"},
+      "ct_payment": {"value": "9 months and 1 day from the end of the accounting period"},
+      "p11d": {"value": "6 July following the tax year"}
+    },
+
+    "record_keeping": {
+      "individual_years": {
+        "value": 5,
+        "legislation": "TMA 1970 s.12B",
+        "note": "5 years from the 31 January filing deadline where a return includes business or property income."
+      },
+      "company_years": {
+        "value": 6,
+        "legislation": "Companies Act 2006 s.388",
+        "note": "6 years from the end of the accounting period."
+      },
+      "vat_years": {"value": 6, "legislation": "VATA 1994 Sch.11"}
+    },
+
+    "mtd": {
+      "itsa_threshold_2026": {
+        "value": 50000,
+        "note": "Making Tax Digital for Income Tax: qualifying income (turnover from self-employment PLUS gross property income, before expenses) above this from April 2026."
+      },
+      "itsa_threshold_2027": {"value": 30000},
+      "itsa_threshold_2028": {"value": 20000},
+      "note": {
+        "value": "quarterly_updates",
+        "note": "Gross property income counts towards the threshold, so a modest portfolio can be brought in even when profits are small after finance costs."
+      }
+    },
+
+    "materiality": {
+      "default_percent_of_revenue": {
+        "value": "0.005",
+        "note": "0.5% of revenue as a starting benchmark for review materiality. Judgement, not a rule - lower it where there is fraud risk or a covenant nearby."
+      },
+      "trivial_percent_of_materiality": {"value": "0.05"}
+    }
+  },
+
+  "unsupported": [
+    "scottish_income_tax",
+    "scottish_lbtt",
+    "welsh_income_tax",
+    "welsh_ltt",
+    "inheritance_tax",
+    "trusts",
+    "non_domicile_fig_regime",
+    "residence_and_domicile_determination",
+    "ated",
+    "vat_partial_exemption",
+    "vat_capital_goods_scheme",
+    "vat_option_to_tax",
+    "vat_flat_rate_scheme",
+    "r_and_d_relief",
+    "share_schemes_emi",
+    "employment_status_ir35",
+    "partnership_profit_reallocation",
+    "furnished_holiday_let_regime",
+    "pension_annual_and_lifetime_allowances",
+    "construction_industry_scheme",
+    "transfer_of_going_concern",
+    "incorporation_relief_and_stamp_duty_on_incorporation"
+  ],
+
+  "unsupported_note": "These are NOT gaps to be filled with an estimate. Each involves rules where a plausible-looking approximation produces a materially wrong answer, or where the outcome turns on facts the engine cannot see. The engine refuses to compute them and refers them out. That refusal is a feature."
+}

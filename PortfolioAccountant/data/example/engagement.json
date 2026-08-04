@@ -1,0 +1,144 @@
+{
+  "note": "Worked example. A person holding three residential properties personally and one commercial property through a company, alongside a small trade. Fictional throughout - names, amounts and references are invented for demonstration.",
+
+  "jurisdiction": "uk_2025_26",
+  "period_start": "2025-04-06",
+  "period_end": "2026-04-05",
+  "primary_entity": "IND-001",
+
+  "prepared_by": "portfolio-accountant (automated)",
+  "reviewed_by": "",
+
+  "opening_balances": {
+    "IND-001": {"1000": 24500 },
+    "CO-001": {"1000": 18200 }
+  },
+  "opening_balances_note": "Brought forward from the prior period's reviewed closing balances. These are an assertion carried in from outside this period's evidence, so they are the first thing a reviewer should agree back to last year's signed figures.",
+
+  "statement_balances": {},
+
+  "entities": [
+    {
+      "id": "IND-001",
+      "name": "Example Individual",
+      "entity_type": "individual",
+      "accounting_period_end": "05-04",
+      "country": "England",
+      "related_parties": ["R MEHRA", "KESTREL TRADING"],
+      "notes": "Higher rate taxpayer. Holds FLAT-01, FLAT-02 and HOUSE-03 personally."
+    },
+    {
+      "id": "CO-001",
+      "name": "Example Property Holdings Ltd",
+      "entity_type": "company",
+      "accounting_period_end": "31-03",
+      "vat_registered": false,
+      "country": "England",
+      "related_parties": ["R MEHRA"],
+      "notes": "Single commercial property. Director is the primary individual."
+    }
+  ],
+
+  "properties": [
+    {
+      "id": "FLAT-01",
+      "address": "Flat 1, Meadow Court",
+      "owner_entity_id": "IND-001",
+      "basis": "personal",
+      "use": "residential_let",
+      "purchase_date": "2018-06-14",
+      "purchase_price": 185000,
+      "acquisition_costs": 8400,
+      "capital_improvements": 6200,
+      "current_valuation": 232000,
+      "mortgage_balance": 138000,
+      "mortgage_rate": 0.0452,
+      "ownership_share": 1
+    },
+    {
+      "id": "FLAT-02",
+      "address": "Flat 7, Riverside House",
+      "owner_entity_id": "IND-001",
+      "basis": "personal",
+      "use": "residential_let",
+      "purchase_date": "2020-02-28",
+      "purchase_price": 149000,
+      "acquisition_costs": 6100,
+      "capital_improvements": 0,
+      "current_valuation": 176000,
+      "mortgage_balance": 109000,
+      "mortgage_rate": 0.0451,
+      "ownership_share": 1,
+      "notes": "Two void months in the period - the review should query this."
+    },
+    {
+      "id": "HOUSE-03",
+      "address": "14 Alder Road",
+      "owner_entity_id": "IND-001",
+      "basis": "personal",
+      "use": "residential_let",
+      "purchase_date": "2015-09-01",
+      "purchase_price": 240000,
+      "acquisition_costs": 11200,
+      "capital_improvements": 18500,
+      "current_valuation": 341000,
+      "mortgage_balance": 195000,
+      "mortgage_rate": 0.048,
+      "ownership_share": 1
+    },
+    {
+      "id": "COMM-04",
+      "address": "Unit 3, Foundry Park",
+      "owner_entity_id": "CO-001",
+      "basis": "company",
+      "use": "commercial",
+      "purchase_date": "2021-11-05",
+      "purchase_price": 410000,
+      "acquisition_costs": 24500,
+      "current_valuation": 468000,
+      "mortgage_balance": 290000,
+      "mortgage_rate": 0.06,
+      "ownership_share": 1
+    }
+  ],
+
+  "sources": [
+    {
+      "path": "bank_personal.csv",
+      "entity_id": "IND-001",
+      "account": "1000"
+    },
+    {
+      "path": "bank_company.csv",
+      "entity_id": "CO-001",
+      "account": "1000"
+    }
+  ],
+
+  "rules_file": "rules.json",
+
+  "personal_income": {
+    "employment": 58000,
+    "self_employment_profit": 0,
+    "savings_interest": 1240,
+    "dividends": 4500,
+    "gross_pension_contributions": 0,
+    "paye_deducted": 11432,
+    "taxable_income_for_cgt": 45000,
+    "note": "Property profit and restricted finance costs are taken from the ledger, not entered here, so they trace back to bank transactions."
+  },
+
+  "companies": [
+    {
+      "id": "CO-001",
+      "trading_profit": 0,
+      "property_profit": 21000,
+      "depreciation": 0,
+      "capital_allowances": 0,
+      "associated_companies": 0,
+      "period_end": "2026-03-31"
+    }
+  ],
+
+  "trading_income": 0
+}
