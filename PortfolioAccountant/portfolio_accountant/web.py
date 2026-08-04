@@ -51,17 +51,34 @@ BIND_HOST = "127.0.0.1"
 # ---------------------------------------------------------------------------
 
 STYLE = """
+/* Palette: ledger blue accent with blue-biased neutrals, so the greys read as
+   chosen rather than inherited. Semantic colours (ok/warn/bad) are deliberately
+   distinct from the accent - severity must not be confusable with emphasis.
+
+   Theming is token-level: components style through the variables and never
+   inside a media query, so the OS preference and the viewer's explicit toggle
+   can each win in both directions. */
 :root {
-  --bg: #f6f7f9; --card: #ffffff; --ink: #1a1d21; --muted: #5b6470;
-  --line: #e2e6ea; --accent: #1f5f8b; --ok: #1c7c4a; --warn: #a86a00;
-  --bad: #b3261e; --chip: #eef1f4;
+  --bg: #f3f6f8; --card: #ffffff; --ink: #131a22; --muted: #5a6675;
+  --line: #dfe5eb; --accent: #1f5f8b; --ok: #1c7c4a; --warn: #a05f00;
+  --bad: #b3261e; --chip: #e9eef3;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14171a; --card: #1c2024; --ink: #e8eaed; --muted: #a2acb8;
-    --line: #2c3238; --accent: #6fb3e0; --ok: #5cc98d; --warn: #e0a94a;
-    --bad: #f2887f; --chip: #262c32;
+    --bg: #10141a; --card: #181e26; --ink: #e6ebf1; --muted: #97a3b2;
+    --line: #29323d; --accent: #6fb3e0; --ok: #5cc98d; --warn: #e0a94a;
+    --bad: #f2887f; --chip: #222b35;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #10141a; --card: #181e26; --ink: #e6ebf1; --muted: #97a3b2;
+  --line: #29323d; --accent: #6fb3e0; --ok: #5cc98d; --warn: #e0a94a;
+  --bad: #f2887f; --chip: #222b35;
+}
+:root[data-theme="light"] {
+  --bg: #f3f6f8; --card: #ffffff; --ink: #131a22; --muted: #5a6675;
+  --line: #dfe5eb; --accent: #1f5f8b; --ok: #1c7c4a; --warn: #a05f00;
+  --bad: #b3261e; --chip: #e9eef3;
 }
 * { box-sizing: border-box; }
 body {
@@ -94,6 +111,7 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
 .banner.bad { border-left-color: var(--bad); }
 .banner.ok { border-left-color: var(--ok); }
 .banner h2 { color: var(--ink); text-transform: none; letter-spacing: 0; font-size: 17px; }
+.tablewrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -110,7 +128,17 @@ tr.total td { font-weight: 600; border-top: 2px solid var(--line); border-bottom
 .tag.low, .tag.info { background: var(--chip); color: var(--muted); }
 .tag.pass { background: var(--ok); color: #fff; }
 .tag.fail { background: var(--bad); color: #fff; }
-.finding { border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+/* Severity reads as form as well as colour: a left stripe makes the high-risk
+   items scannable without relying on hue alone. */
+.finding {
+  border: 1px solid var(--line); border-left: 4px solid var(--line);
+  border-radius: 8px; padding: 14px; margin-bottom: 12px;
+}
+.finding.high { border-left-color: var(--bad); }
+.finding.medium { border-left-color: var(--warn); }
+.finding.low, .finding.info { border-left-color: var(--muted); }
+a:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 .finding .q { margin: 8px 0; }
 .finding ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; }
 .muted { color: var(--muted); }
@@ -346,11 +374,11 @@ bears a real cost of 20% of the restricted interest.</p>"""
     return f"""
 <div class="card">
   <h2>Property performance</h2>
-  <table>
+  <div class="tablewrap"><table>
     <tr><th>Property</th><th class="num">Rent</th><th class="num">Costs</th>
         <th class="num">Finance</th><th class="num">Cash</th><th class="num">RoE</th></tr>
     {''.join(rows)}
-  </table>
+  </table></div>
   <div class="grid" style="margin-top:16px">
     <div class="stat"><div class="label">Portfolio value</div>
       <div class="value">{esc(summary.total_value)}</div></div>
@@ -385,14 +413,14 @@ def _statements_card(statements) -> str:
                     "Do not issue these figures.</strong></p>")
         blocks.append(f"""
 <h3>{esc(entity.name)} <span class="muted small">({esc(entity.id)})</span></h3>
-<table>
+<div class="tablewrap"><table>
   <tr><th>Income</th><th class="num"></th></tr>{income}
   <tr class="total"><td>Total income</td>{money_cell(pl.total_income)}</tr>
   <tr><th style="padding-top:16px">Expenses</th><th class="num"></th></tr>{expenses}
   <tr class="total"><td>Total expenses</td>{money_cell(pl.total_expenses)}</tr>
   <tr class="total"><td>{'PROFIT' if not pl.profit.is_negative else 'LOSS'}</td>
       {money_cell(pl.profit)}</tr>
-</table>
+</table></div>
 <div class="grid" style="margin-top:12px">
   <div class="stat"><div class="label">Net assets</div>
     <div class="value">{esc(bs.net_assets)}</div></div>
@@ -418,7 +446,7 @@ def _forensic_card(forensic) -> str:
             innocent = ('<p class="small muted">Commonly innocent because: '
                         + esc("; ".join(f.innocent_explanations)) + "</p>")
         blocks.append(f"""
-<div class="finding">
+<div class="finding {esc(f.severity)}">
   <span class="tag {esc(f.severity)}">{esc(f.severity)}</span>
   <strong> {esc(f.test)}</strong>{value}
   <p>{esc(f.summary)}</p>
@@ -460,7 +488,7 @@ def _review_card(review) -> str:
     <div class="stat"><div class="label">Reviewed by</div>
       <div class="value" style="font-size:15px">{esc(review.reviewed_by or "NOT YET REVIEWED")}</div></div>
   </div>
-  <table style="margin-top:14px">{rows}</table>
+  <div class="tablewrap"><table style="margin-top:14px">{rows}</table></div>
   <p class="small muted">{len(review.sample)} item(s) selected for vouching — trace each
   to its invoice and confirm amount, date, payee and business purpose.</p>
 </div>"""
@@ -496,10 +524,10 @@ def _tax_card(computations) -> str:
                            + "".join(f"<li>{esc(i)}</li>" for i in items) + "</ul>")
         blocks.append(f"""
 <h3>{esc(comp.title)} <span class="muted small">{esc(comp.entity_id)} {esc(comp.period)}</span></h3>
-<table>
+<div class="tablewrap"><table>
   <tr><th>Working</th><th class="num">Amount</th><th class="num">Rate</th><th class="num">Result</th></tr>
   {steps}{totals}
-</table>{extras}""")
+</table></div>{extras}""")
     return f'<div class="card"><h2>Tax computations</h2>{"".join(blocks)}</div>'
 
 
@@ -516,7 +544,7 @@ def _planning_card(planning) -> str:
                  + "".join(f"<li>{esc(r)}</li>" for r in o.risks) + "</ul>"
                  if o.risks else "")
         blocks.append(f"""
-<div class="finding">
+<div class="finding {esc(o.priority)}">
   <span class="tag {esc(o.priority)}">{esc(o.priority)}</span>
   <strong> {esc(o.title)}</strong>
   <p class="muted small">Basis: {esc(o.statutory_basis)}</p>
@@ -586,7 +614,7 @@ def view_run(name: str) -> bytes:
         )
         queue = f"""
 <h3>Work queue — needs a human decision</h3>
-<table>{rows}</table>
+<div class="tablewrap"><table>{rows}</table></div>
 <p class="small muted">Nothing here should be guessed. An expense whose purpose
 cannot be determined is not a deductible expense. Each of these is either an
 expense, a capital item, or drawings — three different tax outcomes.</p>"""
@@ -680,6 +708,187 @@ def view_retention() -> bytes:
     body = (f'<div class="card"><h2>Record keeping</h2>'
             f"<pre>{esc(record_retention_note(jur))}</pre></div>")
     return page("Record keeping", body)
+
+
+# ---------------------------------------------------------------------------
+# Static export
+# ---------------------------------------------------------------------------
+
+GUIDE = """
+<section id="guide" class="card banner">
+  <h2>What you are looking at</h2>
+  <p>This is one complete run over a portfolio: three flats held personally, one
+  commercial unit held through a company, twelve months of bank transactions.
+  Every figure below was computed from those transactions and traces back to a
+  row in a bank export.</p>
+  <p>The example data has deliberate problems in it, because a demo where
+  everything is clean teaches nothing. A contractor invoice paid twice, payments
+  with no receipt, cash deposits, unexplained transfers. Watch how each is
+  surfaced as a <em>question</em> rather than an accusation or a silent fix.</p>
+
+  <h3>The order is the argument</h3>
+  <p>Sections run in dependency order, and that is deliberate: the most common way
+  to produce confidently wrong accounts is to compute tax on a ledger nobody
+  reconciled. So the verification state and the readiness verdict come
+  <strong>before</strong> any numbers, not in a footnote after them.</p>
+
+  <div class="tablewrap"><table>
+    <tr><th>Section</th><th>Question it answers</th></tr>
+    <tr><td><a href="#rates">Rate verification</a></td>
+        <td>Can these numbers be trusted at all yet?</td></tr>
+    <tr><td><a href="#readiness">Readiness</a></td>
+        <td>Is this fit to file, or is something unresolved?</td></tr>
+    <tr><td><a href="#import">Import &amp; classify</a></td>
+        <td>What came in, and what still needs a human decision?</td></tr>
+    <tr><td><a href="#statements">Statements</a></td>
+        <td>Profit and loss, balance sheet, per entity.</td></tr>
+    <tr><td><a href="#properties">Properties</a></td>
+        <td>Which properties actually make money? What does Section 24 cost?</td></tr>
+    <tr><td><a href="#tax">Tax</a></td>
+        <td>What is legally due, with every step of the working shown?</td></tr>
+    <tr><td><a href="#forensics">Forensic review</a></td>
+        <td>What does not add up, and what should be asked about it?</td></tr>
+    <tr><td><a href="#controls">Controls</a></td>
+        <td>Would this survive being checked by someone independent?</td></tr>
+    <tr><td><a href="#planning">Planning</a></td>
+        <td>Which statutory reliefs do these facts actually engage?</td></tr>
+    <tr><td><a href="#calendar">Calendar</a></td>
+        <td>What is due, when, and what happens if it is missed?</td></tr>
+  </table></div>
+
+  <h3>Three things worth watching for</h3>
+  <ul class="plain">
+    <li><strong>It refuses to declare itself finished.</strong> The readiness
+    verdict below says NOT READY, and one blocking reason is that no human has
+    reviewed it. That check cannot be satisfied by the software itself.</li>
+    <li><strong>Unknown transactions are not guessed.</strong> Anything no rule
+    matches goes to a work queue rather than being swept into a plausible
+    category. The queue is the point, not a failure.</li>
+    <li><strong>The Section 24 gap.</strong> On personally-held mortgaged
+    residential property, tax is charged on profit <em>before</em> finance costs.
+    That is why the taxable figure below is far larger than the cash actually
+    earned.</li>
+  </ul>
+</section>"""
+
+
+def static_page(title: str, body: str, subtitle: str) -> bytes:
+    """A single self-contained page, with in-page anchors instead of routes."""
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{esc(title)}</title>
+<style>{STYLE}
+html {{ scroll-behavior: smooth; }}
+@media (prefers-reduced-motion: reduce) {{ html {{ scroll-behavior: auto; }} }}
+section {{ scroll-margin-top: 130px; }}
+</style></head><body>
+<header>
+  <h1>{esc(title)}</h1>
+  <div class="sub">{esc(subtitle)}</div>
+  <nav>
+    <a href="#guide">Guide</a>
+    <a href="#readiness">Readiness</a>
+    <a href="#import">Import</a>
+    <a href="#statements">Statements</a>
+    <a href="#properties">Properties</a>
+    <a href="#tax">Tax</a>
+    <a href="#forensics">Forensics</a>
+    <a href="#controls">Controls</a>
+    <a href="#planning">Planning</a>
+    <a href="#calendar">Calendar</a>
+  </nav>
+</header>
+<main>{body}</main>
+<footer>
+  Prepared workings only — not a tax return, not statutory accounts, not an audit
+  opinion, and not tax advice. A named person must review these workings and take
+  responsibility before anything is filed.
+</footer>
+</body></html>""".encode("utf-8")
+
+
+def export_static(name: str = "example", include_guide: bool = True) -> bytes:
+    """Render one complete run as a self-contained HTML file.
+
+    Useful beyond the demo: it is how you hand a period's workings to an
+    accountant or a lender without asking them to run anything.
+    """
+    from .cli import load_engagement, run_close
+
+    config_path = resolve_engagement(name)
+    engagement = load_engagement(str(config_path))
+    out: List[str] = []
+    sections = run_close(engagement, out)
+
+    jur = sections["jurisdiction"]
+    summary = sections.get("summary")
+    imported = sections.get("import")
+    classification = sections.get("classification")
+
+    queue = ""
+    if classification and classification.unclassified:
+        top = sorted(
+            classification.unmatched_descriptions.items(), key=lambda kv: -kv[1]
+        )[:12]
+        rows = "".join(
+            f'<tr><td class="num">{count}x</td><td>{esc(desc)}</td></tr>'
+            for desc, count in top
+        )
+        queue = f"""
+<h3>Work queue — needs a human decision</h3>
+<div class="tablewrap"><table>{rows}</table></div>
+<p class="small muted">Nothing here is guessed. Each is either an expense, a
+capital item, or drawings — three different tax outcomes. An expense whose
+purpose cannot be determined is not a deductible expense.</p>"""
+
+    def wrap(anchor: str, markup: str) -> str:
+        return f'<section id="{anchor}">{markup}</section>' if markup else ""
+
+    body = "".join([
+        GUIDE if include_guide else "",
+        wrap("rates", _verification_card(jur)),
+        wrap("readiness", _readiness_card(sections.get("blockers", []))),
+        wrap("import", f"""
+<div class="card">
+  <h2>Import and classification</h2>
+  <div class="grid">
+    <div class="stat"><div class="label">Imported</div>
+      <div class="value">{imported.imported_count if imported else 0}</div></div>
+    <div class="stat"><div class="label">Duplicates skipped</div>
+      <div class="value">{len(imported.duplicates) if imported else 0}</div></div>
+    <div class="stat"><div class="label">Classified</div>
+      <div class="value">{classification.coverage:.0f}%</div></div>
+    <div class="stat"><div class="label">Unclassified</div>
+      <div class="value">{len(classification.unclassified)}</div></div>
+  </div>
+  {queue}
+</div>"""),
+        wrap("statements", _statements_card(sections.get("statements", []))),
+        wrap("properties", _properties_card(summary) if summary else ""),
+        wrap("tax", _tax_card(sections.get("computations", []))),
+        wrap("forensics", _forensic_card(sections["forensic"])
+             if "forensic" in sections else ""),
+        wrap("controls", _review_card(sections["review"])
+             if "review" in sections else ""),
+        wrap("planning", _planning_card(sections["planning"])
+             if "planning" in sections else ""),
+        wrap("calendar", _calendar_card(sections["calendar"])
+             if "calendar" in sections else ""),
+        wrap("report", f"""
+<div class="card">
+  <h2>Full text report</h2>
+  <p class="small muted">The identical run as the terminal prints it — the page
+  and the text are two views of one computation, never two computations.</p>
+  <pre>{esc(chr(10).join(out))}</pre>
+</div>"""),
+    ])
+
+    return static_page(
+        f"Portfolio close — {name}",
+        body,
+        f"{jur.name} · {jur.tax_year} · {sections.get('period_label', '')}",
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -100,6 +100,66 @@ class TestViews(unittest.TestCase):
         self.assertIn("TRANSFER MAINTENANCE SERVICES", body)
 
 
+class TestStaticExport(unittest.TestCase):
+    """The export is how a period's workings reach an accountant or a lender.
+
+    It has to survive being emailed and opened offline, so it must carry no
+    external references at all.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.html = web.export_static("example").decode()
+
+    def test_is_a_complete_document(self):
+        self.assertTrue(self.html.startswith("<!doctype html>"))
+        self.assertIn("</html>", self.html)
+
+    def test_makes_no_external_requests(self):
+        """A CDN font or remote image would break offline and leak the fact of
+        opening the file to a third party."""
+        import re
+
+        self.assertIsNone(re.search(r'(src|href)="https?://', self.html))
+        self.assertNotIn("@import", self.html)
+
+    def test_tags_are_balanced(self):
+        for tag in ("section", "div", "table", "ul"):
+            self.assertEqual(
+                self.html.count(f"<{tag}") - self.html.count(f"</{tag}>"),
+                0,
+                f"unbalanced <{tag}>",
+            )
+
+    def test_every_nav_anchor_has_a_target(self):
+        import re
+
+        for anchor in set(re.findall(r'href="#([\w-]+)"', self.html)):
+            self.assertIn(f'id="{anchor}"', self.html, f"dead anchor #{anchor}")
+
+    def test_supports_both_themes_and_an_explicit_toggle(self):
+        self.assertIn("prefers-color-scheme: dark", self.html)
+        self.assertIn(':root[data-theme="dark"]', self.html)
+        self.assertIn(':root[data-theme="light"]', self.html)
+
+    def test_leads_with_verification_and_readiness_not_with_figures(self):
+        """Ordering is a correctness property, not a layout preference."""
+        rates = self.html.index("Rates not verified")
+        readiness = self.html.index("Not ready")
+        tax = self.html.index("Income tax computation")
+        self.assertLess(rates, tax)
+        self.assertLess(readiness, tax)
+
+    def test_scope_limitation_survives_export(self):
+        self.assertIn("not tax advice", self.html)
+        self.assertIn("must review these workings", self.html)
+
+    def test_guide_can_be_omitted(self):
+        plain = web.export_static("example", include_guide=False).decode()
+        self.assertNotIn('id="guide"', plain)
+        self.assertIn('id="readiness"', plain)
+
+
 class TestServerRoutes(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

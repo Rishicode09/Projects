@@ -514,6 +514,18 @@ def cmd_web(args) -> int:
     return 0
 
 
+def cmd_export(args) -> int:
+    from .web import export_static
+
+    html_bytes = export_static(args.portfolio, include_guide=not args.no_guide)
+    target = Path(args.output)
+    target.write_bytes(html_bytes)
+    print(f"Written to {target.resolve()}")
+    print("Open it in any browser, or send it to your accountant - it is a single")
+    print("self-contained file with no server and no external requests.")
+    return 0
+
+
 def cmd_demo(args) -> int:
     config_path = PACKAGE_ROOT / "data" / "example" / "engagement.json"
     if not config_path.exists():
@@ -569,6 +581,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-browser", action="store_true", help="do not open a browser window"
     )
     p_web.set_defaults(func=cmd_web)
+
+    p_export = subparsers.add_parser(
+        "export", help="write one run to a self-contained HTML file"
+    )
+    p_export.add_argument(
+        "--portfolio", default="example", help="folder name under data/"
+    )
+    p_export.add_argument("--output", default="report.html")
+    p_export.add_argument(
+        "--no-guide", action="store_true", help="omit the explanatory intro"
+    )
+    p_export.set_defaults(func=cmd_export)
 
     p_demo = subparsers.add_parser("demo", help="run against the bundled example data")
     p_demo.add_argument("--output")
