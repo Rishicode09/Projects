@@ -1,0 +1,7 @@
+direction,category,transactions,total,average,pct_of_direction
+CASH IN,Rental income,12,38400.0,3200.0,100.0
+CASH OUT,Mortgage interest,12,17400.0,1450.0,52.9
+CASH OUT,Directors remuneration,1,9100.0,9100.0,27.6
+CASH OUT,Managing agent fees,12,3072.0,256.0,9.3
+CASH OUT,Professional fees,1,2100.0,2100.0,6.4
+CASH OUT,Insurance,1,1250.0,1250.0,3.8
