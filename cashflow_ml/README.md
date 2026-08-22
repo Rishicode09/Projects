@@ -38,9 +38,23 @@ the new category automatically.
 
 ## Output
 
-The run ends with a consolidated **summary table** printed to the terminal: every
-cash in / cash out process with its frequency and total, the net profit or loss,
-and the accumulated position with each company.
+The run ends by opening a **desktop summary window** with the headline figures and
+five tabs: processes, accumulated totals by company, profit and loss, month by month,
+and items flagged for review. Close the window to end the run, or use the button in
+it to open the HTML report in a browser.
+
+Before that it prints a consolidated **summary table** to the terminal: every cash
+in / cash out process with its frequency and total, the net profit or loss, and the
+accumulated position with each company.
+
+Add `--no-window` to skip the window and just print (useful for scripting):
+
+```bash
+python cashflow_ml.py --no-window
+```
+
+The window uses tkinter, which ships with Python on Windows and macOS. On Linux you
+may need `sudo apt install python3-tk`; without it the script says so and carries on.
 
 ## Files (`output/`)
 

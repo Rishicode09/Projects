@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+import webbrowser
 from pathlib import Path
 
 import numpy as np
@@ -631,19 +632,229 @@ def write_summary_page(df: pd.DataFrame, accuracy: float, source: Path, path: Pa
     path.write_text(page, encoding="utf-8")
 
 
-def find_csv(argv: list[str]) -> Path | None:
+# ---------------------------------------------------------------------------
+# 9. Desktop summary window
+# ---------------------------------------------------------------------------
+WINDOW_TABS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
+    (
+        "Processes",
+        ("Direction", "Process", "Company", "Frequency", "Count", "Each", "Total"),
+        (90, 265, 245, 90, 60, 100, 120),
+    ),
+    (
+        "By company",
+        ("Company", "Direction", "Category", "Count", "Average", "Accumulated",
+         "Share", "First", "Last"),
+        (250, 90, 180, 60, 100, 120, 70, 95, 95),
+    ),
+    ("Profit and loss", ("Line", "Amount"), (420, 140)),
+    (
+        "Month by month",
+        ("Month", "Cash in", "Cash out", "Net", "Running total"),
+        (110, 120, 120, 120, 130),
+    ),
+    (
+        "Flagged for review",
+        ("Date", "Description", "Company", "Category", "Amount", "Document"),
+        (95, 260, 200, 170, 110, 160),
+    ),
+)
+
+
+def _window_rows(df: pd.DataFrame, tab: str) -> list[tuple[list[str], str]]:
+    """Rows for one tab, each paired with a colour tag: in, out, or a style."""
+    rows: list[tuple[list[str], str]] = []
+
+    if tab == "Processes":
+        for line in process_summary(df).itertuples():
+            tag = "in" if line.direction == "CASH IN" else "out"
+            signed = line.total if line.direction == "CASH IN" else -line.total
+            rows.append(
+                (
+                    [line.direction, line.stream, line.counterparty, line.frequency,
+                     str(line.transactions), money(line.each), money(signed)],
+                    tag,
+                )
+            )
+    elif tab == "By company":
+        for line in counterparty_summary(df).itertuples():
+            tag = "in" if line.direction == "CASH IN" else "out"
+            signed = line.total if line.direction == "CASH IN" else -line.total
+            rows.append(
+                (
+                    [line.counterparty, line.direction, line.category,
+                     str(line.transactions), money(line.average), money(signed),
+                     f"{line.pct_of_direction:.1f}%",
+                     f"{line.first_seen:%d/%m/%Y}", f"{line.last_seen:%d/%m/%Y}"],
+                    tag,
+                )
+            )
+    elif tab == "Profit and loss":
+        for line in profit_and_loss(df).itertuples():
+            tag = line.kind if line.kind in ("subtotal", "result") else (
+                "in" if line.amount >= 0 else "out"
+            )
+            label = line.line if line.kind in ("subtotal", "result") else f"    {line.line}"
+            rows.append(([label, money(line.amount)], tag))
+    elif tab == "Month by month":
+        for line in monthly_cashflow(df).itertuples():
+            rows.append(
+                (
+                    [line.month, money(line.cash_in), money(-line.cash_out),
+                     money(line.net_movement), money(line.closing_balance_movement)],
+                    "in" if line.net_movement >= 0 else "out",
+                )
+            )
+    elif tab == "Flagged for review":
+        for line in df.loc[df["unusual"]].itertuples():
+            rows.append(
+                (
+                    [f"{line.date:%d/%m/%Y}", line.description, line.counterparty,
+                     line.category, money(line.amount), line.document or "—"],
+                    "out" if line.amount < 0 else "in",
+                )
+            )
+    return rows
+
+
+def show_summary_window(
+    df: pd.DataFrame, accuracy: float, source: Path, page: Path
+) -> None:
+    """Open a desktop window summarising the finances. Blocks until closed."""
+    try:
+        import tkinter as tk
+        from tkinter import font as tkfont
+        from tkinter import ttk
+    except ImportError:
+        print(
+            "\nCould not open the summary window: this Python has no tkinter."
+            "\nThe summary table above and the HTML page still work.",
+            file=sys.stderr,
+        )
+        return
+
+    cash_in = df["paid_in"].sum()
+    cash_out = df["paid_out"].sum()
+    net = cash_in - cash_out
+
+    root = tk.Tk()
+    root.title("Cash In / Cash Out Summary")
+    root.geometry("1100x720")
+    root.minsize(820, 520)
+    root.configure(bg="#ffffff")
+
+    base = tkfont.nametofont("TkDefaultFont").actual()["family"]
+    ink, muted, green, red = "#1a1d21", "#6b7280", "#17694a", "#a8341f"
+
+    header = tk.Frame(root, bg="#ffffff", padx=22, pady=18)
+    header.pack(fill="x")
+    tk.Label(
+        header, text="Cash In / Cash Out Summary", bg="#ffffff", fg=ink,
+        font=(base, 17, "bold"), anchor="w",
+    ).pack(fill="x")
+    tk.Label(
+        header,
+        text=f"{df['date'].min():%d %b %Y} – {df['date'].max():%d %b %Y}"
+             f"   ·   {len(df)} transactions   ·   {df['month'].nunique()} months"
+             f"   ·   source: {source.name}",
+        bg="#ffffff", fg=muted, font=(base, 10), anchor="w",
+    ).pack(fill="x", pady=(3, 0))
+
+    kpis = tk.Frame(root, bg="#ffffff", padx=18)
+    kpis.pack(fill="x")
+    cards = (
+        ("CASH IN", money(cash_in), f"{(df['direction'] == 'CASH IN').sum()} receipts", green),
+        ("CASH OUT", money(cash_out), f"{(df['direction'] == 'CASH OUT').sum()} payments", red),
+        ("NET PROFIT" if net >= 0 else "NET LOSS", money(net),
+         f"{net / cash_in * 100:.1f}% of income retained" if cash_in else "",
+         green if net >= 0 else red),
+        ("COST RATIO", f"{cash_out / cash_in * 100:.1f}%" if cash_in else "n/a",
+         "spent per £1 received", ink),
+    )
+    for column, (label, value, note, colour) in enumerate(cards):
+        card = tk.Frame(kpis, bg="#f7f8fa", highlightbackground="#e3e6ea",
+                        highlightthickness=1, padx=14, pady=11)
+        card.grid(row=0, column=column, sticky="nsew", padx=4)
+        kpis.grid_columnconfigure(column, weight=1, uniform="kpi")
+        tk.Label(card, text=label, bg="#f7f8fa", fg=muted,
+                 font=(base, 8, "bold"), anchor="w").pack(fill="x")
+        tk.Label(card, text=value, bg="#f7f8fa", fg=colour,
+                 font=(base, 16, "bold"), anchor="w").pack(fill="x", pady=(4, 0))
+        tk.Label(card, text=note, bg="#f7f8fa", fg=muted,
+                 font=(base, 8), anchor="w").pack(fill="x")
+
+    style = ttk.Style(root)
+    style.configure("Treeview", rowheight=25, font=(base, 10),
+                    background="#ffffff", fieldbackground="#ffffff")
+    style.configure("Treeview.Heading", font=(base, 9, "bold"))
+
+    notebook = ttk.Notebook(root)
+    notebook.pack(fill="both", expand=True, padx=22, pady=(16, 8))
+
+    for title, columns, widths in WINDOW_TABS:
+        frame = tk.Frame(notebook, bg="#ffffff")
+        notebook.add(frame, text=f" {title} ")
+
+        tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
+        bar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=bar.set)
+        tree.pack(side="left", fill="both", expand=True)
+        bar.pack(side="right", fill="y")
+
+        for name, width in zip(columns, widths):
+            numeric = name in {"Count", "Each", "Total", "Average", "Accumulated",
+                               "Share", "Amount", "Cash in", "Cash out", "Net",
+                               "Running total"}
+            tree.heading(name, text=name.upper())
+            tree.column(name, width=width, anchor="e" if numeric else "w", stretch=True)
+
+        tree.tag_configure("in", foreground=green)
+        tree.tag_configure("out", foreground=red)
+        tree.tag_configure("subtotal", font=(base, 10, "bold"), background="#f7f8fa")
+        tree.tag_configure("result", font=(base, 11, "bold"), background="#eef1f4")
+
+        rows = _window_rows(df, title)
+        if rows:
+            for values, tag in rows:
+                tree.insert("", "end", values=values, tags=(tag,))
+        else:
+            tree.insert("", "end", values=["Nothing to show"] + [""] * (len(columns) - 1))
+
+    footer = tk.Frame(root, bg="#ffffff", padx=22, pady=12)
+    footer.pack(fill="x")
+    tk.Label(
+        footer,
+        text="Cash basis: receipts and payments as they cleared the bank. Not a "
+             "statutory profit — no accruals, prepayments, depreciation or tax.\n"
+             f"Categories by TF-IDF + Naive Bayes ({accuracy:.0%} cross-validated); "
+             "processes by KMeans; review flags by IsolationForest.",
+        bg="#ffffff", fg=muted, font=(base, 8), justify="left", anchor="w",
+    ).pack(side="left")
+
+    buttons = tk.Frame(footer, bg="#ffffff")
+    buttons.pack(side="right")
+    ttk.Button(
+        buttons, text="Open HTML report",
+        command=lambda: webbrowser.open(page.resolve().as_uri()),
+    ).pack(side="left", padx=4)
+    ttk.Button(buttons, text="Close", command=root.destroy).pack(side="left")
+
+    root.mainloop()
+
+
+def find_csv(positional: list[str]) -> Path | None:
     """Path given on the command line, else the first default that exists."""
-    if len(argv) > 1:
-        given = Path(argv[1]).expanduser()
+    if positional:
+        given = Path(positional[0]).expanduser()
         return given if given.exists() else None
     return next((p for p in DEFAULT_CSV_CANDIDATES if p.exists()), None)
 
 
-def explain_missing_csv(argv: list[str]) -> None:
+def explain_missing_csv(positional: list[str]) -> None:
     """Tell the user exactly where we looked and what we did find."""
     print("Could not find the bank statement CSV.", file=sys.stderr)
-    if len(argv) > 1:
-        print(f"  You asked for: {Path(argv[1]).expanduser()}", file=sys.stderr)
+    if positional:
+        print(f"  You asked for: {Path(positional[0]).expanduser()}", file=sys.stderr)
     else:
         print("  Looked in:", file=sys.stderr)
         for candidate in DEFAULT_CSV_CANDIDATES:
@@ -665,9 +876,12 @@ def explain_missing_csv(argv: list[str]) -> None:
 
 
 def main(argv: list[str]) -> int:
-    csv_path = find_csv(argv)
+    flags = {arg.lower() for arg in argv[1:] if arg.startswith("-")}
+    positional = [arg for arg in argv[1:] if not arg.startswith("-")]
+
+    csv_path = find_csv(positional)
     if csv_path is None:
-        explain_missing_csv(argv)
+        explain_missing_csv(positional)
         return 1
 
     print(f"Reading {csv_path}\n")
@@ -694,6 +908,10 @@ def main(argv: list[str]) -> int:
 
     # Last thing on screen, once everything else is done.
     print_summary_table(df)
+
+    if "--no-window" not in flags:
+        print("\nOpening the summary window. Close it to finish.")
+        show_summary_window(df, accuracy, csv_path, page)
     return 0
 
 
