@@ -7,8 +7,18 @@ cash in / cash out analysis using a small scikit-learn pipeline.
 
 ```bash
 pip install pandas scikit-learn
-python cashflow_ml.py                    # uses data/bank_company.csv
-python cashflow_ml.py path/to/other.csv
+python cashflow_ml.py                    # finds the CSV automatically
+python cashflow_ml.py path/to/other.csv  # or point it at any statement
+```
+
+With no argument it looks for `bank_company.csv` first in `data/`, then next to the
+script itself — so it works whether or not you keep a `data/` folder. If it finds
+nothing it lists where it looked and any CSVs it can see nearby.
+
+On Windows, quote paths that contain spaces:
+
+```powershell
+python "cashflow_ml.py" "C:\Users\you\Downloads\bank_company.csv"
 ```
 
 Expected columns: `date, description, paid in, paid out, counterparty, property, document`

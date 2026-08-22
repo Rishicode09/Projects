@@ -31,8 +31,15 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_CSV = BASE_DIR / "data" / "bank_company.csv"
 OUTPUT_DIR = BASE_DIR / "output"
+
+# Where to look for the statement when no path is given on the command line.
+# Tried in order, so the script works whether the CSV sits in data/ or loose
+# next to the script.
+DEFAULT_CSV_CANDIDATES = (
+    BASE_DIR / "data" / "bank_company.csv",
+    BASE_DIR / "bank_company.csv",
+)
 
 # Chart of accounts. Each entry is (category, keywords, capital_or_revenue).
 # These rules only seed the training labels - the classifier below is what
@@ -255,12 +262,46 @@ def report(df: pd.DataFrame, accuracy: float) -> None:
     print(f"\n7. CONTROLS: {len(missing)} transaction(s) without a document reference.")
 
 
+def find_csv(argv: list[str]) -> Path | None:
+    """Path given on the command line, else the first default that exists."""
+    if len(argv) > 1:
+        given = Path(argv[1]).expanduser()
+        return given if given.exists() else None
+    return next((p for p in DEFAULT_CSV_CANDIDATES if p.exists()), None)
+
+
+def explain_missing_csv(argv: list[str]) -> None:
+    """Tell the user exactly where we looked and what we did find."""
+    print("Could not find the bank statement CSV.", file=sys.stderr)
+    if len(argv) > 1:
+        print(f"  You asked for: {Path(argv[1]).expanduser()}", file=sys.stderr)
+    else:
+        print("  Looked in:", file=sys.stderr)
+        for candidate in DEFAULT_CSV_CANDIDATES:
+            print(f"    {candidate}", file=sys.stderr)
+
+    nearby = sorted(BASE_DIR.glob("*.csv")) + sorted(BASE_DIR.glob("data/*.csv"))
+    if nearby:
+        print("\n  CSV files I can see near the script:", file=sys.stderr)
+        for path in nearby:
+            print(f"    {path}", file=sys.stderr)
+        print("\n  Run it again with the one you want, e.g.:", file=sys.stderr)
+        print(f'    python "{Path(__file__).name}" "{nearby[0]}"', file=sys.stderr)
+    else:
+        print(
+            f"\n  No CSV files found in {BASE_DIR}. Put the statement next to the"
+            "\n  script, or pass its full path as an argument.",
+            file=sys.stderr,
+        )
+
+
 def main(argv: list[str]) -> int:
-    csv_path = Path(argv[1]) if len(argv) > 1 else DEFAULT_CSV
-    if not csv_path.exists():
-        print(f"CSV not found: {csv_path}", file=sys.stderr)
+    csv_path = find_csv(argv)
+    if csv_path is None:
+        explain_missing_csv(argv)
         return 1
 
+    print(f"Reading {csv_path}\n")
     df = load_ledger(csv_path)
     df["stream"] = cluster_streams(df)
     df["category"], accuracy = classify_categories(df)
