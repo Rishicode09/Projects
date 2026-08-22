@@ -32,6 +32,9 @@ from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 
+# Printed on every run so you can tell which copy of the file you are running.
+VERSION = "1.4 (charts + summary window)"
+
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
 
@@ -1016,6 +1019,18 @@ def show_summary_window(
     ).pack(side="left", padx=4)
     ttk.Button(buttons, text="Close", command=root.destroy).pack(side="left")
 
+    # Windows often opens a new Tk window behind the terminal that launched it.
+    # Raise it, flash it to the front, then drop topmost so it behaves normally.
+    root.update_idletasks()
+    root.deiconify()
+    root.lift()
+    root.attributes("-topmost", True)
+    root.after(600, lambda: root.attributes("-topmost", False))
+    try:
+        root.focus_force()
+    except tk.TclError:
+        pass
+
     root.mainloop()
 
 
@@ -1052,9 +1067,33 @@ def explain_missing_csv(positional: list[str]) -> None:
         )
 
 
+def check_environment() -> None:
+    """Report what this Python can and cannot do. Run with --check."""
+    print(f"  script      {Path(__file__).resolve()}")
+    print(f"  python      {sys.version.split()[0]}  ({sys.executable})")
+    for name, why in (
+        ("pandas", "required"),
+        ("sklearn", "required"),
+        ("tkinter", "needed for the summary window"),
+        ("matplotlib", "needed for the charts"),
+    ):
+        try:
+            __import__(name)
+            print(f"  {name:<11} installed")
+        except ImportError:
+            print(f"  {name:<11} MISSING  -- {why}")
+    print("\nIf tkinter is missing the window cannot open. On Windows, reinstall")
+    print("Python from python.org with 'tcl/tk and IDLE' ticked.")
+
+
 def main(argv: list[str]) -> int:
     flags = {arg.lower() for arg in argv[1:] if arg.startswith("-")}
     positional = [arg for arg in argv[1:] if not arg.startswith("-")]
+
+    print(f"cashflow_ml {VERSION}")
+    if "--check" in flags:
+        check_environment()
+        return 0
 
     csv_path = find_csv(positional)
     if csv_path is None:
