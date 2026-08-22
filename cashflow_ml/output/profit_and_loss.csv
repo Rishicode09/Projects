@@ -1,0 +1,10 @@
+line,amount,kind
+Rental income,38400.0,income
+Total income,38400.0,subtotal
+Mortgage interest,-17400.0,expense
+Directors remuneration,-9100.0,expense
+Managing agent fees,-3072.0,expense
+Professional fees,-2100.0,expense
+Insurance,-1250.0,expense
+Total expenditure,-32922.0,subtotal
+Net profit for the period,5478.0,result

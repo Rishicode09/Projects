@@ -200,12 +200,77 @@ def category_summary(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def counterparty_summary(df: pd.DataFrame) -> pd.DataFrame:
-    return (
+    """Accumulated position with each company the business banks with."""
+    out = (
         df.groupby(["direction", "counterparty"])
-        .agg(transactions=("amount", "size"), total=("amount", lambda s: s.abs().sum()))
+        .agg(
+            transactions=("amount", "size"),
+            total=("amount", lambda s: s.abs().sum()),
+            average=("amount", lambda s: s.abs().mean()),
+            first_seen=("date", "min"),
+            last_seen=("date", "max"),
+            category=("category", lambda s: s.mode().iat[0]),
+        )
         .reset_index()
         .sort_values(["direction", "total"], ascending=[True, False])
     )
+    grand = df.groupby("direction")["amount"].apply(lambda s: s.abs().sum())
+    out["pct_of_direction"] = (out["total"] / out["direction"].map(grand) * 100).round(1)
+    return out
+
+
+def process_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """Every recurring cash process: what it is, how often, how much in total."""
+    out = (
+        df.groupby(["direction", "stream"])
+        .agg(
+            category=("category", lambda s: s.mode().iat[0]),
+            counterparty=("counterparty", lambda s: s.mode().iat[0]),
+            transactions=("amount", "size"),
+            each=("amount", lambda s: s.abs().median()),
+            total=("amount", lambda s: s.abs().sum()),
+            first_seen=("date", "min"),
+            last_seen=("date", "max"),
+        )
+        .reset_index()
+        .sort_values(["direction", "total"], ascending=[True, False])
+    )
+    months = df["month"].nunique()
+    out["frequency"] = np.where(
+        out["transactions"] >= months * 0.9,
+        "Monthly",
+        np.where(out["transactions"] == 1, "One-off", "Irregular"),
+    )
+    return out
+
+
+def profit_and_loss(df: pd.DataFrame) -> pd.DataFrame:
+    """Cash-basis income statement: income, then expenses, then the result."""
+    rows: list[dict[str, object]] = []
+
+    income = df.loc[df["direction"] == "CASH IN"]
+    for category, value in income.groupby("category")["amount"].sum().sort_values(
+        ascending=False
+    ).items():
+        rows.append({"line": category, "amount": value, "kind": "income"})
+    total_income = income["amount"].sum()
+    rows.append({"line": "Total income", "amount": total_income, "kind": "subtotal"})
+
+    expense = df.loc[df["direction"] == "CASH OUT"]
+    for category, value in expense.groupby("category")["amount"].sum().sort_values().items():
+        rows.append({"line": category, "amount": value, "kind": "expense"})
+    total_expense = expense["amount"].sum()
+    rows.append({"line": "Total expenditure", "amount": total_expense, "kind": "subtotal"})
+
+    result = total_income + total_expense
+    rows.append(
+        {
+            "line": "Net profit for the period" if result >= 0 else "Net loss for the period",
+            "amount": result,
+            "kind": "result",
+        }
+    )
+    return pd.DataFrame(rows)
 
 
 def money(x: float) -> str:
@@ -262,6 +327,200 @@ def report(df: pd.DataFrame, accuracy: float) -> None:
     print(f"\n7. CONTROLS: {len(missing)} transaction(s) without a document reference.")
 
 
+# ---------------------------------------------------------------------------
+# 7. One-page HTML summary
+# ---------------------------------------------------------------------------
+PAGE_CSS = """
+:root {
+  --ink: #1a1d21; --muted: #6b7280; --line: #e3e6ea; --bg: #ffffff;
+  --panel: #f7f8fa; --in: #17694a; --out: #a8341f; --flag: #8a6100;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 40px 24px 64px; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.wrap { max-width: 980px; margin: 0 auto; }
+h1 { font-size: 25px; letter-spacing: -0.02em; margin: 0 0 4px; }
+h2 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--muted); margin: 40px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.sub { color: var(--muted); font-size: 14px; margin: 0 0 28px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.kpi .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.kpi .value { font-size: 23px; font-weight: 600; margin-top: 6px; letter-spacing: -0.02em; }
+.kpi .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.in { color: var(--in); } .out { color: var(--out); } .flag { color: var(--flag); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--ink);
+}
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.subtotal td { font-weight: 600; background: var(--panel); }
+tr.result td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+tr.indent td:first-child { padding-left: 28px; }
+.tag {
+  display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+}
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
+         font-size: 12.5px; color: var(--muted); }
+footer p { margin: 6px 0; }
+@media print { body { padding: 0; } h2 { break-after: avoid; } tr { break-inside: avoid; } }
+"""
+
+
+def _cell(value: float) -> str:
+    """A money cell, coloured by sign."""
+    css = "in" if value >= 0 else "out"
+    return f'<td class="num {css}">{money(value)}</td>'
+
+
+def summary_html(df: pd.DataFrame, accuracy: float, source: Path) -> str:
+    cash_in = df["paid_in"].sum()
+    cash_out = df["paid_out"].sum()
+    net = cash_in - cash_out
+    period = f"{df['date'].min():%d %b %Y} – {df['date'].max():%d %b %Y}"
+    result_word = "Net profit" if net >= 0 else "Net loss"
+
+    parts: list[str] = [
+        "<div class='wrap'>",
+        "<h1>Cash In / Cash Out Summary</h1>",
+        f"<p class='sub'>{period} &nbsp;·&nbsp; {len(df)} transactions "
+        f"&nbsp;·&nbsp; {df['month'].nunique()} months &nbsp;·&nbsp; "
+        f"source: {source.name}</p>",
+        "<div class='kpis'>",
+        f"<div class='kpi'><div class='label'>Cash in</div>"
+        f"<div class='value in'>{money(cash_in)}</div>"
+        f"<div class='note'>{(df['direction'] == 'CASH IN').sum()} receipts</div></div>",
+        f"<div class='kpi'><div class='label'>Cash out</div>"
+        f"<div class='value out'>{money(cash_out)}</div>"
+        f"<div class='note'>{(df['direction'] == 'CASH OUT').sum()} payments</div></div>",
+        f"<div class='kpi'><div class='label'>{result_word}</div>"
+        f"<div class='value {'in' if net >= 0 else 'out'}'>{money(net)}</div>"
+        f"<div class='note'>{net / cash_in * 100:.1f}% of income retained</div></div>",
+        f"<div class='kpi'><div class='label'>Cost ratio</div>"
+        f"<div class='value'>{cash_out / cash_in * 100:.1f}%</div>"
+        f"<div class='note'>spent per £1 received</div></div>",
+        "</div>",
+    ]
+
+    # --- Profit and loss --------------------------------------------------
+    parts.append("<h2>Profit and loss (cash basis)</h2><div class='scroll'><table>")
+    parts.append("<tr><th>Line</th><th class='num'>Amount</th></tr>")
+    for row in profit_and_loss(df).itertuples():
+        css = {"subtotal": "subtotal", "result": "result"}.get(row.kind, "indent")
+        parts.append(f"<tr class='{css}'><td>{row.line}</td>{_cell(row.amount)}</tr>")
+    parts.append("</table></div>")
+
+    # --- Processes --------------------------------------------------------
+    processes = process_summary(df)
+    for direction, heading in (("CASH IN", "Cash in processes"), ("CASH OUT", "Cash out processes")):
+        subset = processes.loc[processes["direction"] == direction]
+        parts.append(f"<h2>{heading}</h2><div class='scroll'><table>")
+        parts.append(
+            "<tr><th>Process</th><th>Category</th><th>Counterparty</th><th>Frequency</th>"
+            "<th class='num'>Count</th><th class='num'>Each</th><th class='num'>Total</th></tr>"
+        )
+        for row in subset.itertuples():
+            parts.append(
+                f"<tr><td>{row.stream}</td><td>{row.category}</td>"
+                f"<td>{row.counterparty}</td><td><span class='tag'>{row.frequency}</span></td>"
+                f"<td class='num'>{row.transactions}</td>"
+                f"<td class='num'>{money(row.each)}</td>"
+                f"<td class='num'>{money(row.total)}</td></tr>"
+            )
+        parts.append("</table></div>")
+
+    # --- Accumulated position per company ---------------------------------
+    parts.append("<h2>Accumulated total by company</h2><div class='scroll'><table>")
+    parts.append(
+        "<tr><th>Company</th><th>Direction</th><th>Category</th>"
+        "<th class='num'>Transactions</th><th class='num'>Average</th>"
+        "<th class='num'>Accumulated</th><th class='num'>Share</th>"
+        "<th>First</th><th>Last</th></tr>"
+    )
+    for row in counterparty_summary(df).itertuples():
+        css = "in" if row.direction == "CASH IN" else "out"
+        parts.append(
+            f"<tr><td>{row.counterparty}</td>"
+            f"<td class='{css}'>{row.direction}</td><td>{row.category}</td>"
+            f"<td class='num'>{row.transactions}</td>"
+            f"<td class='num'>{money(row.average)}</td>"
+            f"<td class='num {css}'>{money(row.total)}</td>"
+            f"<td class='num'>{row.pct_of_direction:.1f}%</td>"
+            f"<td>{row.first_seen:%d/%m/%Y}</td><td>{row.last_seen:%d/%m/%Y}</td></tr>"
+        )
+    parts.append("</table></div>")
+
+    # --- Month by month ---------------------------------------------------
+    parts.append("<h2>Month by month</h2><div class='scroll'><table>")
+    parts.append(
+        "<tr><th>Month</th><th class='num'>Cash in</th><th class='num'>Cash out</th>"
+        "<th class='num'>Net</th><th class='num'>Running total</th></tr>"
+    )
+    for row in monthly_cashflow(df).itertuples():
+        parts.append(
+            f"<tr><td>{row.month}</td>"
+            f"<td class='num in'>{money(row.cash_in)}</td>"
+            f"<td class='num out'>{money(row.cash_out)}</td>"
+            f"{_cell(row.net_movement)}{_cell(row.closing_balance_movement)}</tr>"
+        )
+    parts.append("</table></div>")
+
+    # --- Review list ------------------------------------------------------
+    flagged = df.loc[df["unusual"]]
+    parts.append("<h2>Flagged for review</h2>")
+    if flagged.empty:
+        parts.append("<p class='sub'>Nothing unusual detected.</p>")
+    else:
+        parts.append("<div class='scroll'><table>")
+        parts.append(
+            "<tr><th>Date</th><th>Description</th><th>Counterparty</th>"
+            "<th>Category</th><th class='num'>Amount</th><th>Document</th></tr>"
+        )
+        for row in flagged.itertuples():
+            parts.append(
+                f"<tr><td>{row.date:%d/%m/%Y}</td><td>{row.description}</td>"
+                f"<td>{row.counterparty}</td><td>{row.category}</td>"
+                f"{_cell(row.amount)}<td>{row.document or '—'}</td></tr>"
+            )
+        parts.append("</table></div>")
+
+    missing = int((df["document"] == "").sum())
+    parts.append(
+        "<footer>"
+        "<p><strong>Basis.</strong> Prepared on a cash basis from bank transactions only — "
+        "receipts and payments as they cleared the account. It is not a statutory profit "
+        "figure: no accruals, prepayments, depreciation or tax are included.</p>"
+        f"<p><strong>Method.</strong> Categories assigned by a TF-IDF + Naive Bayes classifier "
+        f"({accuracy:.0%} cross-validated accuracy); processes grouped by KMeans clustering; "
+        f"review flags from IsolationForest.</p>"
+        f"<p><strong>Controls.</strong> {missing} transaction(s) without a document reference.</p>"
+        "</footer></div>"
+    )
+    return "\n".join(parts)
+
+
+def write_summary_page(df: pd.DataFrame, accuracy: float, source: Path, path: Path) -> None:
+    """Save the summary as a standalone HTML file that opens in any browser."""
+    page = (
+        "<!doctype html>\n<html lang='en'>\n<head>\n"
+        "<meta charset='utf-8'>\n"
+        "<meta name='viewport' content='width=device-width, initial-scale=1'>\n"
+        "<title>Cash In / Cash Out Summary</title>\n"
+        f"<style>{PAGE_CSS}</style>\n</head>\n<body>\n"
+        f"{summary_html(df, accuracy, source)}\n</body>\n</html>\n"
+    )
+    path.write_text(page, encoding="utf-8")
+
+
 def find_csv(argv: list[str]) -> Path | None:
     """Path given on the command line, else the first default that exists."""
     if len(argv) > 1:
@@ -314,7 +573,14 @@ def main(argv: list[str]) -> int:
     monthly_cashflow(df).to_csv(OUTPUT_DIR / "monthly_cashflow.csv", index=False)
     category_summary(df).to_csv(OUTPUT_DIR / "category_summary.csv", index=False)
     counterparty_summary(df).to_csv(OUTPUT_DIR / "counterparty_summary.csv", index=False)
+    process_summary(df).to_csv(OUTPUT_DIR / "process_summary.csv", index=False)
+    profit_and_loss(df).to_csv(OUTPUT_DIR / "profit_and_loss.csv", index=False)
+
+    page = OUTPUT_DIR / "summary.html"
+    write_summary_page(df, accuracy, csv_path, page)
+
     print(f"\nWritten to {OUTPUT_DIR}/")
+    print(f"Open the summary page: {page}")
     return 0
 
 

@@ -38,10 +38,18 @@ the new category automatically.
 
 ## Outputs (`output/`)
 
+- **`summary.html`** — one-page summary: headline figures, cash-basis profit and loss,
+  every cash in / cash out process, accumulated total per company, month by month,
+  and the items flagged for review. Open it in any browser; it prints to PDF cleanly.
 - `categorised_transactions.csv` — every line with signed amount, stream, category, unusual flag
 - `monthly_cashflow.csv` — cash in, cash out, net movement, cumulative balance movement
 - `category_summary.csv` — totals and % of direction per nominal category
-- `counterparty_summary.csv` — totals per counterparty
+- `counterparty_summary.csv` — accumulated total, average, share and date range per company
+- `process_summary.csv` — each recurring process with its frequency and value
+- `profit_and_loss.csv` — the cash-basis income statement
+
+The profit figure is **cash basis** — receipts and payments as they cleared the bank.
+It is not a statutory profit: no accruals, prepayments, depreciation or tax.
 
 ## Result on `data/bank_company.csv` (01/04/2025 – 05/03/2026, 39 transactions)
 
