@@ -38,9 +38,11 @@ the new category automatically.
 
 ## Output
 
-The run ends by opening a **desktop summary window** with the headline figures and
-five tabs: processes, accumulated totals by company, profit and loss, month by month,
-and items flagged for review. Close the window to end the run, or use the button in
+The run ends by opening a **desktop summary window** with the headline figures, a
+**Charts** tab (cash in vs cash out by month, running cash position, cash out by
+category, and an income-to-profit bridge), and five table tabs: processes,
+accumulated totals by company, profit and loss, month by month, and items flagged
+for review. Close the window to end the run, or use the button in
 it to open the HTML report in a browser.
 
 Before that it prints a consolidated **summary table** to the terminal: every cash
@@ -67,6 +69,7 @@ may need `sudo apt install python3-tk`; without it the script says so and carrie
 - `counterparty_summary.csv` — accumulated total, average, share and date range per company
 - `process_summary.csv` — each recurring process with its frequency and value
 - `profit_and_loss.csv` — the cash-basis income statement
+- `charts.png` — the four charts at print resolution
 
 The profit figure is **cash basis** — receipts and payments as they cleared the bank.
 It is not a statutory profit: no accruals, prepayments, depreciation or tax.

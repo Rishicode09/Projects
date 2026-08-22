@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+import textwrap
 import webbrowser
 from pathlib import Path
 
@@ -633,7 +634,157 @@ def write_summary_page(df: pd.DataFrame, accuracy: float, source: Path, path: Pa
 
 
 # ---------------------------------------------------------------------------
-# 9. Desktop summary window
+# 9. Charts
+# ---------------------------------------------------------------------------
+# Colour follows the entity, not the value: money in is always blue, money out
+# always orange, the result aqua (red if it is a loss). Validated as a
+# colourblind-safe set — do not swap these for a green/red pair.
+C_IN, C_OUT, C_RESULT, C_LOSS = "#2a78d6", "#eb6834", "#1baf7a", "#e34948"
+C_GRID, C_AXIS, C_TEXT, C_MUTED = "#e3e6ea", "#c8ccd2", "#1a1d21", "#6b7280"
+
+
+def money_axis(value: float, _=None) -> str:
+    """Axis tick: £0, £4k, -£4k. Sign goes outside the pound sign."""
+    if value == 0:
+        return "£0"
+    return f"{'-' if value < 0 else ''}£{abs(value) / 1000:,.0f}k"
+
+
+def money_short(value: float) -> str:
+    """Compact label for tight chart space: £38.4k, £256."""
+    sign = "-" if value < 0 else ""
+    if abs(value) >= 1000:
+        return f"{sign}£{abs(value) / 1000:,.1f}k"
+    return f"{sign}£{abs(value):,.0f}"
+
+
+def _style_axes(ax, money_on: str = "y") -> None:
+    """Recessive grid and axes so the data carries the chart."""
+    from matplotlib.ticker import MaxNLocator
+
+    ax.set_facecolor("#ffffff")
+    ax.grid(axis=money_on, color=C_GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(C_AXIS)
+    ax.tick_params(colors=C_MUTED, labelsize=8, length=0)
+
+    # Round tick values only -- the default locator lands on 2.5k and 7.5k,
+    # which the thousands formatter then rounds to a misleading "£2k"/"£8k".
+    axis = ax.yaxis if money_on == "y" else ax.xaxis
+    axis.set_major_locator(MaxNLocator(nbins=6, steps=[1, 2, 5, 10]))
+    axis.set_major_formatter(money_axis)
+
+
+def build_charts_figure(df: pd.DataFrame, figsize: tuple[float, float] = (11.2, 6.6)):
+    """Four charts: monthly flows, running position, costs, and the result.
+
+    figsize is smaller for the window than for the saved PNG: the canvas asks
+    Tk for its natural size, so an oversized figure pushes the footer off the
+    bottom of the screen.
+    """
+    from matplotlib.figure import Figure
+
+    fig = Figure(figsize=figsize, dpi=100, facecolor="#ffffff")
+    fig.set_layout_engine("constrained")
+    (ax1, ax2), (ax3, ax4) = fig.subplots(2, 2)
+
+    months = monthly_cashflow(df)
+    labels = [pd.Period(m).strftime("%b %y") for m in months["month"]]
+    x = np.arange(len(months))
+
+    # 1. Cash in vs cash out, month by month -- two series, so a legend.
+    ax1.bar(x - 0.21, months["cash_in"], width=0.38, color=C_IN, label="Cash in")
+    ax1.bar(x + 0.21, months["cash_out"], width=0.38, color=C_OUT, label="Cash out")
+    ax1.set_title("Cash in vs cash out by month", fontsize=10,
+                  fontweight="bold", color=C_TEXT, loc="left")
+    ax1.set_xticks(x, labels, rotation=45, ha="right")
+    ax1.legend(frameon=False, fontsize=8, labelcolor=C_MUTED, loc="upper right")
+    _style_axes(ax1)
+
+    # 2. Running cash position -- one series, so no legend; label the low point.
+    running = months["closing_balance_movement"]
+    ax2.axhline(0, color=C_AXIS, linewidth=1)
+    ax2.plot(x, running, color=C_IN, linewidth=2, marker="o", markersize=6)
+    trough = int(running.idxmin())
+    # Open up headroom below the trough so the label sits in clear space
+    # rather than across the neighbouring markers.
+    ax2.set_ylim(bottom=running.min() - abs(running.min()) * 0.6)
+    ax2.annotate(
+        f"low point {labels[trough]}  {money_short(running[trough])}",
+        xy=(trough, running[trough]), xytext=(8, -11), va="top",
+        textcoords="offset points", ha="left", fontsize=8, color=C_MUTED,
+    )
+    ax2.set_title("Running cash position", fontsize=10,
+                  fontweight="bold", color=C_TEXT, loc="left")
+    ax2.set_xticks(x, labels, rotation=45, ha="right")
+    _style_axes(ax2)
+
+    # 3. Where the money goes -- one measure, so one colour for every bar.
+    costs = (
+        df.loc[df["direction"] == "CASH OUT"]
+        .groupby("category")["paid_out"].sum().sort_values()
+    )
+    bars = ax3.barh(costs.index, costs.to_numpy(), color=C_OUT, height=0.62)
+    ax3.bar_label(bars, labels=[f"£{v:,.0f}" for v in costs], padding=4,
+                  fontsize=8, color=C_MUTED)
+    ax3.set_xlim(0, costs.max() * 1.3)
+    ax3.set_title("Cash out by category", fontsize=10,
+                  fontweight="bold", color=C_TEXT, loc="left")
+    _style_axes(ax3, money_on="x")
+
+    # 4. How income becomes the result -- a bridge from income down to net.
+    income = df["paid_in"].sum()
+    steps = costs.sort_values(ascending=False)
+    net = income - costs.sum()
+    names = ["Income"] + [str(i) for i in steps.index] + ["Result"]
+    bottoms, heights, colours = [0.0], [income], [C_IN]
+    running_total = income
+    for value in steps:
+        running_total -= value
+        bottoms.append(running_total)
+        heights.append(value)
+        colours.append(C_OUT)
+    bottoms.append(0.0)
+    heights.append(net)
+    colours.append(C_RESULT if net >= 0 else C_LOSS)
+
+    positions = np.arange(len(names))
+    ax4.bar(positions, heights, bottom=bottoms, color=colours, width=0.62)
+    for pos, bottom, height in zip(positions, bottoms, heights):
+        ax4.text(pos, bottom + height + income * 0.025, money_short(height),
+                 ha="center", fontsize=8, color=C_MUTED)
+    ax4.axhline(0, color=C_AXIS, linewidth=1)
+    # Wrap rather than truncate, or the tick labels lose their ends.
+    ax4.set_xticks(
+        positions,
+        [textwrap.fill(n, 12) for n in names],
+        rotation=45, ha="right", fontsize=7.5,
+    )
+    ax4.set_ylim(0, income * 1.2)
+    ax4.set_title(
+        f"Income to {'profit' if net >= 0 else 'loss'}: {money(net)}",
+        fontsize=10, fontweight="bold", color=C_TEXT, loc="left",
+    )
+    _style_axes(ax4)
+
+    return fig
+
+
+def save_charts(df: pd.DataFrame, path: Path) -> bool:
+    """Write the charts to a PNG. False if matplotlib is not installed."""
+    try:
+        fig = build_charts_figure(df)
+    except ImportError:
+        return False
+    fig.savefig(path, dpi=140, facecolor="#ffffff")
+    return True
+
+
+# ---------------------------------------------------------------------------
+# 10. Desktop summary window
 # ---------------------------------------------------------------------------
 WINDOW_TABS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
     (
@@ -739,8 +890,8 @@ def show_summary_window(
 
     root = tk.Tk()
     root.title("Cash In / Cash Out Summary")
-    root.geometry("1100x720")
-    root.minsize(820, 520)
+    root.geometry("1160x780")
+    root.minsize(900, 600)
     root.configure(bg="#ffffff")
 
     base = tkfont.nametofont("TkDefaultFont").actual()["family"]
@@ -788,8 +939,36 @@ def show_summary_window(
                     background="#ffffff", fieldbackground="#ffffff")
     style.configure("Treeview.Heading", font=(base, 9, "bold"))
 
+    # Pack the footer before the notebook: Tk allocates space in packing
+    # order, so the expanding notebook would otherwise take everything and
+    # squeeze the footer off the bottom of the window.
+    footer = tk.Frame(root, bg="#ffffff", padx=22, pady=12)
+    footer.pack(side="bottom", fill="x")
+
     notebook = ttk.Notebook(root)
     notebook.pack(fill="both", expand=True, padx=22, pady=(16, 8))
+
+    # Charts first, so the window opens on the picture.
+    charts = tk.Frame(notebook, bg="#ffffff")
+    notebook.add(charts, text=" Charts ")
+    try:
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+        canvas = FigureCanvasTkAgg(build_charts_figure(df, (10.6, 4.3)), master=charts)
+        canvas.draw()
+        widget = canvas.get_tk_widget()
+        # Cap the requested size: the canvas otherwise asks Tk for the full
+        # figure in pixels, which grows the window past the screen and pushes
+        # the footer off the bottom. It still fills and rescales on resize.
+        widget.configure(width=880, height=400)
+        widget.pack(fill="both", expand=True)
+    except ImportError:
+        tk.Label(
+            charts,
+            text="Charts need matplotlib.\n\nInstall it with:   pip install matplotlib"
+                 "\n\nEverything else in this window works without it.",
+            bg="#ffffff", fg=muted, font=(base, 11), justify="center",
+        ).pack(expand=True)
 
     for title, columns, widths in WINDOW_TABS:
         frame = tk.Frame(notebook, bg="#ffffff")
@@ -820,8 +999,6 @@ def show_summary_window(
         else:
             tree.insert("", "end", values=["Nothing to show"] + [""] * (len(columns) - 1))
 
-    footer = tk.Frame(root, bg="#ffffff", padx=22, pady=12)
-    footer.pack(fill="x")
     tk.Label(
         footer,
         text="Cash basis: receipts and payments as they cleared the bank. Not a "
@@ -902,9 +1079,12 @@ def main(argv: list[str]) -> int:
 
     page = OUTPUT_DIR / "summary.html"
     write_summary_page(df, accuracy, csv_path, page)
+    charts_saved = save_charts(df, OUTPUT_DIR / "charts.png")
 
     print(f"\nWritten to {OUTPUT_DIR}/")
     print(f"Summary page: {page}")
+    if not charts_saved:
+        print("Charts skipped: matplotlib is not installed (pip install matplotlib)")
 
     # Last thing on screen, once everything else is done.
     print_summary_table(df)
