@@ -328,7 +328,117 @@ def report(df: pd.DataFrame, accuracy: float) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 7. One-page HTML summary
+# 7. Final summary table (printed last, after everything is processed)
+# ---------------------------------------------------------------------------
+SUMMARY_WIDTH = 94
+
+# One layout string used for both the header and the rows, so the columns can
+# never drift out of line. Indentation is baked into the first value. Each
+# column must be at least as wide as its longest heading and longest value
+# ("FREQUENCY" and "Irregular" are both 9), or everything after it shifts.
+PROCESS_ROW = "  {process:<34} {company:<29} {freq:<9} {n:>3} {total:>13}"
+COMPANY_ROW = "  {company:<32} {direction:<9} {n:>3} {average:>12} {total:>13} {share:>7}"
+
+
+def trim(text: str, width: int) -> str:
+    """Shorten to fit a column, marking that something was cut."""
+    return text if len(text) <= width else text[: width - 2] + ".."
+
+
+def row(layout: str, **cells: object) -> None:
+    """Print one table row without the trailing padding spaces."""
+    print(layout.format(**cells).rstrip())
+
+
+def print_summary_table(df: pd.DataFrame) -> None:
+    """The single consolidated table: processes, result, and company totals."""
+    cash_in = df["paid_in"].sum()
+    cash_out = df["paid_out"].sum()
+    net = cash_in - cash_out
+    processes = process_summary(df)
+
+    print("\n" + "=" * SUMMARY_WIDTH)
+    print("SUMMARY TABLE".center(SUMMARY_WIDTH))
+    print(
+        f"{df['date'].min():%d/%m/%Y} to {df['date'].max():%d/%m/%Y}"
+        f"   |   {len(df)} transactions   |   {df['month'].nunique()} months".center(
+            SUMMARY_WIDTH
+        )
+    )
+    print("=" * SUMMARY_WIDTH)
+
+    # --- Every cash in / cash out process --------------------------------
+    print()
+    row(PROCESS_ROW, process="PROCESS", company="COMPANY", freq="FREQUENCY", n="N", total="TOTAL")
+    print("-" * SUMMARY_WIDTH)
+
+    for direction, total, count in (
+        ("CASH IN", cash_in, int((df["direction"] == "CASH IN").sum())),
+        ("CASH OUT", -cash_out, int((df["direction"] == "CASH OUT").sum())),
+    ):
+        row(PROCESS_ROW, process=direction, company="", freq="", n="", total="")
+        for line in processes.loc[processes["direction"] == direction].itertuples():
+            signed = line.total if direction == "CASH IN" else -line.total
+            row(
+                PROCESS_ROW,
+                process="  " + trim(line.stream, 32),
+                company=trim(line.counterparty, 29),
+                freq=line.frequency,
+                n=line.transactions,
+                total=money(signed),
+            )
+        row(
+            PROCESS_ROW,
+            process=f"  Total {direction.lower()}",
+            company="",
+            freq="",
+            n=count,
+            total=money(total),
+        )
+
+    result = "NET PROFIT FOR THE PERIOD" if net >= 0 else "NET LOSS FOR THE PERIOD"
+    margin = net / cash_in * 100 if cash_in else 0.0
+    print("-" * SUMMARY_WIDTH)
+    row(PROCESS_ROW, process=result, company="", freq="", n=len(df), total=money(net))
+    row(
+        PROCESS_ROW,
+        process=f"  {margin:.1f}% of income retained",
+        company="",
+        freq="",
+        n="",
+        total="",
+    )
+    print("=" * SUMMARY_WIDTH)
+
+    # --- Accumulated position with each company ---------------------------
+    print("\nACCUMULATED BY COMPANY")
+    print("-" * SUMMARY_WIDTH)
+    row(
+        COMPANY_ROW,
+        company="COMPANY",
+        direction="DIRECTION",
+        n="N",
+        average="AVERAGE",
+        total="ACCUMULATED",
+        share="SHARE",
+    )
+    print("-" * SUMMARY_WIDTH)
+    for line in counterparty_summary(df).itertuples():
+        signed = line.total if line.direction == "CASH IN" else -line.total
+        row(
+            COMPANY_ROW,
+            company=trim(line.counterparty, 32),
+            direction=line.direction,
+            n=line.transactions,
+            average=money(line.average),
+            total=money(signed),
+            share=f"{line.pct_of_direction:.1f}%",
+        )
+    print("-" * SUMMARY_WIDTH)
+
+
+# ---------------------------------------------------------------------------
+# 8. One-page HTML summary
 # ---------------------------------------------------------------------------
 PAGE_CSS = """
 :root {
@@ -580,7 +690,10 @@ def main(argv: list[str]) -> int:
     write_summary_page(df, accuracy, csv_path, page)
 
     print(f"\nWritten to {OUTPUT_DIR}/")
-    print(f"Open the summary page: {page}")
+    print(f"Summary page: {page}")
+
+    # Last thing on screen, once everything else is done.
+    print_summary_table(df)
     return 0
 
 

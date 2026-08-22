@@ -36,7 +36,13 @@ The keyword rules in `RULES` are only training seeds — extend them to add
 nominal codes (repairs, service charge, VAT, etc.) and the classifier picks up
 the new category automatically.
 
-## Outputs (`output/`)
+## Output
+
+The run ends with a consolidated **summary table** printed to the terminal: every
+cash in / cash out process with its frequency and total, the net profit or loss,
+and the accumulated position with each company.
+
+## Files (`output/`)
 
 - **`summary.html`** — one-page summary: headline figures, cash-basis profit and loss,
   every cash in / cash out process, accumulated total per company, month by month,
