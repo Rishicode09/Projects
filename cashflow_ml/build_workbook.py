@@ -22,8 +22,28 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-from chart_of_accounts import categorise, keyword_rows
-from find_statement import explain_missing, find_csv
+
+def _need(missing: str) -> None:
+    """A missing project file should say so in English, not a traceback."""
+    import sys
+    print(f"Missing file: {missing}", file=sys.stderr)
+    print(f"  This script needs {missing} in the same folder as itself.",
+          file=sys.stderr)
+    print("  It looks like the project files were downloaded one at a time.",
+          file=sys.stderr)
+    print("  Extract the whole cashflow_ml folder and run it from there.",
+          file=sys.stderr)
+    raise SystemExit(1)
+
+
+try:
+    from chart_of_accounts import categorise, keyword_rows
+except ImportError:
+    _need("chart_of_accounts.py")
+try:
+    from find_statement import explain_missing, find_csv
+except ImportError:
+    _need("find_statement.py")
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT = BASE_DIR / "output" / "cashflow_workbook.xlsx"

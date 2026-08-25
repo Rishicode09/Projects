@@ -32,8 +32,28 @@ BASE_DIR = Path(__file__).resolve().parent
 # The chart of accounts lives one folder up and is shared with the Excel
 # builder and the ML script, so all three agree on the categories.
 sys.path.insert(0, str(BASE_DIR.parent))
-from chart_of_accounts import categorise  # noqa: E402
-from find_statement import collect_csvs  # noqa: E402
+
+def _need(missing: str) -> None:
+    """A missing project file should say so in English, not a traceback."""
+    import sys
+    print(f"Missing file: {missing}", file=sys.stderr)
+    print(f"  This script needs {missing} in the same folder as itself.",
+          file=sys.stderr)
+    print("  It looks like the project files were downloaded one at a time.",
+          file=sys.stderr)
+    print("  Extract the whole cashflow_ml folder and run it from there.",
+          file=sys.stderr)
+    raise SystemExit(1)
+
+
+try:
+    from chart_of_accounts import categorise  # noqa: E402
+except ImportError:
+    _need("chart_of_accounts.py")
+try:
+    from find_statement import collect_csvs  # noqa: E402
+except ImportError:
+    _need("find_statement.py")
 
 DB_PATH = BASE_DIR / "cashflow.db"
 

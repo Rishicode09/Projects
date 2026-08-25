@@ -33,7 +33,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 
 # Printed on every run so you can tell which copy of the file you are running.
-VERSION = "1.4 (charts + summary window)"
+VERSION = "1.5 (charts + summary window)"
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
@@ -1084,6 +1084,26 @@ def check_environment() -> None:
             print(f"  {name:<11} MISSING  -- {why}")
     print("\nIf tkinter is missing the window cannot open. On Windows, reinstall")
     print("Python from python.org with 'tcl/tk and IDLE' ticked.")
+
+    # This script runs on its own, but the workbook and database tools need
+    # their companions. Report them here so one command answers everything.
+    print("\nProject files beside this script:")
+    companions = (
+        ("chart_of_accounts.py", "the shared category rules"),
+        ("find_statement.py", "finds your CSV"),
+        ("build_workbook.py", "builds the Excel workbook"),
+        ("sql/build_database.py", "loads the database"),
+    )
+    for name, why in companions:
+        present = (BASE_DIR / name).exists()
+        print(f"  {name:<24} {'found' if present else 'MISSING  -- ' + why}")
+
+    statements = sorted(BASE_DIR.glob("*.csv")) + sorted(BASE_DIR.glob("data/*.csv"))
+    print(f"\nStatements I can see: {len(statements)}")
+    for path in statements[:8]:
+        print(f"  {path}")
+    if not statements:
+        print("  none -- put a CSV beside this script or in a data folder")
 
 
 def main(argv: list[str]) -> int:
