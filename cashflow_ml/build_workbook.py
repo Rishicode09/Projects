@@ -23,9 +23,9 @@ from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from chart_of_accounts import categorise, keyword_rows
+from find_statement import explain_missing, find_csv
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_CSV = BASE_DIR / "data" / "bank_company.csv"
 OUTPUT = BASE_DIR / "output" / "cashflow_workbook.xlsx"
 
 FONT = "Arial"
@@ -566,10 +566,11 @@ def main(argv: list[str]) -> int:
         build(rows, OUTPUT, f"{DB_PATH.name} ({len(rows)} transactions)")
         return 0
 
-    csv_path = Path(positional[0]).expanduser() if positional else DEFAULT_CSV
-    if not csv_path.exists():
-        print(f"CSV not found: {csv_path}", file=sys.stderr)
+    csv_path = find_csv(positional, BASE_DIR)
+    if csv_path is None:
+        explain_missing(positional, BASE_DIR, Path(__file__).name)
         return 1
+    print(f"Reading {csv_path}")
     build(read_csv(csv_path), OUTPUT, csv_path.name)
     return 0
 

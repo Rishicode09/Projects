@@ -33,9 +33,9 @@ BASE_DIR = Path(__file__).resolve().parent
 # builder and the ML script, so all three agree on the categories.
 sys.path.insert(0, str(BASE_DIR.parent))
 from chart_of_accounts import categorise  # noqa: E402
+from find_statement import collect_csvs  # noqa: E402
 
 DB_PATH = BASE_DIR / "cashflow.db"
-DEFAULT_CSV = BASE_DIR.parent / "data" / "bank_company.csv"
 
 # ---------------------------------------------------------------------------
 # The schema
@@ -246,27 +246,12 @@ def build(csv_paths: list[Path], db_path: Path, reset: bool) -> None:
           f"net £{(cash_in or 0) - (cash_out or 0):,.2f}")
 
 
-def collect_csvs(arguments: list[str]) -> list[Path]:
-    """Accept files, folders, or nothing at all (meaning the data folder)."""
-    if not arguments:
-        folder = DEFAULT_CSV.parent
-        return sorted(folder.glob("*.csv")) if folder.is_dir() else []
-
-    paths: list[Path] = []
-    for argument in arguments:
-        path = Path(argument).expanduser()
-        if path.is_dir():
-            paths.extend(sorted(path.glob("*.csv")))
-        else:
-            paths.append(path)
-    return paths
-
-
 def main(argv: list[str]) -> int:
     reset = "--reset" in argv
     arguments = [a for a in argv[1:] if not a.startswith("-")]
 
-    csv_paths = collect_csvs(arguments)
+    # Look in ../data first, then beside the script itself.
+    csv_paths = collect_csvs(arguments, BASE_DIR.parent)
     missing = [p for p in csv_paths if not p.exists()]
     if missing:
         for path in missing:
@@ -274,8 +259,9 @@ def main(argv: list[str]) -> int:
         return 1
     if not csv_paths:
         print("No CSV files to load.", file=sys.stderr)
-        print(f"Put them in {DEFAULT_CSV.parent} or name them on the command "
-              "line.", file=sys.stderr)
+        print(f"Looked in {BASE_DIR.parent / 'data'} and {BASE_DIR.parent}."
+              "\n  Name them on the command line to load from anywhere else.",
+              file=sys.stderr)
         return 1
 
     print(f"Loading {len(csv_paths)} file(s) into {DB_PATH.name}"
