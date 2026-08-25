@@ -22,6 +22,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
+from chart_of_accounts import categorise, keyword_rows
+
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_CSV = BASE_DIR / "data" / "bank_company.csv"
 OUTPUT = BASE_DIR / "output" / "cashflow_workbook.xlsx"
@@ -39,17 +41,10 @@ GBP0 = '£#,##0;(£#,##0);"-"'
 PCT = '0.0%'
 DATE = 'dd/mm/yyyy'
 
-# Keyword -> category. Held on its own sheet so it can be edited without
-# touching a formula; the Transactions sheet looks the category up from here.
-CATEGORY_RULES: list[tuple[str, str, str]] = [
-    ("RENT", "Rental income", "Income"),
-    ("MORTGAGE", "Mortgage interest", "Expense"),
-    ("AGENT", "Managing agent fees", "Expense"),
-    ("INSURANCE", "Insurance", "Expense"),
-    ("ACCOUNTANCY", "Professional fees", "Expense"),
-    ("REMUNERATION", "Directors remuneration", "Expense"),
-    ("REPAIR", "Repairs and maintenance", "Expense"),
-]
+# One row per keyword, drawn from the shared chart of accounts.
+CATEGORY_RULES = keyword_rows()
+
+DB_PATH = BASE_DIR / "sql" / "cashflow.db"
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -57,6 +52,42 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
     with path.open(newline="", encoding="utf-8-sig") as handle:
         return list(csv.DictReader(handle))
+
+
+def read_database(db_path: Path) -> list[dict[str, str]]:
+    """Read every transaction out of the database, in the same shape a CSV
+    row arrives in, so the rest of this file does not care which it was."""
+    import sqlite3
+
+    connection = sqlite3.connect(db_path)
+    try:
+        rows = connection.execute(
+            """
+            SELECT t.txn_date, t.description, cp.name, t.property_ref,
+                   t.document_ref, t.paid_in, t.paid_out
+            FROM transactions t
+            JOIN counterparty cp ON cp.counterparty_id = t.counterparty_id
+            ORDER BY t.txn_date, t.transaction_id
+            """
+        ).fetchall()
+    finally:
+        connection.close()
+
+    return [
+        {
+            # The database stores dates as yyyy-mm-dd; the rest of this file
+            # expects the dd/mm/yyyy the bank exports.
+            "date": datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m/%Y"),
+            "description": description,
+            "counterparty": counterparty,
+            "property": property_ref or "",
+            "document": document_ref or "",
+            "paid in": str(paid_in or ""),
+            "paid out": str(paid_out or ""),
+        }
+        for (date, description, counterparty, property_ref, document_ref,
+             paid_in, paid_out) in rows
+    ]
 
 
 def number(value: str) -> float:
@@ -178,7 +209,8 @@ def build_transactions(sheet, rows: list[dict[str, str]]) -> int:
         sheet.cell(row=row, column=10, value=(
             f'=IFERROR(INDEX(Categories!$B$5:$B${rule_end},'
             f'MATCH(1,INDEX(--ISNUMBER(SEARCH(Categories!$A$5:$A${rule_end},'
-            f'UPPER($B{row}))),0),0)),"Uncategorised")'
+            f'UPPER($B{row}))),0),0)),'
+            f'IF(H{row}>=0,"Uncategorised income","Uncategorised expense"))'
         ))
         sheet.cell(row=row, column=11, value=f'=TEXT(A{row},"yyyy-mm")')
 
@@ -257,7 +289,15 @@ def build_monthly(sheet, months: list[str], last: int) -> None:
     sheet.freeze_panes = "A5"
 
 
-def build_profit_and_loss(sheet, last: int) -> None:
+def build_profit_and_loss(sheet, last: int, income: list[str],
+                          expense: list[str]) -> None:
+    """One line per category PRESENT IN THE DATA.
+
+    Not one line per keyword rule: a category with several keywords would
+    then appear several times and the total would double-count it. Driving
+    the statement off the data also guarantees nothing is left out -- an
+    uncategorised receipt still has to show up somewhere.
+    """
     title_block(sheet, "Profit and loss",
                 "Cash basis: receipts and payments as they cleared the bank. "
                 "Not a statutory profit - no accruals, prepayments, "
@@ -266,15 +306,13 @@ def build_profit_and_loss(sheet, last: int) -> None:
 
     amounts = f"Transactions!$H$5:$H${last}"
     categories = f"Transactions!$J$5:$J${last}"
-    income = [r for r in CATEGORY_RULES if r[2] == "Income"]
-    expense = [r for r in CATEGORY_RULES if r[2] == "Expense"]
 
     row = 5
     sheet.cell(row=row, column=1, value="INCOME").font = Font(
         name=FONT, size=9, bold=True, color=MUTED)
     row += 1
     income_first = row
-    for _, category, _kind in income:
+    for category in income:
         sheet.cell(row=row, column=1, value=f"    {category}")
         sheet.cell(row=row, column=2,
                    value=f'=COUNTIFS({categories},"{category}")')
@@ -291,7 +329,7 @@ def build_profit_and_loss(sheet, last: int) -> None:
         name=FONT, size=9, bold=True, color=MUTED)
     row += 1
     expense_first = row
-    for _, category, _kind in expense:
+    for category in expense:
         sheet.cell(row=row, column=1, value=f"    {category}")
         sheet.cell(row=row, column=2,
                    value=f'=COUNTIFS({categories},"{category}")')
@@ -452,8 +490,21 @@ def build_dashboard(sheet, months: list[str], last: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-def build(csv_path: Path, output: Path) -> None:
-    rows = read_csv(csv_path)
+def categories_in_data(rows: list[dict[str, str]]) -> tuple[list[str], list[str]]:
+    """The categories actually present, in the order they first appear."""
+    income: list[str] = []
+    expense: list[str] = []
+    for record in rows:
+        amount = number(record["paid in"]) - number(record["paid out"])
+        name, kind = categorise(record["description"], amount)
+        bucket = income if kind == "income" else expense
+        if name not in bucket:
+            bucket.append(name)
+    return income, expense
+
+
+def build(rows: list[dict[str, str]], output: Path, source: str) -> None:
+    income_lines, expense_lines = categories_in_data(rows)
     months = sorted({
         datetime.strptime(r["date"].strip(), "%d/%m/%Y").strftime("%Y-%m")
         for r in rows
@@ -478,7 +529,7 @@ def build(csv_path: Path, output: Path) -> None:
     build_categories(categories)
     last = build_transactions(transactions, rows)
     build_monthly(monthly, months, last)
-    build_profit_and_loss(profit, last)
+    build_profit_and_loss(profit, last, income_lines, expense_lines)
     build_by_company(by_company, companies, last)
     build_dashboard(dashboard, months, last)
 
@@ -489,16 +540,37 @@ def build(csv_path: Path, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output)
     print(f"Written {output}")
+    print(f"  source: {source}")
     print(f"  {len(rows)} transactions, {len(months)} months, "
           f"{len(companies)} companies")
 
 
 def main(argv: list[str]) -> int:
-    csv_path = Path(argv[1]) if len(argv) > 1 else DEFAULT_CSV
+    flags = {a.lower() for a in argv[1:] if a.startswith("-")}
+    positional = [a for a in argv[1:] if not a.startswith("-")]
+
+    # --from-db builds the workbook from everything ever loaded into the
+    # database, rather than from a single CSV. That is the point of having a
+    # database: one statement at a time goes in, the whole history comes out.
+    if "--from-db" in flags:
+        if not DB_PATH.exists():
+            print(f"No database at {DB_PATH}", file=sys.stderr)
+            print("Build it first:  cd sql && python build_database.py",
+                  file=sys.stderr)
+            return 1
+        rows = read_database(DB_PATH)
+        if not rows:
+            print("The database has no transactions in it yet.",
+                  file=sys.stderr)
+            return 1
+        build(rows, OUTPUT, f"{DB_PATH.name} ({len(rows)} transactions)")
+        return 0
+
+    csv_path = Path(positional[0]).expanduser() if positional else DEFAULT_CSV
     if not csv_path.exists():
         print(f"CSV not found: {csv_path}", file=sys.stderr)
         return 1
-    build(csv_path, OUTPUT)
+    build(read_csv(csv_path), OUTPUT, csv_path.name)
     return 0
 
 

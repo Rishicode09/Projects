@@ -93,10 +93,25 @@ one and SQL is on far more job specs than Python.
 
 ```bash
 cd sql
-python build_database.py     # creates cashflow.db from the CSV
-python run_queries.py        # runs every query in queries.sql
-python run_queries.py monthly_cashflow    # or just one
+python build_database.py                     # every CSV in ../data
+python build_database.py march.csv april.csv # named files
+python build_database.py ~/statements        # a whole folder
+python build_database.py --reset             # start the database again
+python run_queries.py                        # runs every query
+python run_queries.py monthly_cashflow       # or just one
 ```
+
+**The loader accumulates.** Drop next month's statement in and run it again —
+new rows are added, and running it twice on the same file changes nothing,
+because a unique index treats a transaction with the same date, description,
+company, amount and document reference as one you already have. That property
+is called *idempotency* and it is the thing that makes a data load safe to
+re-run. Every row also records which file it came from and when, so any figure
+in a report can be traced back to its source.
+
+Descriptions matching no category rule are still loaded — on the correct side
+of the P&L, decided by whether the money came in or went out — and listed at
+the end of the run so you know to add a rule.
 
 `build_database.py` creates a **normalised schema** — `counterparty`,
 `category` and `transactions`, joined by ids — with foreign keys, check
@@ -117,8 +132,12 @@ table ready for Excel or a chart.
 ## Excel workbook (`build_workbook.py`)
 
 ```bash
-python build_workbook.py     # writes output/cashflow_workbook.xlsx
+python build_workbook.py             # from a single CSV
+python build_workbook.py --from-db   # from everything in the database
 ```
+
+`--from-db` is the point of the whole chain: statements go in one at a time,
+the entire history comes out as one workbook.
 
 Six sheets, and **every figure is a formula** — change a number on the
 Transactions sheet and the P&L, the monthly cash flow and the dashboard all
@@ -142,3 +161,16 @@ Conventions follow standard financial modelling practice: black for
 calculations, blue for inputs, green for cross-sheet links, negatives in
 brackets, zeros as a dash, and every sheet set to print on one page wide with
 the header row repeated.
+
+
+## The full loop
+
+```bash
+cd sql && python build_database.py ~/statements   # CSVs in, deduplicated
+cd .. && python build_workbook.py --from-db       # whole history out
+```
+
+Add a CSV a month and the database grows; the workbook always reflects
+everything loaded so far. The chart of accounts lives in `chart_of_accounts.py`
+and is shared by the loader and the workbook, so they cannot disagree about
+which category a transaction belongs to.
