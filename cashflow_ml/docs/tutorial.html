@@ -1,0 +1,830 @@
+<title>Bank Statement to Accounts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+
+<style>
+:root {
+  --paper:   #fcfcfd;
+  --surface: #f1f5f8;
+  --sunken:  #e8eef3;
+  --line:    #dbe3ea;
+  --rule:    #c3ced8;
+  --ink:     #172029;
+  --muted:   #5c6773;
+  --in:      #1a5fa8;
+  --out:     #b5451f;
+  --flag:    #855c00;
+  --flagbg:  #fbf3e0;
+  --inbg:    #e9f0f9;
+  --shadow:  0 1px 2px rgba(23, 32, 41, .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:   #0f151b;
+    --surface: #171f27;
+    --sunken:  #1c262f;
+    --line:    #29333d;
+    --rule:    #3b4854;
+    --ink:     #e6ecf2;
+    --muted:   #98a4b0;
+    --in:      #6aa6e8;
+    --out:     #e88a5f;
+    --flag:    #d9ad57;
+    --flagbg:  #241f12;
+    --inbg:    #141e2b;
+    --shadow:  0 1px 2px rgba(0, 0, 0, .3);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:   #0f151b;
+  --surface: #171f27;
+  --sunken:  #1c262f;
+  --line:    #29333d;
+  --rule:    #3b4854;
+  --ink:     #e6ecf2;
+  --muted:   #98a4b0;
+  --in:      #6aa6e8;
+  --out:     #e88a5f;
+  --flag:    #d9ad57;
+  --flagbg:  #241f12;
+  --inbg:    #141e2b;
+  --shadow:  0 1px 2px rgba(0, 0, 0, .3);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px 120px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 56px;
+}
+@media (min-width: 1060px) {
+  .page { grid-template-columns: 200px minmax(0, 1fr); }
+  .masthead { grid-column: 1 / -1; }
+}
+
+/* ---------- masthead ---------- */
+.masthead {
+  padding: 68px 0 34px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 0;
+}
+.eyebrow {
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 0 0 18px;
+}
+h1 {
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-size: clamp(2.3rem, 5.2vw, 3.4rem);
+  line-height: 1.06;
+  letter-spacing: -.018em;
+  margin: 0 0 18px;
+  text-wrap: balance;
+}
+.standfirst {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(1.05rem, 2vw, 1.24rem);
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 60ch;
+  margin: 0;
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 34px;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--muted);
+}
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* ---------- contents rail ---------- */
+.rail { display: none; }
+@media (min-width: 1060px) {
+  .rail {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    padding-top: 46px;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+}
+.rail p {
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 14px;
+  font-weight: 500;
+}
+.rail ol { margin: 0; padding: 0; list-style: none; counter-reset: rail; }
+.rail li { counter-increment: rail; margin-bottom: 9px; }
+.rail a {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 4px;
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  padding-left: 10px;
+  margin-left: -12px;
+}
+.rail a::before {
+  content: counter(rail);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--rule);
+}
+.rail a:hover { color: var(--ink); border-left-color: var(--in); }
+.rail a:focus-visible { outline: 2px solid var(--in); outline-offset: 3px; }
+
+/* ---------- article ---------- */
+article { padding-top: 46px; max-width: 74ch; }
+
+section { padding-bottom: 8px; }
+section + section { margin-top: 58px; }
+
+h2 {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 1.72rem;
+  font-weight: 700;
+  letter-spacing: -.012em;
+  line-height: 1.18;
+  margin: 0 0 6px;
+  text-wrap: balance;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 14px;
+}
+h2 .num {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--in);
+  letter-spacing: 0;
+}
+h2 + .lede { color: var(--muted); margin: 0 0 26px; max-width: 62ch; }
+
+h3 {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -.003em;
+  margin: 34px 0 10px;
+}
+h4 {
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  margin: 28px 0 10px;
+}
+
+p { margin: 0 0 16px; }
+ul, ol { margin: 0 0 16px; padding-left: 22px; }
+li { margin-bottom: 7px; }
+li::marker { color: var(--rule); }
+strong { font-weight: 600; }
+a { color: var(--in); }
+
+code {
+  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: .875em;
+  background: var(--sunken);
+  padding: .12em .38em;
+  border-radius: 3px;
+}
+
+pre {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rule);
+  border-radius: 4px;
+  padding: 15px 18px;
+  overflow-x: auto;
+  font-size: 13.2px;
+  line-height: 1.62;
+  margin: 0 0 20px;
+  box-shadow: var(--shadow);
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+pre .cm { color: var(--muted); }
+pre .ok { color: var(--in); }
+
+.terminal {
+  border-left-color: var(--in);
+  background: var(--inbg);
+}
+
+/* callouts */
+.note, .warn {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 15px 18px;
+  margin: 0 0 20px;
+  font-size: 15.2px;
+  background: var(--surface);
+}
+.warn { background: var(--flagbg); border-color: var(--flag); }
+.note > :last-child, .warn > :last-child { margin-bottom: 0; }
+.note h4, .warn h4 { margin-top: 0; }
+.warn h4 { color: var(--flag); }
+
+.tablewrap { overflow-x: auto; margin: 0 0 22px; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.4px;
+  min-width: 460px;
+}
+th, td {
+  text-align: left;
+  padding: 9px 14px 9px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  font-size: 11.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--rule);
+}
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; }
+.pos { color: var(--in); }
+.neg { color: var(--out); }
+
+figure { margin: 0 0 26px; }
+figure svg { max-width: 100%; height: auto; display: block; }
+figcaption {
+  font-size: 13.2px;
+  color: var(--muted);
+  margin-top: 12px;
+  max-width: 62ch;
+}
+
+.steps { list-style: none; padding: 0; counter-reset: step; }
+.steps > li {
+  counter-increment: step;
+  padding-left: 40px;
+  position: relative;
+  margin-bottom: 20px;
+}
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+hr.end {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 54px 0 26px;
+}
+.colophon { font-size: 13.6px; color: var(--muted); }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Tutorial · cashflow_ml</p>
+    <h1>From a bank statement to a set of accounts</h1>
+    <p class="standfirst">A property company's bank export goes in as a CSV. What comes out is a
+      categorised ledger, a profit and loss, a database that grows month by month, and an Excel
+      workbook that recalculates. This walks the whole chain, in order, assuming you have written
+      no Python before.</p>
+    <ul class="facts">
+      <li><b>Three tools</b> Python · SQL · Excel</li>
+      <li><b>Sample data</b> 39 transactions, 12 months</li>
+      <li><b>Needs</b> Python 3.10+</li>
+    </ul>
+  </header>
+
+  <nav class="rail" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#shape">The shape of it</a></li>
+      <li><a href="#setup">Before you start</a></li>
+      <li><a href="#data">The data</a></li>
+      <li><a href="#analyse">Run the analyser</a></li>
+      <li><a href="#database">Build the database</a></li>
+      <li><a href="#workbook">Build the workbook</a></li>
+      <li><a href="#routine">The monthly routine</a></li>
+      <li><a href="#inside">What's happening inside</a></li>
+      <li><a href="#extend">Making it yours</a></li>
+      <li><a href="#broken">When it breaks</a></li>
+      <li><a href="#interview">Talking about it</a></li>
+    </ol>
+  </nav>
+
+  <article>
+
+    <section id="shape">
+      <h2><span class="num">01</span><span>The shape of it</span></h2>
+      <p class="lede">Two independent paths out of the same CSV. Knowing which one you are on
+        explains most of what follows.</p>
+
+      <figure>
+        <svg viewBox="0 0 900 340" role="img" aria-label="Two paths from a bank statement CSV. The analyser path reads one file and produces a window, charts and an HTML page. The database path appends CSVs into cashflow.db, which the workbook builder turns into an Excel file.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- lane A -->
+          <text x="24" y="30" font-size="11" letter-spacing="1.6" fill="currentColor" opacity=".55">A ONE-OFF LOOK</text>
+          <rect x="24" y="52" width="150" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".75"/>
+          <text x="99" y="76" font-size="12.5" text-anchor="middle" fill="currentColor">Bank statement</text>
+          <text x="99" y="93" font-size="12.5" text-anchor="middle" fill="currentColor">CSV</text>
+
+          <line x1="176" y1="80" x2="322" y2="80" stroke="currentColor" stroke-width="1.5" marker-end="url(#ah)"/>
+          <text x="249" y="70" font-size="11" text-anchor="middle" fill="currentColor" opacity=".7">python cashflow_ml.py</text>
+
+          <rect x="330" y="52" width="240" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".75"/>
+          <text x="450" y="76" font-size="12.5" text-anchor="middle" fill="currentColor">Summary window, charts,</text>
+          <text x="450" y="93" font-size="12.5" text-anchor="middle" fill="currentColor">summary.html</text>
+          <text x="590" y="84" font-size="11.5" fill="currentColor" opacity=".55">nothing is kept</text>
+
+          <line x1="24" y1="148" x2="876" y2="148" stroke="currentColor" stroke-width="1" opacity=".2" stroke-dasharray="3 4"/>
+
+          <!-- lane B -->
+          <text x="24" y="188" font-size="11" letter-spacing="1.6" fill="#1a5fa8">A RECORD THAT GROWS</text>
+          <rect x="32" y="214" width="150" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".35"/>
+          <rect x="28" y="218" width="150" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/>
+          <rect x="24" y="222" width="150" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".85"/>
+          <text x="99" y="246" font-size="12.5" text-anchor="middle" fill="currentColor">One CSV</text>
+          <text x="99" y="263" font-size="12.5" text-anchor="middle" fill="currentColor">per month</text>
+
+          <line x1="180" y1="250" x2="322" y2="250" stroke="#1a5fa8" stroke-width="1.5" marker-end="url(#ah)" color="#1a5fa8"/>
+          <text x="251" y="240" font-size="11" text-anchor="middle" fill="#1a5fa8">build_database.py</text>
+          <text x="251" y="272" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".6">appends · skips duplicates</text>
+
+          <rect x="330" y="222" width="150" height="56" rx="4" fill="none" stroke="#1a5fa8" stroke-width="1.5"/>
+          <text x="405" y="246" font-size="12.5" text-anchor="middle" fill="currentColor">cashflow.db</text>
+          <text x="405" y="263" font-size="11" text-anchor="middle" fill="currentColor" opacity=".6">every month so far</text>
+
+          <line x1="486" y1="250" x2="646" y2="250" stroke="#1a5fa8" stroke-width="1.5" marker-end="url(#ah)" color="#1a5fa8"/>
+          <text x="566" y="240" font-size="11" text-anchor="middle" fill="#1a5fa8">build_workbook.py</text>
+          <text x="566" y="272" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".6">--from-db</text>
+
+          <rect x="654" y="222" width="222" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".85"/>
+          <text x="765" y="246" font-size="12.5" text-anchor="middle" fill="currentColor">cashflow_workbook.xlsx</text>
+          <text x="765" y="263" font-size="11" text-anchor="middle" fill="currentColor" opacity=".6">whole history, live formulas</text>
+        </svg>
+        <figcaption>The analyser reads one file and shows you what is in it. The database path
+          keeps what it is given, so each new statement adds to a record rather than replacing it.
+          Both start from the same CSV, and you can use either or both.</figcaption>
+      </figure>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>File</th><th>What it is for</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>cashflow_ml.py</code></td><td>Reads one statement, categorises it with machine learning, opens the summary window</td></tr>
+            <tr><td><code>sql/build_database.py</code></td><td>Loads CSVs into the database, without duplicating anything</td></tr>
+            <tr><td><code>sql/queries.sql</code></td><td>The analysis written as SQL</td></tr>
+            <tr><td><code>sql/run_queries.py</code></td><td>Connects to the database and runs those queries</td></tr>
+            <tr><td><code>build_workbook.py</code></td><td>Writes the Excel workbook, from a CSV or from the database</td></tr>
+            <tr><td><code>chart_of_accounts.py</code></td><td>The category rules, shared so nothing disagrees</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="setup">
+      <h2><span class="num">02</span><span>Before you start</span></h2>
+      <p class="lede">Three things to install once. Everything after this is just running commands.</p>
+
+      <ol class="steps">
+        <li><strong>Python.</strong> From <a href="https://python.org">python.org</a>. On Windows,
+          tick <em>Add Python to PATH</em> and leave <em>tcl/tk and IDLE</em> ticked — that second
+          one is what draws the summary window.</li>
+        <li><strong>The libraries.</strong> One command, and it only needs doing once.</li>
+        <li><strong>The project files.</strong> Put them in a folder you can find. Keep the
+          structure: <code>cashflow_ml.py</code> at the top, the <code>sql</code> folder inside it.</li>
+      </ol>
+
+<pre><code><span class="cm"># Windows PowerShell</span>
+&amp; C:\Python314\python.exe -m pip install pandas scikit-learn matplotlib openpyxl
+
+<span class="cm"># macOS / Linux</span>
+python3 -m pip install pandas scikit-learn matplotlib openpyxl</code></pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Library</th><th>Does what</th><th>Needed for</th></tr></thead>
+          <tbody>
+            <tr><td><code>pandas</code></td><td>Tables in memory</td><td>Everything</td></tr>
+            <tr><td><code>scikit-learn</code></td><td>The machine learning models</td><td>The analyser</td></tr>
+            <tr><td><code>matplotlib</code></td><td>Charts</td><td>The charts tab</td></tr>
+            <tr><td><code>openpyxl</code></td><td>Writing .xlsx files</td><td>The workbook</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><code>sqlite3</code> is not on that list because it comes with Python. That is the whole
+        reason the database part needs no setup at all.</p>
+
+      <div class="note">
+        <h4>Check it worked</h4>
+        <p>Run the analyser with <code>--check</code>. It prints which file is running, which Python,
+          and whether each library is importable. If anything says <code>MISSING</code>, that is your
+          problem, and the line above tells you which install to repeat.</p>
+      </div>
+    </section>
+
+    <section id="data">
+      <h2><span class="num">03</span><span>The data</span></h2>
+      <p class="lede">Seven columns. Get these right and everything downstream works; get the dates
+        wrong and every figure is quietly wrong.</p>
+
+<pre><code>date,description,paid in,paid out,counterparty,property,document
+01/04/2025,COMMERCIAL RENT COMM-04,3200,,TENANT - KESTREL TRADING LTD,COMM-04,RENT-COMM-04-202504
+03/04/2025,COMMERCIAL MORTGAGE INTEREST COMM-04,,1450,MERIDIAN COMMERCIAL,COMM-04,CMTG-202504
+05/04/2025,MANAGING AGENT COMM-04,,256,HORIZON COMMERCIAL,COMM-04,INV-HC-202504</code></pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Column</th><th>Rule</th></tr></thead>
+          <tbody>
+            <tr><td><code>date</code></td><td><strong>dd/mm/yyyy.</strong> UK order, day first</td></tr>
+            <tr><td><code>description</code></td><td>The bank narrative. This is what the models read</td></tr>
+            <tr><td><code>paid in</code> / <code>paid out</code></td><td>One or the other, never both. Leave the unused one blank</td></tr>
+            <tr><td><code>counterparty</code></td><td>Who the money came from or went to</td></tr>
+            <tr><td><code>property</code></td><td>Which property, or blank for company-wide costs</td></tr>
+            <tr><td><code>document</code></td><td>Invoice or reference number. The audit trail</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="warn">
+        <h4>The date trap</h4>
+        <p>The code is told the format is day-first. If your file is <code>2025-04-01</code> or
+          American <code>04/01/2025</code>, it will either error or — worse — read 5 April as
+          4 May, moving transactions between months and changing every monthly figure without
+          any warning. Check the first row before trusting the output.</p>
+      </div>
+
+      <p>Make your own file in Excel or Notepad, save it as <strong>CSV (comma delimited)</strong>,
+        and put it next to the script or in the <code>data</code> folder. Turn on file extensions
+        in File Explorer so you can see it really is <code>.csv</code> and not <code>.csv.txt</code>.</p>
+    </section>
+
+    <section id="analyse">
+      <h2><span class="num">04</span><span>Run the analyser</span></h2>
+      <p class="lede">One command. Roughly ten seconds. Four kinds of output.</p>
+
+<pre><code>&amp; C:\Python314\python.exe "C:\Users\you\Downloads\cashflow_ml.py"</code></pre>
+
+      <p>Add <code>--no-window</code> to skip the window, or a file path to point it at a different
+        statement.</p>
+
+      <h3>What appears</h3>
+      <ol class="steps">
+        <li><strong>A version line.</strong> <code>cashflow_ml 1.4</code>. If you do not see this,
+          you are running an old copy of the file — the commonest cause of "nothing happens".</li>
+        <li><strong>The detailed report,</strong> printed in sections: headline position, the
+          recurring streams found, categories, monthly cash flow, flagged items.</li>
+        <li><strong>The summary table,</strong> the last thing printed.</li>
+        <li><strong>The window,</strong> with charts and five tabs. PowerShell will appear to hang
+          while it is open. That is normal — close the window to get your prompt back.</li>
+      </ol>
+
+<pre class="terminal"><code>  PROCESS                            COMPANY                       FREQUENCY   N         TOTAL
+  CASH IN
+    COMMERCIAL RENT COMM-04          TENANT - KESTREL TRADING LTD  Monthly    12    £38,400.00
+    Total cash in                                                             12    £38,400.00
+  CASH OUT
+    COMMERCIAL MORTGAGE INTEREST C.. MERIDIAN COMMERCIAL           Monthly    12   -£17,400.00
+    DIRECTORS REMUNERATION           R MEHRA                       One-off     1    -£9,100.00
+    MANAGING AGENT COMM-04           HORIZON COMMERCIAL            Monthly    12    -£3,072.00
+    Total cash out                                                            27   -£32,922.00
+  <span class="ok">NET PROFIT FOR THE PERIOD                                                   39     £5,478.00</span></code></pre>
+
+      <p>It also writes files into an <code>output</code> folder beside the script:
+        <code>summary.html</code> to open in a browser or print to PDF, <code>charts.png</code>,
+        and six CSVs holding each summary table.</p>
+    </section>
+
+    <section id="database">
+      <h2><span class="num">05</span><span>Build the database</span></h2>
+      <p class="lede">This is the step that turns a one-off analysis into a record. It is also the
+        part most worth understanding, because it is the part employers ask about.</p>
+
+<pre><code>cd sql
+python build_database.py                        <span class="cm"># every CSV in ../data</span>
+python build_database.py march.csv april.csv    <span class="cm"># named files</span>
+python build_database.py ~/statements           <span class="cm"># a whole folder</span>
+python build_database.py --reset                <span class="cm"># start over</span></code></pre>
+
+      <h3>Three tables, not one sheet</h3>
+      <p>A spreadsheet repeats "MERIDIAN COMMERCIAL" on every row. A database stores it once in a
+        <code>counterparty</code> table and points at it by number. Rename it in one place and every
+        transaction follows. That is what <em>normalised</em> means, and it is the main thing a
+        database gives you that a spreadsheet cannot.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Table</th><th>Holds</th></tr></thead>
+          <tbody>
+            <tr><td><code>counterparty</code></td><td>Each company, once</td></tr>
+            <tr><td><code>category</code></td><td>Each nominal category, and which side of the P&amp;L it sits on</td></tr>
+            <tr><td><code>transactions</code></td><td>Every bank line, pointing at the two tables above</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Running it twice changes nothing</h3>
+      <p>Load the same file again and you get:</p>
+<pre class="terminal"><code>  bank_company.csv: 0 new, 39 already present</code></pre>
+      <p>A unique index treats same date + description + company + amount + document as the
+        transaction you already have, so the second attempt is ignored rather than doubling your
+        income. The word for this property is <strong>idempotency</strong>, and it is the single
+        most important thing about a data load in finance. Without it, someone re-runs a script on
+        a Friday afternoon and the accounts are wrong on Monday.</p>
+
+      <h3>New descriptions get flagged, not hidden</h3>
+      <p>When something arrives that no category rule covers, it is still loaded — on the correct
+        side of the profit and loss, decided by whether the money came in or went out — and named
+        at the end of the run:</p>
+<pre class="terminal"><code>These descriptions matched no category rule. They are still
+loaded, on the correct side of the P&amp;L, but add a rule to
+CATEGORY_RULES to code them properly:
+  DILAPIDATIONS SETTLEMENT
+  INSTALMENT TO HMRC</code></pre>
+
+      <h3>Asking it questions</h3>
+<pre><code>python run_queries.py                     <span class="cm"># all eight queries</span>
+python run_queries.py monthly_cashflow    <span class="cm"># just one</span></code></pre>
+      <p>The queries live in <code>queries.sql</code> as plain text you can edit. They cover the
+        headline figures, monthly cash flow with a running total, the profit and loss, totals per
+        company, recurring versus one-off payments, and three audit checks — missing document
+        references, unusually large payments, and how concentrated the income is.</p>
+    </section>
+
+    <section id="workbook">
+      <h2><span class="num">06</span><span>Build the workbook</span></h2>
+      <p class="lede">Six sheets where every figure is a formula, not a pasted number.</p>
+
+<pre><code>python build_workbook.py             <span class="cm"># from one CSV</span>
+python build_workbook.py --from-db   <span class="cm"># from the whole database</span></code></pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Sheet</th><th>Contents</th></tr></thead>
+          <tbody>
+            <tr><td>Summary</td><td>Headline figures, each one a link to another sheet</td></tr>
+            <tr><td>Transactions</td><td>The statement as a filterable table; amount, direction, category and month calculated</td></tr>
+            <tr><td>Monthly cash flow</td><td><code>SUMIFS</code> by month, with a running total</td></tr>
+            <tr><td>Profit and loss</td><td><code>SUMIFS</code> by category, income then expenditure</td></tr>
+            <tr><td>By company</td><td>What has accumulated with each counterparty</td></tr>
+            <tr><td>Categories</td><td>The keyword rules — the only cells you edit</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The colours follow standard financial modelling convention, so anyone in an accounts
+        department will read them without being told: <span class="kicker">black</span> is a
+        calculation, <span style="color:#0000ff">blue on yellow</span> is an input you may change,
+        <span style="color:#008000">green</span> is a link to another sheet. Negatives sit in
+        brackets, zeros show as a dash, and every sheet is set to print on one page wide.</p>
+
+      <div class="note">
+        <h4>Why formulas rather than values</h4>
+        <p>Change a figure on the Transactions sheet and the profit and loss, the monthly cash flow
+          and the dashboard all move with it. A workbook of pasted numbers is a photograph; this one
+          is a model. It is also the difference between a reviewer being able to check your work and
+          having to take it on trust.</p>
+      </div>
+    </section>
+
+    <section id="routine">
+      <h2><span class="num">07</span><span>The monthly routine</span></h2>
+      <p class="lede">Once it is set up, this is the whole job.</p>
+
+      <ol class="steps">
+        <li>Export the month's transactions from the bank and save as CSV with the seven columns.</li>
+        <li>Load it: <code>cd sql</code> then <code>python build_database.py april.csv</code>.</li>
+        <li>Read what it says. New rows added? Anything flagged as uncategorised?</li>
+        <li>Rebuild the workbook: <code>python build_workbook.py --from-db</code>.</li>
+        <li>Open it, check the profit and loss ties to what you expect, and file it.</li>
+      </ol>
+
+      <p>Two minutes, and the database holds every month you have ever loaded. If you load the wrong
+        file, load it again — nothing duplicates. If you want to start clean, <code>--reset</code>.</p>
+    </section>
+
+    <section id="inside">
+      <h2><span class="num">08</span><span>What's happening inside</span></h2>
+      <p class="lede">The same job — decide what each transaction is — done three ways.</p>
+
+      <h3>The three models</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Model</th><th>Job</th><th>Replaces</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>KMeans</strong><br><span class="kicker">clustering</span></td>
+              <td>Groups transactions whose wording is similar, without being told what to look for</td>
+              <td>Eyeballing a statement for what repeats</td>
+            </tr>
+            <tr>
+              <td><strong>Naive Bayes</strong><br><span class="kicker">classification</span></td>
+              <td>Learns from keyword-labelled examples, then codes every line — including wording it has never seen</td>
+              <td>Coding transactions to the nominal ledger by hand</td>
+            </tr>
+            <tr>
+              <td><strong>IsolationForest</strong><br><span class="kicker">anomaly detection</span></td>
+              <td>Scores size, timing and how often something repeats, and flags the odd ones</td>
+              <td>The "what looks wrong here" pass</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Both text models first convert words into numbers using <strong>TF-IDF</strong>, which
+        scores each word by how often it appears in one transaction and how rare it is across all of
+        them. "Commercial" appears everywhere so it carries little information; "insurance" appears
+        once so it is highly distinctive. Models do arithmetic, not reading — this is the step that
+        makes that possible.</p>
+
+      <div class="warn">
+        <h4>About that 100% accuracy</h4>
+        <p>On this file the classifier scores 100%, and that is not an achievement — it is a symptom.
+          Six descriptions with completely separate vocabulary are trivially separable, and a simple
+          lookup table would do just as well. The model earns its place when a new supplier appears
+          with wording the rules never anticipated. Say this before anyone asks; it reads as
+          judgement rather than as a gap.</p>
+      </div>
+
+      <h3>The same decision in SQL and in Excel</h3>
+      <p>Worth seeing side by side, because knowing where each tool stops is more useful than
+        knowing any one of them.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Tool</th><th>How it categorises</th><th>Limit</th></tr></thead>
+          <tbody>
+            <tr><td>Python</td><td>Trained classifier</td><td>Needs enough data to learn from</td></tr>
+            <tr><td>SQL</td><td>Keyword rules in the loader</td><td>Only matches what you listed</td></tr>
+            <tr><td>Excel</td><td><code>INDEX</code>/<code>MATCH</code>/<code>SEARCH</code> against a rules sheet</td><td>Only matches what you listed</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The rules live in one file, <code>chart_of_accounts.py</code>, shared by the loader and the
+        workbook. They used to be duplicated, and the two copies drifted: the database filed a
+        service charge receipt as income while Excel called it uncategorised — the same transaction,
+        two answers, in one reporting pack. One list fixed it.</p>
+    </section>
+
+    <section id="extend">
+      <h2><span class="num">09</span><span>Making it yours</span></h2>
+
+      <h3>Add a category</h3>
+      <p>Open <code>chart_of_accounts.py</code> and add a line. The database loader and the Excel
+        workbook both pick it up; nothing else needs touching.</p>
+<pre><code>CATEGORY_RULES = [
+    (("rent",), "Rental income", "income"),
+    <span class="ok">(("ground rent", "freeholder"), "Ground rent", "expense"),</span>
+    ...
+]</code></pre>
+      <p>Order matters — the first keyword found in the description wins. Put the more specific rule
+        above the more general one, or "ground rent" will be caught by "rent" and booked as income.</p>
+
+      <h3>Add a query</h3>
+      <p>Append to <code>queries.sql</code> with a <code>-- @name</code> line above it. The runner
+        picks it up automatically.</p>
+
+      <h3>Change how much gets flagged</h3>
+      <p>In <code>cashflow_ml.py</code>, <code>contamination=0.1</code> means "expect about 10% to be
+        unusual". Raise it to see more, lower it to see only the extremes. It is a judgement call
+        about how much review you want, not a setting with a correct value.</p>
+    </section>
+
+    <section id="broken">
+      <h2><span class="num">10</span><span>When it breaks</span></h2>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Symptom</th><th>Cause and fix</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Nothing appears at all</td>
+              <td>You are running an old copy of the file. The first line printed must be
+                <code>cashflow_ml 1.4</code>. If it is not, download the current version and save
+                over it — watch for <code>cashflow_ml (1).py</code></td>
+            </tr>
+            <tr>
+              <td>Terminal output but no window</td>
+              <td>It opened behind the terminal. Check the taskbar or press Alt+Tab. If it is
+                genuinely absent, run <code>--check</code> and look at the tkinter line</td>
+            </tr>
+            <tr>
+              <td><code>Could not find the bank statement CSV</code></td>
+              <td>It lists where it looked and what it can see. Usually the filename does not match
+                or Windows saved it as <code>.csv.txt</code></td>
+            </tr>
+            <tr>
+              <td><code>ModuleNotFoundError</code></td>
+              <td>A library is missing. Re-run the pip install from step 2</td>
+            </tr>
+            <tr>
+              <td>Charts tab says it needs matplotlib</td>
+              <td>Exactly what it says. Everything else still works without it</td>
+            </tr>
+            <tr>
+              <td>Figures look wrong by a month</td>
+              <td>Date format. Check your CSV is <code>dd/mm/yyyy</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <h4>The diagnostic</h4>
+        <p><code>python cashflow_ml.py --check</code> prints the script path, the interpreter, and
+          whether each library imports. It answers most of the table above in one line each.</p>
+      </div>
+    </section>
+
+    <section id="interview">
+      <h2><span class="num">11</span><span>Talking about it</span></h2>
+      <p class="lede">What to lead with, and what to get in first.</p>
+
+      <p><strong>Lead with the business reading, not the models.</strong> A statement is only
+        interesting for what it tells you. On the sample data: rent is 100% concentrated in one
+        tenant, interest cover is roughly 1.9× after costs, the £9,100 directors' payment is
+        discretionary and single-handedly causes the June deficit, and there is no maintenance
+        spend at all across a full year for a commercial property — which is either a full repairing
+        lease or a gap worth asking about.</p>
+
+      <p><strong>Then describe the mechanism in one breath.</strong> "It reads a bank statement and
+        turns it into a set of accounts. One function cleans the data; three small models do what a
+        bookkeeper does — group the recurring streams, code each transaction, flag the odd ones. The
+        rest builds the outputs."</p>
+
+      <p><strong>Get the caveats in before they are asked.</strong> The 100% accuracy on 39 rows.
+        That the profit is cash basis and not a statutory figure — no accruals, no prepayments, no
+        depreciation, no tax. Naming a limitation yourself reads as judgement; being shown it reads
+        as a gap.</p>
+
+      <p><strong>Be ready to change something live.</strong> Adding a category takes one line in
+        <code>chart_of_accounts.py</code>. If you can do that while talking, the question of who
+        wrote it stops mattering.</p>
+    </section>
+
+    <hr class="end">
+    <p class="colophon">Sample figures throughout are from <code>data/bank_company.csv</code> —
+      39 transactions, 1 April 2025 to 5 March 2026. Cash in £38,400, cash out £32,922, net £5,478
+      on a cash basis.</p>
+
+  </article>
+</div>
