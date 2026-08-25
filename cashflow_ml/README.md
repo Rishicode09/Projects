@@ -82,3 +82,63 @@ It is not a statutory profit: no accruals, prepayments, depreciation or tax.
 - Net cash generated **£5,478.00** — 14.3% of turnover retained, 85.7% cost ratio
 - Two deficit months: June 2025 (−£7,606, payroll) and February 2026 (−£606, accountancy fee)
 - All 39 transactions carry a document reference
+
+
+---
+
+## SQL version (`sql/`)
+
+The same analysis against a real database, because most finance systems sit on
+one and SQL is on far more job specs than Python.
+
+```bash
+cd sql
+python build_database.py     # creates cashflow.db from the CSV
+python run_queries.py        # runs every query in queries.sql
+python run_queries.py monthly_cashflow    # or just one
+```
+
+`build_database.py` creates a **normalised schema** — `counterparty`,
+`category` and `transactions`, joined by ids — with foreign keys, check
+constraints and indexes. It uses SQLite, which needs no server and ships with
+Python; the connection code is the same shape you would write against SQL
+Server or PostgreSQL, and only the `connect()` line changes.
+
+`queries.sql` holds eight queries covering the headline figures, monthly cash
+flow with a **running total via a window function**, the profit and loss,
+accumulated totals per company, recurring vs one-off processes, and three audit
+checks — missing document references, unusually large payments, and customer
+concentration.
+
+`run_queries.py` shows both ways of connecting: plain `sqlite3` (cursor,
+execute, fetch) and `pandas.read_sql_query`, which hands the result back as a
+table ready for Excel or a chart.
+
+## Excel workbook (`build_workbook.py`)
+
+```bash
+python build_workbook.py     # writes output/cashflow_workbook.xlsx
+```
+
+Six sheets, and **every figure is a formula** — change a number on the
+Transactions sheet and the P&L, the monthly cash flow and the dashboard all
+follow:
+
+| Sheet | What it holds |
+|---|---|
+| Summary | Headline figures, each one a cross-sheet formula, plus a guide to the workbook |
+| Transactions | The cleaned statement as a filterable Excel table; signed amount, direction, category and month are calculated |
+| Monthly cash flow | `SUMIFS` by month, with a running total |
+| Profit and loss | `SUMIFS` by category, income then expenditure, with the cash-basis caveat stated on the sheet |
+| By company | Accumulated position with each counterparty and its share of the direction |
+| Categories | The keyword rules — the only cells you edit, marked blue on yellow |
+
+The category column uses `INDEX`/`MATCH`/`SEARCH` to look each description up
+against the rules sheet — the Excel equivalent of the Python classifier, and a
+useful comparison: the formula only matches keywords it has been given, whereas
+the trained model generalises to wording it has never seen.
+
+Conventions follow standard financial modelling practice: black for
+calculations, blue for inputs, green for cross-sheet links, negatives in
+brackets, zeros as a dash, and every sheet set to print on one page wide with
+the header row repeated.
