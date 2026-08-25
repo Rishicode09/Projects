@@ -33,7 +33,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 
 # Printed on every run so you can tell which copy of the file you are running.
-VERSION = "1.5 (charts + summary window)"
+VERSION = "1.6 (charts + summary window)"
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
@@ -1034,6 +1034,21 @@ def show_summary_window(
     root.mainloop()
 
 
+def write_safely(path: Path, writer) -> bool:
+    """Write a file, returning False if something else has it locked.
+
+    Excel holds an exclusive lock on any workbook or CSV it has open, so an
+    ordinary re-run raises PermissionError partway through and loses the rest
+    of the output. Reporting which files were locked, and carrying on with
+    the others, is far more useful than stopping.
+    """
+    try:
+        writer(path)
+        return True
+    except PermissionError:
+        return False
+
+
 def find_csv(positional: list[str]) -> Path | None:
     """Path given on the command line, else the first default that exists."""
     if positional:
@@ -1129,19 +1144,35 @@ def main(argv: list[str]) -> int:
     report(df, accuracy)
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    df.to_csv(OUTPUT_DIR / "categorised_transactions.csv", index=False)
-    monthly_cashflow(df).to_csv(OUTPUT_DIR / "monthly_cashflow.csv", index=False)
-    category_summary(df).to_csv(OUTPUT_DIR / "category_summary.csv", index=False)
-    counterparty_summary(df).to_csv(OUTPUT_DIR / "counterparty_summary.csv", index=False)
-    process_summary(df).to_csv(OUTPUT_DIR / "process_summary.csv", index=False)
-    profit_and_loss(df).to_csv(OUTPUT_DIR / "profit_and_loss.csv", index=False)
+    locked: list[str] = []
+    for name, frame in (
+        ("categorised_transactions.csv", df),
+        ("monthly_cashflow.csv", monthly_cashflow(df)),
+        ("category_summary.csv", category_summary(df)),
+        ("counterparty_summary.csv", counterparty_summary(df)),
+        ("process_summary.csv", process_summary(df)),
+        ("profit_and_loss.csv", profit_and_loss(df)),
+    ):
+        if not write_safely(OUTPUT_DIR / name,
+                            lambda path, f=frame: f.to_csv(path, index=False)):
+            locked.append(name)
 
     page = OUTPUT_DIR / "summary.html"
-    write_summary_page(df, accuracy, csv_path, page)
+    if not write_safely(page, lambda path: write_summary_page(
+            df, accuracy, csv_path, path)):
+        locked.append(page.name)
+
     charts_saved = save_charts(df, OUTPUT_DIR / "charts.png")
 
     print(f"\nWritten to {OUTPUT_DIR}/")
     print(f"Summary page: {page}")
+    if locked:
+        print(f"\nCould not overwrite {len(locked)} file(s) -- they are open "
+              "in another program:", file=sys.stderr)
+        for name in locked:
+            print(f"  {name}", file=sys.stderr)
+        print("  Close Excel (and any open CSV) and run again.",
+              file=sys.stderr)
     if not charts_saved:
         print("Charts skipped: matplotlib is not installed (pip install matplotlib)")
 

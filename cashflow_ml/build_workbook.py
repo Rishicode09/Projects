@@ -114,6 +114,36 @@ def number(value: str) -> float:
     return float(value) if value.strip() else 0.0
 
 
+def save_workbook(workbook, output: Path) -> Path:
+    """Save, and cope with the file being open in Excel.
+
+    Excel takes an exclusive lock on a workbook while it is open, so writing
+    over it raises PermissionError. Rather than throwing away a completed
+    build, save alongside it under a dated name and say so.
+    """
+    try:
+        workbook.save(output)
+        return output
+    except PermissionError:
+        pass
+
+    stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+    alternative = output.with_name(f"{output.stem}_{stamp}{output.suffix}")
+    print(f"\n  {output.name} is locked -- it is probably open in Excel.",
+          file=sys.stderr)
+    try:
+        workbook.save(alternative)
+    except PermissionError:
+        print(f"  Could not write to {output.parent} at all.", file=sys.stderr)
+        print("  Close Excel, or run with the folder not syncing, and try "
+              "again.", file=sys.stderr)
+        raise SystemExit(1)
+
+    print(f"  Saved as {alternative.name} instead. Close Excel and re-run to "
+          "write the usual name.\n", file=sys.stderr)
+    return alternative
+
+
 # ---------------------------------------------------------------------------
 # Styling helpers
 # ---------------------------------------------------------------------------
@@ -558,7 +588,7 @@ def build(rows: list[dict[str, str]], output: Path, source: str) -> None:
         printable(sheet)
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    workbook.save(output)
+    output = save_workbook(workbook, output)
     print(f"Written {output}")
     print(f"  source: {source}")
     print(f"  {len(rows)} transactions, {len(months)} months, "
