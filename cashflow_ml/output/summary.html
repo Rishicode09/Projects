@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Cash In / Cash Out Summary</title>
+<style>
+:root {
+  --ink: #1a1d21; --muted: #6b7280; --line: #e3e6ea; --bg: #ffffff;
+  --panel: #f7f8fa; --in: #17694a; --out: #a8341f; --flag: #8a6100;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 40px 24px 64px; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.wrap { max-width: 980px; margin: 0 auto; }
+h1 { font-size: 25px; letter-spacing: -0.02em; margin: 0 0 4px; }
+h2 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--muted); margin: 40px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.sub { color: var(--muted); font-size: 14px; margin: 0 0 28px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.kpi .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.kpi .value { font-size: 23px; font-weight: 600; margin-top: 6px; letter-spacing: -0.02em; }
+.kpi .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.in { color: var(--in); } .out { color: var(--out); } .flag { color: var(--flag); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--ink);
+}
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.subtotal td { font-weight: 600; background: var(--panel); }
+tr.result td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+tr.indent td:first-child { padding-left: 28px; }
+.tag {
+  display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+}
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
+         font-size: 12.5px; color: var(--muted); }
+footer p { margin: 6px 0; }
+@media print { body { padding: 0; } h2 { break-after: avoid; } tr { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class='wrap'>
+<h1>Cash In / Cash Out Summary</h1>
+<p class='sub'>01 Apr 2025 – 05 Mar 2026 &nbsp;·&nbsp; 39 transactions &nbsp;·&nbsp; 12 months &nbsp;·&nbsp; source: bank_company.csv</p>
+<div class='kpis'>
+<div class='kpi'><div class='label'>Cash in</div><div class='value in'>£38,400.00</div><div class='note'>12 receipts</div></div>
+<div class='kpi'><div class='label'>Cash out</div><div class='value out'>£32,922.00</div><div class='note'>27 payments</div></div>
+<div class='kpi'><div class='label'>Net profit</div><div class='value in'>£5,478.00</div><div class='note'>14.3% of income retained</div></div>
+<div class='kpi'><div class='label'>Cost ratio</div><div class='value'>85.7%</div><div class='note'>spent per £1 received</div></div>
+</div>
+<h2>Profit and loss (cash basis)</h2><div class='scroll'><table>
+<tr><th>Line</th><th class='num'>Amount</th></tr>
+<tr class='indent'><td>Rental income</td><td class="num in">£38,400.00</td></tr>
+<tr class='subtotal'><td>Total income</td><td class="num in">£38,400.00</td></tr>
+<tr class='indent'><td>Mortgage interest</td><td class="num out">-£17,400.00</td></tr>
+<tr class='indent'><td>Directors remuneration</td><td class="num out">-£9,100.00</td></tr>
+<tr class='indent'><td>Managing agent fees</td><td class="num out">-£3,072.00</td></tr>
+<tr class='indent'><td>Professional fees</td><td class="num out">-£2,100.00</td></tr>
+<tr class='indent'><td>Insurance</td><td class="num out">-£1,250.00</td></tr>
+<tr class='subtotal'><td>Total expenditure</td><td class="num out">-£32,922.00</td></tr>
+<tr class='result'><td>Net profit for the period</td><td class="num in">£5,478.00</td></tr>
+</table></div>
+<h2>Cash in processes</h2><div class='scroll'><table>
+<tr><th>Process</th><th>Category</th><th>Counterparty</th><th>Frequency</th><th class='num'>Count</th><th class='num'>Each</th><th class='num'>Total</th></tr>
+<tr><td>COMMERCIAL RENT COMM-04</td><td>Rental income</td><td>TENANT - KESTREL TRADING LTD</td><td><span class='tag'>Monthly</span></td><td class='num'>12</td><td class='num'>£3,200.00</td><td class='num'>£38,400.00</td></tr>
+</table></div>
+<h2>Cash out processes</h2><div class='scroll'><table>
+<tr><th>Process</th><th>Category</th><th>Counterparty</th><th>Frequency</th><th class='num'>Count</th><th class='num'>Each</th><th class='num'>Total</th></tr>
+<tr><td>COMMERCIAL MORTGAGE INTEREST COMM-04</td><td>Mortgage interest</td><td>MERIDIAN COMMERCIAL</td><td><span class='tag'>Monthly</span></td><td class='num'>12</td><td class='num'>£1,450.00</td><td class='num'>£17,400.00</td></tr>
+<tr><td>DIRECTORS REMUNERATION</td><td>Directors remuneration</td><td>R MEHRA</td><td><span class='tag'>One-off</span></td><td class='num'>1</td><td class='num'>£9,100.00</td><td class='num'>£9,100.00</td></tr>
+<tr><td>MANAGING AGENT COMM-04</td><td>Managing agent fees</td><td>HORIZON COMMERCIAL</td><td><span class='tag'>Monthly</span></td><td class='num'>12</td><td class='num'>£256.00</td><td class='num'>£3,072.00</td></tr>
+<tr><td>ACCOUNTANCY FEES</td><td>Professional fees</td><td>WHITFIELD & CO</td><td><span class='tag'>One-off</span></td><td class='num'>1</td><td class='num'>£2,100.00</td><td class='num'>£2,100.00</td></tr>
+<tr><td>BUILDINGS INSURANCE COMMERCIAL</td><td>Insurance</td><td>ALBION INSURANCE</td><td><span class='tag'>One-off</span></td><td class='num'>1</td><td class='num'>£1,250.00</td><td class='num'>£1,250.00</td></tr>
+</table></div>
+<h2>Accumulated total by company</h2><div class='scroll'><table>
+<tr><th>Company</th><th>Direction</th><th>Category</th><th class='num'>Transactions</th><th class='num'>Average</th><th class='num'>Accumulated</th><th class='num'>Share</th><th>First</th><th>Last</th></tr>
+<tr><td>TENANT - KESTREL TRADING LTD</td><td class='in'>CASH IN</td><td>Rental income</td><td class='num'>12</td><td class='num'>£3,200.00</td><td class='num in'>£38,400.00</td><td class='num'>100.0%</td><td>01/04/2025</td><td>01/03/2026</td></tr>
+<tr><td>MERIDIAN COMMERCIAL</td><td class='out'>CASH OUT</td><td>Mortgage interest</td><td class='num'>12</td><td class='num'>£1,450.00</td><td class='num out'>£17,400.00</td><td class='num'>52.9%</td><td>03/04/2025</td><td>03/03/2026</td></tr>
+<tr><td>R MEHRA</td><td class='out'>CASH OUT</td><td>Directors remuneration</td><td class='num'>1</td><td class='num'>£9,100.00</td><td class='num out'>£9,100.00</td><td class='num'>27.6%</td><td>30/06/2025</td><td>30/06/2025</td></tr>
+<tr><td>HORIZON COMMERCIAL</td><td class='out'>CASH OUT</td><td>Managing agent fees</td><td class='num'>12</td><td class='num'>£256.00</td><td class='num out'>£3,072.00</td><td class='num'>9.3%</td><td>05/04/2025</td><td>05/03/2026</td></tr>
+<tr><td>WHITFIELD & CO</td><td class='out'>CASH OUT</td><td>Professional fees</td><td class='num'>1</td><td class='num'>£2,100.00</td><td class='num out'>£2,100.00</td><td class='num'>6.4%</td><td>10/02/2026</td><td>10/02/2026</td></tr>
+<tr><td>ALBION INSURANCE</td><td class='out'>CASH OUT</td><td>Insurance</td><td class='num'>1</td><td class='num'>£1,250.00</td><td class='num out'>£1,250.00</td><td class='num'>3.8%</td><td>15/07/2025</td><td>15/07/2025</td></tr>
+</table></div>
+<h2>Month by month</h2><div class='scroll'><table>
+<tr><th>Month</th><th class='num'>Cash in</th><th class='num'>Cash out</th><th class='num'>Net</th><th class='num'>Running total</th></tr>
+<tr><td>2025-04</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£1,494.00</td></tr>
+<tr><td>2025-05</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£2,988.00</td></tr>
+<tr><td>2025-06</td><td class='num in'>£3,200.00</td><td class='num out'>£10,806.00</td><td class="num out">-£7,606.00</td><td class="num out">-£4,618.00</td></tr>
+<tr><td>2025-07</td><td class='num in'>£3,200.00</td><td class='num out'>£2,956.00</td><td class="num in">£244.00</td><td class="num out">-£4,374.00</td></tr>
+<tr><td>2025-08</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num out">-£2,880.00</td></tr>
+<tr><td>2025-09</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num out">-£1,386.00</td></tr>
+<tr><td>2025-10</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£108.00</td></tr>
+<tr><td>2025-11</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£1,602.00</td></tr>
+<tr><td>2025-12</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£3,096.00</td></tr>
+<tr><td>2026-01</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£4,590.00</td></tr>
+<tr><td>2026-02</td><td class='num in'>£3,200.00</td><td class='num out'>£3,806.00</td><td class="num out">-£606.00</td><td class="num in">£3,984.00</td></tr>
+<tr><td>2026-03</td><td class='num in'>£3,200.00</td><td class='num out'>£1,706.00</td><td class="num in">£1,494.00</td><td class="num in">£5,478.00</td></tr>
+</table></div>
+<h2>Flagged for review</h2>
+<div class='scroll'><table>
+<tr><th>Date</th><th>Description</th><th>Counterparty</th><th>Category</th><th class='num'>Amount</th><th>Document</th></tr>
+<tr><td>30/06/2025</td><td>DIRECTORS REMUNERATION</td><td>R MEHRA</td><td>Directors remuneration</td><td class="num out">-£9,100.00</td><td>PAYROLL-2025-06</td></tr>
+<tr><td>15/07/2025</td><td>BUILDINGS INSURANCE COMMERCIAL</td><td>ALBION INSURANCE</td><td>Insurance</td><td class="num out">-£1,250.00</td><td>POL-COMM-2025</td></tr>
+<tr><td>10/02/2026</td><td>ACCOUNTANCY FEES</td><td>WHITFIELD & CO</td><td>Professional fees</td><td class="num out">-£2,100.00</td><td>INV-WC-2310</td></tr>
+</table></div>
+<footer><p><strong>Basis.</strong> Prepared on a cash basis from bank transactions only — receipts and payments as they cleared the account. It is not a statutory profit figure: no accruals, prepayments, depreciation or tax are included.</p><p><strong>Method.</strong> Categories assigned by a TF-IDF + Naive Bayes classifier (100% cross-validated accuracy); processes grouped by KMeans clustering; review flags from IsolationForest.</p><p><strong>Controls.</strong> 0 transaction(s) without a document reference.</p></footer></div>
+</body>
+</html>

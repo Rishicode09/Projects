@@ -1,0 +1,40 @@
+CASHFLOW_ML - START HERE
+========================
+
+1. INSTALL THE LIBRARIES (once)
+
+   Windows:  & C:\Python314\python.exe -m pip install pandas scikit-learn matplotlib openpyxl
+   Mac:      python3 -m pip install pandas scikit-learn matplotlib openpyxl
+
+
+2. RUN THE ANALYSER
+
+   python cashflow_ml.py
+
+   Prints the analysis, then opens the summary window with charts.
+   Add --no-window to skip the window.
+   Add --check if something goes wrong: it reports what is installed.
+
+
+3. BUILD THE DATABASE (accumulates every statement you load)
+
+   cd sql
+   python build_database.py                     loads the CSVs it can find
+   python build_database.py april.csv           loads a specific file
+   python run_queries.py                        runs the SQL analysis
+   cd ..
+
+
+4. BUILD THE EXCEL WORKBOOK
+
+   python build_workbook.py                     from one CSV
+   python build_workbook.py --from-db           from the whole database
+
+
+DO NOT EDIT THE FILE PATHS IN THE CODE.
+If your statement is somewhere else, pass it as an argument:
+
+   python cashflow_ml.py "C:\path\to\your\statement.csv"
+
+Everything is written into the output folder.
+The full tutorial is docs/tutorial.html - open it in a browser.
