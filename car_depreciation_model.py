@@ -1,574 +1,598 @@
+"""
+Vauxhall Astra depreciation model.
+
+Tailored to vauxhall_astra_market_sample.csv: a cross-section of 100 cars where
+many different cars share the same age, and where age and mileage vary
+independently of each other.
+
+Model:
+
+    price = V0 * exp(-rate(age)) * exp(-b * mileage_10k) * PRODUCT(multipliers)
+
+    rate(age) = k1 * age                                  for age <= t0
+              = k1 * t0 + k2 * (age - t0)                 for age >  t0
+
+V0 is what the car was worth new, k1 the fast early depreciation rate, k2 the
+slower rate after the transition age t0, and b the penalty per 10,000 miles.
+The multipliers are one number per level of each categorical column, so a GS
+trim or a full service history shifts the whole curve up or down by a
+percentage rather than changing its shape.
+"""
+
 import warnings
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 from scipy.optimize import curve_fit
-from scipy.ndimage import uniform_filter1d
-from sklearn.model_selection import TimeSeriesSplit
+from sklearn.model_selection import KFold, TimeSeriesSplit
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
-from typing import Tuple, Dict, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
-# ============================================================================
-# 1. DATA GENERATION (simulating realistic market data)
-# ============================================================================
-def generate_depreciation_data(
-    max_age: int = 11,
-    transition_age: float = 3.0,
-    seed: int = 42
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Generate synthetic car depreciation data with realistic noise.
+DATA_PATH = "vauxhall_astra_market_sample.csv"
 
-    Args:
-        max_age: Oldest age (years) to generate.
-        transition_age: Age at which the true depreciation rate changes.
-        seed: Seed for the random number generator.
+# Columns the model needs. Everything else in the CSV is carried along but unused.
+AGE_COL = "age_years"
+MILEAGE_COL = "mileage"
+PRICE_COL = "asking_price_gbp"
+CATEGORICAL_COLS = ["trim", "fuel", "transmission",
+                    "service_history", "seller_type", "condition"]
 
-    Returns:
-        years: Age in years (0 to max_age)
-        mileage: Cumulative mileage in 10k miles
-        prices: Average market price in GBP
-    """
-    rng = np.random.default_rng(seed)
-    years = np.arange(0, max_age + 1, 1)
-    # Typical annual mileage: 10k-12k miles -> 1.0-1.2 (10k units)
-    annual_mileage = rng.uniform(0.9, 1.3, size=len(years))
-    # A brand-new car has zero miles on it: mileage accrues *during* each year,
-    # so year 0 must start at 0 rather than at one year's worth of driving.
-    annual_mileage[0] = 0.0
-    mileage = np.cumsum(annual_mileage)  # cumulative mileage
-
-    # True underlying model (unknown to the fitting routine).
-    # This is a genuine two-phase curve, so k2 is identifiable from the data.
-    true_V0 = 18500
-    true_k1 = 0.28   # early rapid decay
-    true_k2 = 0.12   # later slower decay
-    true_b = 0.08    # mileage penalty per 10k miles
-    true_rate = np.where(
-        years <= transition_age,
-        true_k1 * years,
-        true_k1 * transition_age + true_k2 * (years - transition_age)
-    )
-    true_prices = true_V0 * np.exp(-true_rate) * np.exp(-true_b * mileage)
-    # Add realistic noise (heteroscedastic: larger variance at higher prices)
-    noise = rng.normal(0, 0.05 * true_prices)
-    prices = np.maximum(true_prices + noise, 1000)  # floor at £1000
-    return years, mileage, prices
+# ---- palette (validated categorical slots 1-3 + blue sequential ramp) -------
+BLUE, ORANGE, AQUA, RED = "#2a78d6", "#eb6834", "#1baf7a", "#e34948"
+INK, INK_SOFT, GRID = "#0b0b0b", "#52514e", "#d9d8d4"
+BLUE_RAMP = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#104281"]
+MILEAGE_CMAP = LinearSegmentedColormap.from_list("mileage", BLUE_RAMP)
 
 
 # ============================================================================
-# 2. DEPRECIATION MODEL (continuous, physics-inspired)
+# 1. LOADING
 # ============================================================================
-class CarDepreciationModel:
+def load_astra_csv(path: str = DATA_PATH, verbose: bool = True) -> pd.DataFrame:
     """
-    Continuous double-phase exponential depreciation with mileage penalty.
+    Read the sample CSV and keep only rows the model can actually use.
 
-    Model form:
-        V(t, m) = V0 * exp(-k1 * t) * exp(-b * m)   for t <= t0
-        V(t, m) = V0 * exp(-k1*t0 - k2*(t-t0)) * exp(-b * m)   for t > t0
-    where t0 is a transition age (fixed at 3 years in this implementation).
-    The function is continuous and smooth at t0.
+    Real listing exports contain rows that will silently poison a fit: a price
+    of £1 for an advert placeholder, a six-digit mileage typo, a blank age. The
+    same guards are applied here so that swapping in real data does not require
+    rewriting this function.
     """
+    # keep_default_na=False matters here: pandas treats the literal string
+    # "None" as missing by default, which would silently turn every
+    # "None" service history into a NaN and invent a phantom category.
+    df = pd.read_csv(path, keep_default_na=False,
+                     na_values=["", "NA", "N/A", "NaN", "null", "NULL"])
 
-    N_PARAMS = 4
-    DEFAULT_BOUNDS = ([10000, 0.15, 0.05, 0.01], [30000, 0.45, 0.25, 0.20])
+    required = [AGE_COL, MILEAGE_COL, PRICE_COL]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"{path} is missing required column(s): {missing}")
 
-    def __init__(self, transition_age: float = 3.0):
+    n_start = len(df)
+    reasons: Dict[str, int] = {}
+
+    def drop(mask: pd.Series, why: str) -> None:
+        nonlocal df
+        n = int(mask.sum())
+        if n:
+            reasons[why] = n
+            df = df.loc[~mask].copy()
+
+    drop(df[required].isna().any(axis=1), "missing age, mileage or price")
+    drop(df[PRICE_COL] <= 0, "price not positive")
+    drop(df[PRICE_COL] < 300, "price below £300 (placeholder advert)")
+    drop(df[MILEAGE_COL] < 0, "negative mileage")
+    drop(df[MILEAGE_COL] > 300_000, "mileage above 300,000 (likely typo)")
+    drop(df[AGE_COL] < 0, "negative age")
+
+    # Model works in units of 10,000 miles so that b lands on a readable scale.
+    df["mileage_10k"] = df[MILEAGE_COL] / 10_000.0
+
+    for col in CATEGORICAL_COLS:
+        if col in df.columns:
+            df[col] = df[col].fillna("Unknown").astype(str)
+
+    if verbose:
+        print(f"Loaded {path}: {len(df)} of {n_start} rows usable")
+        for why, n in reasons.items():
+            print(f"  dropped {n}: {why}")
+        print(f"  age {df[AGE_COL].min():.0f}-{df[AGE_COL].max():.0f} yrs | "
+              f"mileage {df[MILEAGE_COL].min():,.0f}-{df[MILEAGE_COL].max():,.0f} | "
+              f"price £{df[PRICE_COL].min():,.0f}-£{df[PRICE_COL].max():,.0f}")
+        corr = df[AGE_COL].corr(df[MILEAGE_COL])
+        print(f"  corr(age, mileage) = {corr:.3f}", end="")
+        print("  <- age and mileage are separable" if abs(corr) < 0.95
+              else "  <- WARNING: too collinear to separate age from mileage")
+    return df
+
+
+# ============================================================================
+# 2. MODEL
+# ============================================================================
+class AstraDepreciationModel:
+    """Two-phase exponential depreciation with a mileage penalty and categorical multipliers."""
+
+    CORE_PARAMS = ["V0", "k1", "k2", "b"]
+    DEFAULT_BOUNDS = ([8_000, 0.02, 0.001, 0.001], [45_000, 0.60, 0.40, 0.30])
+
+    def __init__(self, transition_age: float = 3.0,
+                 categorical_cols: Optional[Iterable[str]] = None,
+                 shrinkage: float = 3.0):
         """
         Args:
-            transition_age: Age (years) where depreciation rate changes.
+            transition_age: Age (years) at which the depreciation rate changes.
+            categorical_cols: Columns to fit price multipliers for. None uses
+                the module default; an empty list fits the curve alone.
+            shrinkage: Pulls multipliers for thinly-populated levels back
+                toward 1.0. A level seen n times keeps n/(n+shrinkage) of its
+                estimated effect, so a trim appearing twice cannot swing the
+                model on the strength of two cars.
         """
-        self.transition_age = transition_age
+        self.transition_age = float(transition_age)
+        self.categorical_cols = (list(CATEGORICAL_COLS) if categorical_cols is None
+                                 else list(categorical_cols))
+        self.shrinkage = float(shrinkage)
+
         self.params_: Optional[Dict[str, float]] = None
-        self.covariance_: Optional[np.ndarray] = None
+        self.multipliers_: Dict[str, Dict[str, float]] = {}
         self.bounds_: Optional[Tuple] = None
         self.metrics_: Dict = {}
-        self.years_train_: Optional[np.ndarray] = None
-        self.mileage_train_: Optional[np.ndarray] = None
-        self.prices_train_: Optional[np.ndarray] = None
+        self.train_: Optional[pd.DataFrame] = None
 
-    def _model_func(self, x: Tuple[np.ndarray, np.ndarray], V0: float, k1: float, k2: float, b: float) -> np.ndarray:
-        """Underlying model function for curve fitting."""
-        t, m = x
-        # Continuous decay: piecewise exponent with matching at transition_age
-        rate = np.where(
-            t <= self.transition_age,
-            k1 * t,
-            k1 * self.transition_age + k2 * (t - self.transition_age)
-        )
-        return V0 * np.exp(-rate) * np.exp(-b * m)
+    # ---- core curve --------------------------------------------------------
+    def _curve(self, x, V0, k1, k2, b):
+        age, miles = x
+        rate = np.where(age <= self.transition_age,
+                        k1 * age,
+                        k1 * self.transition_age + k2 * (age - self.transition_age))
+        return V0 * np.exp(-rate) * np.exp(-b * miles)
 
-    def _initial_guess(self, prices: np.ndarray, bounds: Tuple) -> np.ndarray:
-        """Build a starting guess that is guaranteed to lie strictly inside the bounds."""
-        lower = np.asarray(bounds[0], dtype=float)
-        upper = np.asarray(bounds[1], dtype=float)
-        p0 = np.array([prices[0], 0.28, 0.12, 0.08], dtype=float)
-        # curve_fit rejects an initial guess that sits outside (or exactly on) the
-        # bounds, which happens whenever the first observed price falls outside
-        # the V0 range. Pull the guess just inside instead of crashing.
+    def _adjustment(self, df: pd.DataFrame) -> np.ndarray:
+        """Combined categorical multiplier for each row (1.0 where unknown)."""
+        adj = np.ones(len(df))
+        for col, levels in self.multipliers_.items():
+            if col in df.columns:
+                adj *= df[col].map(levels).fillna(1.0).to_numpy(dtype=float)
+        return adj
+
+    def _fit_core(self, age, miles, price, p0=None):
+        lower, upper = (np.asarray(b, dtype=float) for b in self.bounds_)
+        if p0 is None:
+            p0 = np.array([float(np.max(price)) * 1.1, 0.20, 0.12, 0.05])
         margin = 1e-6 * (upper - lower)
-        return np.clip(p0, lower + margin, upper - margin)
+        p0 = np.clip(np.asarray(p0, dtype=float), lower + margin, upper - margin)
+        popt, _ = curve_fit(self._curve, (age, miles), price,
+                            p0=p0, bounds=self.bounds_, maxfev=20_000)
+        return popt
 
-    @staticmethod
-    def _warn_if_pinned(popt: np.ndarray, bounds: Tuple, param_names) -> None:
+    def fit(self, df: pd.DataFrame, bounds: Optional[Tuple] = None,
+            n_iter: int = 6, warn_on_bounds: bool = True) -> "AstraDepreciationModel":
         """
-        Warn when an optimum sits on a bound.
+        Fit the curve and the categorical multipliers by backfitting.
 
-        A parameter resting exactly on its bound was not estimated from the
-        data: the optimiser wanted to go further and the constraint stopped it.
-        Reporting such a value as a fitted quantity is misleading, so it is
-        flagged rather than returned silently. With cumulative mileage nearly
-        proportional to age this is common, because the age and mileage terms
-        become hard to tell apart.
+        The two cannot be fitted in one pass without adding a parameter per
+        level, which 100 rows will not support. Instead the curve is fitted to
+        prices divided by the current multipliers, the multipliers are
+        re-estimated from what the curve leaves behind, and the two steps
+        alternate until they stop moving.
         """
-        lower = np.asarray(bounds[0], dtype=float)
-        upper = np.asarray(bounds[1], dtype=float)
+        self.bounds_ = bounds if bounds is not None else self.DEFAULT_BOUNDS
+        if len(df) < len(self.CORE_PARAMS):
+            raise ValueError(f"Need at least {len(self.CORE_PARAMS)} rows, got {len(df)}.")
+
+        age = df[AGE_COL].to_numpy(dtype=float)
+        miles = df["mileage_10k"].to_numpy(dtype=float)
+        price = df[PRICE_COL].to_numpy(dtype=float)
+
+        cols = [c for c in self.categorical_cols if c in df.columns]
+        self.multipliers_ = {c: {} for c in cols}
+        popt = None
+
+        for _ in range(n_iter):
+            adj = self._adjustment(df)
+            popt = self._fit_core(age, miles, price / adj, p0=popt)
+            base = self._curve((age, miles), *popt)
+
+            for col in cols:
+                # Ratio left over once the curve and every OTHER column are accounted for.
+                others = self._adjustment(df) / np.where(
+                    df[col].map(self.multipliers_[col]).fillna(1.0).to_numpy(dtype=float) == 0,
+                    1.0,
+                    df[col].map(self.multipliers_[col]).fillna(1.0).to_numpy(dtype=float))
+                ratio = price / np.maximum(base * others, 1e-9)
+                log_ratio = np.log(np.maximum(ratio, 1e-9))
+
+                est = {}
+                for level, idx in df.groupby(col).groups.items():
+                    rows = df.index.get_indexer(idx)
+                    n = len(rows)
+                    raw = float(np.mean(log_ratio[rows]))
+                    est[str(level)] = float(np.exp(raw * n / (n + self.shrinkage)))
+
+                # Normalise so the multipliers describe deviations around the
+                # curve rather than quietly rescaling V0.
+                mapped = df[col].map(est).astype(float).to_numpy()
+                est = {k: v / float(np.exp(np.mean(np.log(mapped)))) for k, v in est.items()}
+                self.multipliers_[col] = est
+
+        self.params_ = dict(zip(self.CORE_PARAMS, popt))
+        if warn_on_bounds:
+            self._warn_if_pinned(popt)
+
+        self.train_ = df.copy()
+        pred = self.predict(df)
+        resid = price - pred
+        self.metrics_ = {
+            "R2": 1 - np.sum(resid ** 2) / np.sum((price - price.mean()) ** 2),
+            "MAE": mean_absolute_error(price, pred),
+            "MAPE": mean_absolute_percentage_error(price, pred) * 100,
+            "RMSE": float(np.sqrt(np.mean(resid ** 2))),
+            "n": len(df),
+        }
+        return self
+
+    def _warn_if_pinned(self, popt) -> None:
+        """A parameter sitting on a bound was constrained, not estimated."""
+        lower, upper = (np.asarray(b, dtype=float) for b in self.bounds_)
         tol = 1e-6 * (upper - lower)
-        pinned = [
-            name for name, value, lo, hi, t in zip(param_names, popt, lower, upper, tol)
-            if value <= lo + t or value >= hi - t
-        ]
+        pinned = [n for n, v, lo, hi, t in zip(self.CORE_PARAMS, popt, lower, upper, tol)
+                  if v <= lo + t or v >= hi - t]
         if pinned:
             warnings.warn(
                 f"Parameter(s) {', '.join(pinned)} converged onto a fitting bound. "
-                f"These values are constrained, not estimated, and should not be "
-                f"interpreted as depreciation rates.",
-                RuntimeWarning,
-                stacklevel=3
-            )
+                f"They are constrained, not estimated, and must not be read as rates.",
+                RuntimeWarning, stacklevel=3)
 
-    def fit(self, years: np.ndarray, mileage: np.ndarray, prices: np.ndarray,
-            bounds: Optional[Tuple] = None) -> 'CarDepreciationModel':
-        """
-        Fit model parameters using non-linear least squares.
-
-        Args:
-            years: Age in years
-            mileage: Cumulative mileage (same units as used in training)
-            prices: Observed market prices
-            bounds: (lower_bounds, upper_bounds) for (V0, k1, k2, b)
-        """
-        if bounds is None:
-            # Industry-informed bounds: V0 (10k-30k), k1 (0.15-0.45), k2 (0.05-0.25), b (0.01-0.20)
-            bounds = self.DEFAULT_BOUNDS
-        self.bounds_ = bounds
-
-        years = np.asarray(years, dtype=float)
-        mileage = np.asarray(mileage, dtype=float)
-        prices = np.asarray(prices, dtype=float)
-
-        if len(years) < self.N_PARAMS:
-            raise ValueError(
-                f"Need at least {self.N_PARAMS} observations to fit "
-                f"{self.N_PARAMS} parameters, got {len(years)}."
-            )
-
-        # Initial guess (reasonable starting point, clipped inside the bounds)
-        p0 = self._initial_guess(prices, bounds)
-
-        popt, self.covariance_ = curve_fit(
-            self._model_func,
-            (years, mileage),
-            prices,
-            p0=p0,
-            bounds=bounds,
-            maxfev=10000
-        )
-
-        # Store parameters as dictionary for clarity
-        param_names = ['V0', 'k1', 'k2', 'b']
-        self.params_ = dict(zip(param_names, popt))
-        self._warn_if_pinned(popt, bounds, param_names)
-
-        # Compute in-sample metrics
-        pred = self.predict(years, mileage)
-        residuals = prices - pred
-        self.metrics_ = {
-            'R2': 1 - np.sum(residuals**2) / np.sum((prices - np.mean(prices))**2),
-            'MAE': mean_absolute_error(prices, pred),
-            'MAPE': mean_absolute_percentage_error(prices, pred) * 100,
-            'RMSE': np.sqrt(np.mean(residuals**2))
-        }
-        # Store training data for predict_with_uncertainty (for residuals calculation)
-        self.years_train_ = years
-        self.mileage_train_ = mileage
-        self.prices_train_ = prices
-        return self
-
-    def predict(self, years: np.ndarray, mileage: np.ndarray) -> np.ndarray:
-        """
-        Return point predictions.
-
-        Args:
-            years: Array of years for prediction.
-            mileage: Array of mileage for prediction.
-
-        Returns:
-            np.ndarray: Predicted prices.
-        """
+    # ---- prediction --------------------------------------------------------
+    def predict(self, df: pd.DataFrame) -> np.ndarray:
         if self.params_ is None:
-            raise RuntimeError("Model must be fitted before predict()")
-        years = np.atleast_1d(np.asarray(years, dtype=float))
-        mileage = np.atleast_1d(np.asarray(mileage, dtype=float))
-        return self._model_func(
-            (years, mileage),
-            self.params_['V0'], self.params_['k1'],
-            self.params_['k2'], self.params_['b']
-        )
+            raise RuntimeError("Call fit() before predict().")
+        age = df[AGE_COL].to_numpy(dtype=float)
+        miles = (df["mileage_10k"] if "mileage_10k" in df.columns
+                 else df[MILEAGE_COL] / 10_000.0).to_numpy(dtype=float)
+        return self._curve((age, miles), *[self.params_[p] for p in self.CORE_PARAMS]) \
+            * self._adjustment(df)
 
-    def predict_with_uncertainty(
-        self, years: np.ndarray, mileage: np.ndarray,
-        n_bootstrap: int = 500, confidence: float = 0.90,
-        random_state: Optional[int] = None
-    ) -> Dict[str, np.ndarray]:
+    def predict_car(self, age: float, mileage: float, **features) -> float:
+        """Price one specific car. Unknown or omitted features get a multiplier of 1.0."""
+        row = {AGE_COL: age, MILEAGE_COL: mileage, "mileage_10k": mileage / 10_000.0}
+        row.update(features)
+        return float(self.predict(pd.DataFrame([row]))[0])
+
+    def effective_n_params(self) -> int:
+        """Curve parameters plus one free multiplier per level beyond the first."""
+        return len(self.CORE_PARAMS) + sum(max(len(v) - 1, 0)
+                                           for v in self.multipliers_.values())
+
+    def predict_with_uncertainty(self, df: pd.DataFrame, n_bootstrap: int = 400,
+                                 confidence: float = 0.90,
+                                 random_state: Optional[int] = None) -> Dict[str, np.ndarray]:
         """
-        Generate prediction intervals using bootstrap on residuals.
+        Prediction intervals by resampling proportional residuals.
 
-        This accounts for both parameter uncertainty (by refitting the model on
-        resampled residuals) and residual noise (by adding a fresh residual draw
-        to each bootstrap curve). Omitting the second step would yield a
-        confidence interval for the mean curve, which is materially narrower
-        than a prediction interval for an individual car.
-
-        Args:
-            years: Array of years for prediction.
-            mileage: Array of mileage for prediction.
-            n_bootstrap: Number of bootstrap iterations.
-            confidence: Confidence level for the prediction interval (e.g., 0.90 for 90%).
-            random_state: Seed for the bootstrap RNG, so intervals are reproducible.
-
-        Returns:
-            Dict[str, np.ndarray]: A dictionary containing 'mean' predictions,
-            'lower' bound, 'upper' bound, and 'confidence' level.
+        Proportional rather than absolute, because a £25k car misses by
+        hundreds where a £3k car misses by tens; pooling absolute residuals
+        would make the interval far too narrow at the top of the range and far
+        too wide at the bottom.
         """
-        if self.params_ is None:
-            raise RuntimeError("Model must be fitted first")
-        if self.prices_train_ is None or self.years_train_ is None or self.mileage_train_ is None:
-            raise RuntimeError("Model training data (years, mileage, prices) not stored.")
-
-        years = np.atleast_1d(np.asarray(years, dtype=float))
-        mileage = np.atleast_1d(np.asarray(mileage, dtype=float))
+        if self.train_ is None:
+            raise RuntimeError("Call fit() before predict_with_uncertainty().")
         rng = np.random.default_rng(random_state)
 
-        # Point predictions for the input years/mileage (can be future data)
-        pred_mean = self.predict(years, mileage)
-
-        # Obtain in-sample residuals (fitted on the original training data)
-        # These residuals are used for bootstrapping the noise component
-        train_pred_on_train_data = self.predict(self.years_train_, self.mileage_train_)
-        residuals = self.prices_train_ - train_pred_on_train_data
-
-        # Bootstrap: generate new residuals by sampling with replacement
-        n_points_train = len(self.years_train_)
-
-        # In-sample residuals are systematically smaller than the true errors,
-        # because fitting four free parameters lets the curve bend towards the
-        # noise. Rescaling by sqrt(n / (n - p)) restores the correct spread;
-        # without it the intervals below come out far too narrow.
-        dof = n_points_train - self.N_PARAMS
+        train = self.train_
+        price = train[PRICE_COL].to_numpy(dtype=float)
+        fitted = self.predict(train)
+        dof = len(train) - self.effective_n_params()
         if dof <= 0:
             raise ValueError(
-                f"Cannot bootstrap with {n_points_train} training points and "
-                f"{self.N_PARAMS} parameters: no residual degrees of freedom."
-            )
+                f"{len(train)} rows cannot support {self.effective_n_params()} effective "
+                f"parameters. Reduce categorical_cols or raise shrinkage.")
+        # In-sample residuals understate real error because the fit bends toward
+        # the noise; sqrt(n/(n-p)) restores the spread.
+        rel = (price / np.maximum(fitted, 1e-9) - 1.0) * np.sqrt(len(train) / dof)
 
-        # Price noise scales with price: a £20k car is off by hundreds, a £1.5k
-        # car by tens. Resampling absolute residuals across all price levels
-        # therefore produces intervals that are far too narrow for new cars and
-        # far too wide for old ones. Resample proportional residuals instead, so
-        # each drawn error is rescaled to the price level it is applied to.
-        rel_residuals = (residuals / train_pred_on_train_data) * np.sqrt(n_points_train / dof)
-        n_points_predict = len(years)  # For the predicted range
-        p0 = [self.params_['V0'], self.params_['k1'], self.params_['k2'], self.params_['b']]
+        age = train[AGE_COL].to_numpy(dtype=float)
+        miles = train["mileage_10k"].to_numpy(dtype=float)
+        adj_train = self._adjustment(train)
+        base_pred = self.predict(df)
+        p0 = [self.params_[p] for p in self.CORE_PARAMS]
 
-        pred_bootstrap = []
+        draws: List[np.ndarray] = []
         for _ in range(n_bootstrap):
-            # Sample residuals for the training data (same size as original training data)
-            resampled_resid = rng.choice(rel_residuals, size=n_points_train, replace=True)
-            # Create a bootstrapped version of the training prices
-            y_boot = train_pred_on_train_data * (1.0 + resampled_resid)
-
-            # Refit model on bootstrapped data (using original training years/mileage)
+            boot = fitted * (1.0 + rng.choice(rel, size=len(train), replace=True))
             try:
-                boot_params, _ = curve_fit(
-                    self._model_func,
-                    (self.years_train_, self.mileage_train_),
-                    y_boot,
-                    p0=p0,
-                    bounds=self.bounds_,
-                    maxfev=5000
-                )
+                popt = self._fit_core(age, miles, np.maximum(boot, 1.0) / adj_train, p0=p0)
             except (RuntimeError, ValueError):
-                # If curve_fit fails for a bootstrap sample, skip it
                 continue
+            curve = self._curve(
+                (df[AGE_COL].to_numpy(dtype=float),
+                 (df["mileage_10k"] if "mileage_10k" in df.columns
+                  else df[MILEAGE_COL] / 10_000.0).to_numpy(dtype=float)), *popt)
+            # Add an independent noise draw: this is an interval for one car,
+            # not for the average car.
+            draws.append(curve * self._adjustment(df)
+                         * (1.0 + rng.choice(rel, size=len(df), replace=True)))
 
-            # Predict on the *target* years/mileage for uncertainty estimation
-            boot_curve = self._model_func((years, mileage), *boot_params)
-            # Add an independent noise draw so the interval covers an individual
-            # observation, not just the fitted mean.
-            boot_pred = boot_curve * (
-                1.0 + rng.choice(rel_residuals, size=n_points_predict, replace=True)
-            )
-            pred_bootstrap.append(boot_pred)
+        if not draws:
+            warnings.warn("Every bootstrap refit failed; returning point predictions.",
+                          RuntimeWarning, stacklevel=2)
+            return {"mean": base_pred, "lower": base_pred, "upper": base_pred,
+                    "confidence": confidence}
 
-        if not pred_bootstrap:
-            # Handle case where all bootstrap fits failed
-            print("Warning: All bootstrap fits failed. Returning point prediction with no interval.")
-            return {
-                'mean': pred_mean,
-                'lower': pred_mean,
-                'upper': pred_mean,
-                'confidence': confidence
-            }
-
-        pred_bootstrap = np.array(pred_bootstrap)
-        # Ensure the bootstrapped predictions have the same size as the input 'years'
-        if pred_bootstrap.shape[1] != n_points_predict:
-            raise ValueError(f"Bootstrapped prediction shape mismatch. Expected {n_points_predict}, got {pred_bootstrap.shape[1]}")
-
-        lower = np.percentile(pred_bootstrap, (1 - confidence) / 2 * 100, axis=0)
-        upper = np.percentile(pred_bootstrap, (1 + confidence) / 2 * 100, axis=0)
-
+        arr = np.asarray(draws)
         return {
-            'mean': pred_mean,
-            'lower': lower,
-            'upper': upper,
-            'confidence': confidence
+            "mean": base_pred,
+            "lower": np.percentile(arr, (1 - confidence) / 2 * 100, axis=0),
+            "upper": np.percentile(arr, (1 + confidence) / 2 * 100, axis=0),
+            "confidence": confidence,
         }
 
-    def cross_validate(self, years: np.ndarray, mileage: np.ndarray, prices: np.ndarray,
-                       n_splits: int = 5) -> Dict[str, float]:
+    # ---- validation --------------------------------------------------------
+    def cross_validate(self, df: pd.DataFrame, n_splits: int = 5,
+                       scheme: str = "random", random_state: int = 0) -> Dict[str, float]:
         """
-        Time series cross-validation to estimate real-world generalisation error.
+        Estimate out-of-sample error.
 
-        Folds whose training window is too small to identify all four parameters
-        are skipped rather than fitted, since such a fit is unconstrained and
-        would contribute a meaningless score to the average.
-
-        Returns:
-            Dictionary with mean and std of MAPE across test folds.
+        scheme="random"      hold out random cars. Answers: how well do we price
+                             a car similar to ones already seen?
+        scheme="age_blocked" train on younger cars, test on older ones. Answers:
+                             how well do we extrapolate down the curve? This is
+                             the harder and more honest test, and the one that
+                             matches forecasting a car's future value.
         """
-        years = np.asarray(years, dtype=float)
-        mileage = np.asarray(mileage, dtype=float)
-        prices = np.asarray(prices, dtype=float)
+        if scheme == "random":
+            splitter = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+            order = df.index
+        elif scheme == "age_blocked":
+            splitter = TimeSeriesSplit(n_splits=n_splits)
+            order = df.sort_values(AGE_COL).index
+        else:
+            raise ValueError("scheme must be 'random' or 'age_blocked'")
 
-        tscv = TimeSeriesSplit(n_splits=n_splits)
-        mape_scores = []
-        mae_scores = []
-        n_skipped = 0
+        ordered = df.loc[order].reset_index(drop=True)
+        mapes, maes, skipped = [], [], 0
 
-        for train_idx, test_idx in tscv.split(years):
-            if len(train_idx) < self.N_PARAMS:
-                n_skipped += 1
+        for train_idx, test_idx in splitter.split(ordered):
+            train, test = ordered.iloc[train_idx], ordered.iloc[test_idx]
+            if len(train) < len(self.CORE_PARAMS) + 2:
+                skipped += 1
                 continue
+            fold = AstraDepreciationModel(self.transition_age,
+                                          self.categorical_cols, self.shrinkage)
+            # Bound warnings from folds are noise; the full-data fit reports them.
+            fold.fit(train, bounds=self.bounds_, warn_on_bounds=False)
+            pred = fold.predict(test)
+            actual = test[PRICE_COL].to_numpy(dtype=float)
+            mapes.append(mean_absolute_percentage_error(actual, pred) * 100)
+            maes.append(mean_absolute_error(actual, pred))
 
-            # Train on expanding window
-            years_train, miles_train = years[train_idx], mileage[train_idx]
-            prices_train = prices[train_idx]
-            # Fit a fresh model on this fold
-            fold_model = CarDepreciationModel(transition_age=self.transition_age)
-            fold_model.fit(years_train, miles_train, prices_train, bounds=self.bounds_)
+        if not mapes:
+            raise ValueError(f"No usable CV folds for scheme={scheme!r}.")
+        return {"scheme": scheme, "folds": len(mapes), "skipped": skipped,
+                "MAPE_mean": float(np.mean(mapes)), "MAPE_std": float(np.std(mapes)),
+                "MAE_mean": float(np.mean(maes)), "MAE_std": float(np.std(maes))}
 
-            # Predict on test
-            years_test, miles_test = years[test_idx], mileage[test_idx]
-            prices_test = prices[test_idx]
-            pred_test = fold_model.predict(years_test, miles_test)
 
-            mape_scores.append(mean_absolute_percentage_error(prices_test, pred_test) * 100)
-            mae_scores.append(mean_absolute_error(prices_test, pred_test))
+def select_transition_age(df: pd.DataFrame, candidates=np.arange(1.5, 6.5, 0.5),
+                          **kwargs) -> Tuple[float, pd.DataFrame]:
+    """
+    Choose t0 by fit quality instead of assuming 3 years.
 
-        if not mape_scores:
-            raise ValueError(
-                f"All {n_splits} CV folds had fewer than {self.N_PARAMS} training points. "
-                f"Reduce n_splits or provide more data."
-            )
-        if n_skipped:
-            print(f"Note: skipped {n_skipped} CV fold(s) with too few training points.")
-
-        return {
-            'cv_MAPE_mean': np.mean(mape_scores),
-            'cv_MAPE_std': np.std(mape_scores),
-            'cv_MAE_mean': np.mean(mae_scores),
-            'cv_MAE_std': np.std(mae_scores),
-            'cv_n_folds': len(mape_scores)
-        }
+    t0 adds no parameters, so comparing in-sample RMSE across candidates is a
+    fair comparison rather than a complexity contest.
+    """
+    rows = []
+    for t0 in candidates:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            m = AstraDepreciationModel(transition_age=float(t0), **kwargs).fit(
+                df, warn_on_bounds=False)
+        rows.append({"transition_age": float(t0), "RMSE": m.metrics_["RMSE"],
+                     "MAPE": m.metrics_["MAPE"], "R2": m.metrics_["R2"]})
+    table = pd.DataFrame(rows)
+    return float(table.loc[table["RMSE"].idxmin(), "transition_age"]), table
 
 
 # ============================================================================
-# 3. VISUALISATION (professional, publication-ready)
+# 3. VISUALISATION
 # ============================================================================
-def plot_depreciation_analysis(
-    model: CarDepreciationModel,
-    years: np.ndarray,
-    mileage: np.ndarray,
-    prices: np.ndarray,
-    future_years: np.ndarray,
-    future_mileage: np.ndarray,
-    cv_scores: Dict[str, float],
-    random_state: Optional[int] = None
-) -> None:
-    """Create a comprehensive 2x2 figure with fit, residuals, uncertainty, and parameters."""
+def _style_axis(ax):
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(GRID)
+    ax.tick_params(colors=INK_SOFT, labelsize=9)
+    ax.grid(True, color=GRID, linewidth=0.6, alpha=0.7)
+    ax.set_axisbelow(True)
 
-    sns.set_style("whitegrid")
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-    # ---- Panel 1: Model fit with uncertainty (historical + future) ----
+def plot_analysis(model: AstraDepreciationModel, df: pd.DataFrame,
+                  cv_random: Dict, cv_age: Dict,
+                  random_state: Optional[int] = None, save_path: Optional[str] = None):
+    """Four panels: the fitted curve, residuals, categorical effects, and the numbers."""
+    mpl.rcParams.update({"font.family": "DejaVu Sans", "text.color": INK,
+                         "axes.labelcolor": INK_SOFT, "figure.facecolor": "#fcfcfb",
+                         "axes.facecolor": "#fcfcfb"})
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10.5))
+
+    # ---- Panel 1: price vs age, shaded by mileage --------------------------
     ax = axes[0, 0]
-    # Historical data
-    ax.scatter(years, prices, color='black', s=60, zorder=5, label='Market data')
-    # Historical fit
-    years_cont = np.linspace(0, max(years), 100)
-    mile_cont = np.interp(years_cont, years, mileage)  # interpolate mileage
-    pred_cont = model.predict(years_cont, mile_cont)
-    ax.plot(years_cont, pred_cont, 'r-', linewidth=2, label='Fitted model')
+    _style_axis(ax)
+    ages = df[AGE_COL].to_numpy(dtype=float)
+    prices = df[PRICE_COL].to_numpy(dtype=float)
+    miles = df[MILEAGE_COL].to_numpy(dtype=float)
 
-    # Future predictions with uncertainty
-    pred_future = model.predict_with_uncertainty(
-        future_years, future_mileage, random_state=random_state
-    )
-    ax.fill_between(future_years, pred_future['lower'], pred_future['upper'],
-                    alpha=0.25, color='blue', label=f"{int(pred_future['confidence']*100)}% prediction interval")
-    ax.plot(future_years, pred_future['mean'], 'b--', linewidth=2, label='Forecast')
+    norm = Normalize(vmin=miles.min(), vmax=miles.max())
+    ax.scatter(ages, prices, c=miles, cmap=MILEAGE_CMAP, norm=norm,
+               s=52, edgecolors="#fcfcfb", linewidths=1.2, zorder=3, label="Cars in sample")
 
-    ax.axvline(x=max(years), color='gray', linestyle=':', alpha=0.7, label='Last observed')
-    ax.set_xlabel('Years since new')
-    ax.set_ylabel('Price (£)')
-    ax.set_title('Car Depreciation: Model Fit & Forecast')
-    ax.legend(loc='upper right')
-    ax.grid(True, alpha=0.3)
+    # Reference curve: a car doing 10,000 miles a year on average settings.
+    grid = np.linspace(0, ages.max() + 2, 160)
+    ref = pd.DataFrame({AGE_COL: grid, "mileage_10k": grid * 1.0})
+    band = model.predict_with_uncertainty(ref, confidence=0.90, random_state=random_state)
+    ax.fill_between(grid, band["lower"], band["upper"], color=ORANGE, alpha=0.16,
+                    linewidth=0, zorder=1, label="90% prediction interval")
+    ax.plot(grid, band["mean"], color=ORANGE, linewidth=2, zorder=4,
+            label="Fitted curve (10k miles/yr)")
+    ax.axvline(model.transition_age, color=INK_SOFT, linestyle=":", linewidth=1.2,
+               alpha=0.8, zorder=2, label=f"Transition age ({model.transition_age:g} yrs)")
 
-    # ---- Panel 2: Residual diagnostics ----
+    ax.set_xlabel("Age (years)")
+    ax.set_ylabel("Asking price (£)")
+    ax.set_title("Astra depreciation: price against age", fontsize=12, color=INK, pad=10)
+    ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("£{x:,.0f}"))
+    ax.legend(frameon=False, fontsize=8.5, loc="upper right")
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=MILEAGE_CMAP), ax=ax, pad=0.02)
+    cb.set_label("Mileage", color=INK_SOFT, fontsize=9)
+    cb.ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
+    cb.ax.tick_params(colors=INK_SOFT, labelsize=8)
+    cb.outline.set_visible(False)
+
+    # ---- Panel 2: residuals ------------------------------------------------
     ax = axes[0, 1]
-    pred_train = model.predict(years, mileage)
-    residuals = prices - pred_train
-    ax.scatter(pred_train, residuals, alpha=0.7, edgecolors='k')
-    ax.axhline(y=0, color='red', linestyle='--')
-    ax.set_xlabel('Predicted Price (£)')
-    ax.set_ylabel('Residual (£)')
-    ax.set_title('Residuals vs. Fitted Values')
-    ax.grid(True, alpha=0.3)
-    # Calculate running mean for visual
-    order = np.argsort(pred_train)
-    running_mean = uniform_filter1d(residuals[order], size=5, mode='reflect')
-    ax.plot(pred_train[order], running_mean, color='darkred', linewidth=2, label='Local mean')
-    ax.legend()
+    _style_axis(ax)
+    fitted = model.predict(df)
+    resid_pct = (prices - fitted) / fitted * 100
+    ax.scatter(fitted, resid_pct, s=46, color=BLUE, alpha=0.75,
+               edgecolors="#fcfcfb", linewidths=1.1, zorder=3)
+    ax.axhline(0, color=RED, linestyle="--", linewidth=1.4, zorder=2)
+    ax.set_xlabel("Fitted price (£)")
+    ax.set_ylabel("Residual (% of fitted price)")
+    ax.set_title("Residuals — flat band means the shape is right", fontsize=12, color=INK, pad=10)
+    ax.xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("£{x:,.0f}"))
 
-    # ---- Panel 3: Parameter importance and depreciation rates ----
+    # ---- Panel 3: categorical effects --------------------------------------
     ax = axes[1, 0]
-    params = model.params_
-    # V0 (~10^4) and the rates (~10^-1) differ by five orders of magnitude, so
-    # plotting them on one axis renders the rate bars invisible. Give V0 its own
-    # axis on the right.
-    rate_names = ['Early rate k₁', 'Late rate k₂', 'Mileage factor b']
-    rate_values = [params['k1'], params['k2'], params['b']]
-    x = np.arange(4)
+    _style_axis(ax)
+    effects = [(f"{col.replace('_', ' ')}: {lvl}", (mult - 1) * 100)
+               for col, levels in model.multipliers_.items()
+               for lvl, mult in levels.items()]
+    effects.sort(key=lambda t: t[1])
+    top = effects[:6] + effects[-6:] if len(effects) > 12 else effects
+    labels = [t[0] for t in top]
+    values = [t[1] for t in top]
+    ax.barh(range(len(top)), values, height=0.66,
+            color=[BLUE if v >= 0 else ORANGE for v in values], zorder=3)
+    ax.axvline(0, color=INK_SOFT, linewidth=1.1, zorder=4)
+    ax.set_yticks(range(len(top)))
+    ax.set_yticklabels(labels, fontsize=8.5)
+    ax.set_xlabel("Effect on price (%)")
+    ax.set_title("What moves the price, holding age and mileage fixed",
+                 fontsize=12, color=INK, pad=10)
+    for i, v in enumerate(values):
+        ax.text(v + (0.6 if v >= 0 else -0.6), i, f"{v:+.1f}%", va="center",
+                ha="left" if v >= 0 else "right", fontsize=8, color=INK_SOFT)
+    ax.margins(x=0.18)
+    ax.grid(axis="y", visible=False)
 
-    rate_bars = ax.bar(x[:3], rate_values, color=['coral', 'lightgreen', 'skyblue'])
-    ax.set_ylabel('Rate (per year, or per 10k miles)')
-    ax.set_ylim(0, max(rate_values) * 1.35)
-    ax.bar_label(rate_bars, fmt='%.3f', padding=2, fontsize=9)
-
-    ax_v0 = ax.twinx()
-    v0_bar = ax_v0.bar(x[3], params['V0'], color='gold')
-    ax_v0.set_ylabel('Initial price V₀ (£)')
-    ax_v0.set_ylim(0, params['V0'] * 1.35)
-    ax_v0.bar_label(v0_bar, fmt='£%.0f', padding=2, fontsize=9)
-    ax_v0.grid(False)
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(rate_names + ['Initial price V₀'], fontsize=8)
-
-    # Convert rates to meaningful percentages: annual depreciation for k1 and k2
-    annual_dep_early = (1 - np.exp(-params['k1'])) * 100
-    annual_dep_late = (1 - np.exp(-params['k2'])) * 100
-    mileage_penalty = (1 - np.exp(-params['b'])) * 100
-    # Kept inside the title so it cannot be clipped off the bottom of the figure.
-    ax.set_title(
-        'Fitted Model Parameters\n'
-        f'Early annual loss {annual_dep_early:.1f}%  |  Late annual loss {annual_dep_late:.1f}%'
-        f'  |  Per 10k mi {mileage_penalty:.1f}%',
-        fontsize=10
-    )
-    ax.grid(axis='y', alpha=0.3)
-
-    # ---- Panel 4: Cross-validation performance summary ----
+    # ---- Panel 4: the numbers ----------------------------------------------
     ax = axes[1, 1]
-    ax.axis('off')
-    metrics_text = (
-        f"Model Performance (in-sample)\n"
-        f"{'─' * 30}\n"
-        f"R² = {model.metrics_['R2']:.4f}\n"
-        f"MAE = £{model.metrics_['MAE']:.0f}\n"
-        f"MAPE = {model.metrics_['MAPE']:.1f}%\n"
-        f"RMSE = £{model.metrics_['RMSE']:.0f}\n\n"
-        f"Time Series Cross-validation ({cv_scores['cv_n_folds']} folds)\n"
-        f"{'─' * 30}\n"
-        f"CV MAPE = {cv_scores['cv_MAPE_mean']:.1f}% ± {cv_scores['cv_MAPE_std']:.1f}\n"
-        f"CV MAE  = £{cv_scores['cv_MAE_mean']:.0f} ± £{cv_scores['cv_MAE_std']:.0f}\n\n"
-        f"Interpretation:\n"
-        f"• The model explains {model.metrics_['R2']*100:.1f}% of price variance.\n"
-        f"• Out-of-sample error (CV MAPE) is ~{cv_scores['cv_MAPE_mean']:.1f}%,"
-        f"\n  which is realistic for used car valuation."
-    )
-    ax.text(0.05, 0.95, metrics_text, transform=ax.transAxes, verticalalignment='top',
-            fontsize=10, bbox=dict(boxstyle='round', facecolor='whitesmoke', alpha=0.8))
+    ax.axis("off")
+    p = model.params_
+    lines = [
+        ("Fitted curve", True),
+        (f"  V0 (price when new)      £{p['V0']:,.0f}", False),
+        (f"  Early annual loss        {(1 - np.exp(-p['k1'])) * 100:.1f}%  (to age {model.transition_age:g})", False),
+        (f"  Later annual loss        {(1 - np.exp(-p['k2'])) * 100:.1f}%", False),
+        (f"  Per 10,000 miles         {(1 - np.exp(-p['b'])) * 100:.1f}%", False),
+        ("", False),
+        ("In-sample fit", True),
+        (f"  R²    {model.metrics_['R2']:.3f}", False),
+        (f"  MAPE  {model.metrics_['MAPE']:.1f}%", False),
+        (f"  MAE   £{model.metrics_['MAE']:,.0f}", False),
+        (f"  RMSE  £{model.metrics_['RMSE']:,.0f}", False),
+        ("", False),
+        ("Out-of-sample (cross-validated)", True),
+        (f"  Random holdout    MAPE {cv_random['MAPE_mean']:.1f}% ± {cv_random['MAPE_std']:.1f}", False),
+        (f"                    MAE  £{cv_random['MAE_mean']:,.0f}", False),
+        (f"  Older-car holdout MAPE {cv_age['MAPE_mean']:.1f}% ± {cv_age['MAPE_std']:.1f}", False),
+        (f"                    MAE  £{cv_age['MAE_mean']:,.0f}", False),
+        ("", False),
+        ("How to read this", True),
+        (f"  {model.metrics_['n']} cars, {model.effective_n_params()} effective parameters.", False),
+        ("  Random holdout is the easier test. The older-car", False),
+        ("  holdout extrapolates beyond the training ages and", False),
+        ("  is the number to quote for forecasting.", False),
+    ]
+    y = 0.98
+    for text, is_head in lines:
+        ax.text(0.02, y, text, transform=ax.transAxes, va="top", fontsize=10,
+                family="DejaVu Sans Mono" if not is_head else "DejaVu Sans",
+                color=INK if is_head else INK_SOFT,
+                fontweight="bold" if is_head else "normal")
+        y -= 0.040 if text else 0.020
 
-    plt.tight_layout()
-    plt.show()
+    fig.suptitle("Vauxhall Astra depreciation model", fontsize=15, color=INK,
+                 x=0.02, ha="left", y=0.985)
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    if save_path:
+        fig.savefig(save_path, dpi=120, facecolor="#fcfcfb")
+    else:
+        plt.show()
+    return fig
 
 
 # ============================================================================
-# 4. MAIN EXECUTION
+# 4. MAIN
 # ============================================================================
 if __name__ == "__main__":
-    TRANSITION_AGE = 3.0
     SEED = 42
+    df = load_astra_csv(DATA_PATH)
 
-    # Generate data
-    years, mileage, prices = generate_depreciation_data(
-        max_age=10, transition_age=TRANSITION_AGE, seed=SEED
-    )
+    print("\nChoosing the transition age")
+    best_t0, t0_table = select_transition_age(df)
+    print(t0_table.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
+    print(f"  best transition age: {best_t0:g} years")
 
-    # Create and fit model
-    model = CarDepreciationModel(transition_age=TRANSITION_AGE)
-    model.fit(years, mileage, prices)
+    print("\nFitting")
+    model = AstraDepreciationModel(transition_age=best_t0).fit(df)
+    p = model.params_
+    print(f"  V0 = £{p['V0']:,.0f} | early {(1 - np.exp(-p['k1'])) * 100:.1f}%/yr"
+          f" | later {(1 - np.exp(-p['k2'])) * 100:.1f}%/yr"
+          f" | {(1 - np.exp(-p['b'])) * 100:.1f}% per 10k miles")
+    print(f"  R² {model.metrics_['R2']:.3f} | MAPE {model.metrics_['MAPE']:.1f}%"
+          f" | MAE £{model.metrics_['MAE']:,.0f}")
 
-    # Cross-validation
-    cv_results = model.cross_validate(years, mileage, prices, n_splits=5)
+    print("\nWhat moves the price, holding age and mileage fixed")
+    for col, levels in model.multipliers_.items():
+        parts = ", ".join(f"{lvl} {(m - 1) * 100:+.1f}%"
+                          for lvl, m in sorted(levels.items(), key=lambda kv: -kv[1]))
+        print(f"  {col:<16} {parts}")
 
-    # Future predictions (next 3 years, assuming similar annual mileage)
-    future_years = np.arange(0, 13.5, 0.5)
-    # Estimate future mileage by linear extrapolation of average annual increase.
-    # Inside the observed age range, use the actual mileage path rather than a
-    # backwards extrapolation from the final point, which would contradict the
-    # data the model was fitted on.
-    annual_mileage_rate = np.mean(np.diff(mileage) / np.diff(years))
-    future_mileage = np.where(
-        future_years <= years[-1],
-        np.interp(future_years, years, mileage),
-        mileage[-1] + annual_mileage_rate * (future_years - years[-1])
-    )
-    future_mileage = np.maximum(future_mileage, 0)
+    print("\nCross-validation")
+    cv_random = model.cross_validate(df, scheme="random", random_state=SEED)
+    cv_age = model.cross_validate(df, scheme="age_blocked")
+    for cv in (cv_random, cv_age):
+        print(f"  {cv['scheme']:<12} {cv['folds']} folds | "
+              f"MAPE {cv['MAPE_mean']:.1f}% ± {cv['MAPE_std']:.1f} | "
+              f"MAE £{cv['MAE_mean']:,.0f}")
 
-    # Plot everything
-    plot_depreciation_analysis(model, years, mileage, prices,
-                               future_years, future_mileage, cv_results,
-                               random_state=SEED)
+    print("\nExample valuations (90% prediction interval)")
+    examples = [
+        dict(age=3, mileage=30_000, trim="GS", fuel="Petrol", transmission="Manual",
+             service_history="Full", seller_type="Franchise dealer", condition="Good"),
+        dict(age=3, mileage=75_000, trim="Design", fuel="Diesel", transmission="Manual",
+             service_history="Partial", seller_type="Private", condition="Fair"),
+        dict(age=7, mileage=60_000, trim="SRi", fuel="Petrol", transmission="Manual",
+             service_history="Full", seller_type="Independent dealer", condition="Good"),
+    ]
+    rows = []
+    for e in examples:
+        rows.append({AGE_COL: e["age"], MILEAGE_COL: e["mileage"],
+                     "mileage_10k": e["mileage"] / 10_000.0,
+                     **{k: v for k, v in e.items() if k not in ("age", "mileage")}})
+    ex_df = pd.DataFrame(rows)
+    band = model.predict_with_uncertainty(ex_df, confidence=0.90, random_state=SEED)
+    header = f"  {'Age':>3} {'Mileage':>8} {'Spec':<46} {'Estimate':>10} {'90% range':>19}"
+    print(header)
+    print("  " + "-" * (len(header) - 2))
+    for i, e in enumerate(examples):
+        spec = f"{e['trim']}, {e['fuel']}, {e['service_history']} history, {e['seller_type']}"
+        spec = spec if len(spec) <= 46 else spec[:43] + "..."
+        rng_txt = f"£{band['lower'][i]:,.0f} - £{band['upper'][i]:,.0f}"
+        print(f"  {e['age']:>3} {e['mileage']:>8,} {spec:<46} "
+              f"£{band['mean'][i]:>9,.0f} {rng_txt:>19}")
 
-    # Print detailed prediction table for key ages
-    print("\n" + "="*70)
-    print("FORECAST WITH 90% PREDICTION INTERVALS")
-    print("="*70)
-    key_ages = np.arange(0, 13, 1)
-    mile_at_key = np.interp(key_ages, future_years, future_mileage)
-    pred_int = model.predict_with_uncertainty(
-        key_ages, mile_at_key, confidence=0.90, random_state=SEED
-    )
-    print(f"{'Age (years)':<12} {'Predicted (£)':<15} {'Lower 90% (£)':<15} {'Upper 90% (£)':<15}")
-    print("-"*70)
-    for age, mean, low, high in zip(key_ages, pred_int['mean'], pred_int['lower'], pred_int['upper']):
-        print(f"{age:<12.1f} £{mean:<14,.0f} £{low:<14,.0f} £{high:<14,.0f}")
-    print("="*70)
-    print("\nNote: Prediction intervals are obtained via residual bootstrap (500 iterations).")
-    print(f"Cross-validated MAPE = {cv_results['cv_MAPE_mean']:.1f}% ± {cv_results['cv_MAPE_std']:.1f}%")
+    plot_analysis(model, df, cv_random, cv_age, random_state=SEED)
