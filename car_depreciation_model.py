@@ -20,6 +20,7 @@ percentage rather than changing its shape.
 """
 
 import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -31,7 +32,10 @@ from sklearn.model_selection import KFold, TimeSeriesSplit
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from typing import Dict, Iterable, List, Optional, Tuple
 
-DATA_PATH = "vauxhall_astra_market_sample.csv"
+# Resolved next to this file, not relative to wherever you happen to run it
+# from. Editors and notebooks each pick their own working directory, so a bare
+# filename here is the usual cause of "FileNotFoundError" on someone else's machine.
+DATA_PATH = str(Path(__file__).resolve().parent / "vauxhall_astra_market_sample.csv")
 
 # Columns the model needs. Everything else in the CSV is carried along but unused.
 AGE_COL = "age_years"
