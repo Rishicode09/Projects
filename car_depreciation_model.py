@@ -402,6 +402,11 @@ def select_transition_age(df: pd.DataFrame, candidates=np.arange(1.5, 6.5, 0.5),
 # ============================================================================
 # 3. VISUALISATION
 # ============================================================================
+def _gbp_compact(x, _pos=None) -> str:
+    """£12,500 -> '£13k'. Long money labels are what crowds a resized x-axis."""
+    return f"£{x / 1000:,.0f}k" if abs(x) >= 1000 else f"£{x:,.0f}"
+
+
 def _style_axis(ax):
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
@@ -419,7 +424,10 @@ def plot_analysis(model: AstraDepreciationModel, df: pd.DataFrame,
     mpl.rcParams.update({"font.family": "DejaVu Sans", "text.color": INK,
                          "axes.labelcolor": INK_SOFT, "figure.facecolor": "#fcfcfb",
                          "axes.facecolor": "#fcfcfb"})
-    fig, axes = plt.subplots(2, 2, figsize=(15, 10.5))
+    # constrained_layout, not tight_layout: it reserves room for the colorbar and
+    # the long categorical tick labels as the window is resized, instead of
+    # solving the layout once for one particular figure size.
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10.5), constrained_layout=True)
 
     # ---- Panel 1: price vs age, shaded by mileage --------------------------
     ax = axes[0, 0]
@@ -446,8 +454,12 @@ def plot_analysis(model: AstraDepreciationModel, df: pd.DataFrame,
     ax.set_xlabel("Age (years)")
     ax.set_ylabel("Asking price (£)")
     ax.set_title("Astra depreciation: price against age", fontsize=12, color=INK, pad=10)
-    ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("£{x:,.0f}"))
-    ax.legend(frameon=False, fontsize=8.5, loc="upper right")
+    ax.yaxis.set_major_formatter(mpl.ticker.FuncFormatter(_gbp_compact))
+    ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator(nbins=6))
+    # Framed in the surface colour: on a small window the legend sits over the
+    # curve, and unframed text on top of marks is unreadable.
+    ax.legend(loc="upper right", fontsize=8, framealpha=0.93,
+              facecolor="#fcfcfb", edgecolor="none", borderpad=0.6)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=MILEAGE_CMAP), ax=ax, pad=0.02)
     cb.set_label("Mileage", color=INK_SOFT, fontsize=9)
     cb.ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
@@ -464,8 +476,10 @@ def plot_analysis(model: AstraDepreciationModel, df: pd.DataFrame,
     ax.axhline(0, color=RED, linestyle="--", linewidth=1.4, zorder=2)
     ax.set_xlabel("Fitted price (£)")
     ax.set_ylabel("Residual (% of fitted price)")
-    ax.set_title("Residuals — flat band means the shape is right", fontsize=12, color=INK, pad=10)
-    ax.xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("£{x:,.0f}"))
+    # Short enough to survive a narrow window; the y-axis label carries the detail.
+    ax.set_title("Residuals vs fitted price", fontsize=12, color=INK, pad=10)
+    ax.xaxis.set_major_formatter(mpl.ticker.FuncFormatter(_gbp_compact))
+    ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator(nbins=6, prune="both"))
 
     # ---- Panel 3: categorical effects --------------------------------------
     ax = axes[1, 0]
@@ -477,60 +491,67 @@ def plot_analysis(model: AstraDepreciationModel, df: pd.DataFrame,
     top = effects[:6] + effects[-6:] if len(effects) > 12 else effects
     labels = [t[0] for t in top]
     values = [t[1] for t in top]
-    ax.barh(range(len(top)), values, height=0.66,
-            color=[BLUE if v >= 0 else ORANGE for v in values], zorder=3)
+    bars = ax.barh(range(len(top)), values, height=0.66,
+                   color=[BLUE if v >= 0 else ORANGE for v in values], zorder=3)
     ax.axvline(0, color=INK_SOFT, linewidth=1.1, zorder=4)
     ax.set_yticks(range(len(top)))
-    ax.set_yticklabels(labels, fontsize=8.5)
+    ax.set_yticklabels(labels, fontsize=max(6.5, min(8.5, fig.get_size_inches()[0] * 0.6)))
     ax.set_xlabel("Effect on price (%)")
-    ax.set_title("What moves the price, holding age and mileage fixed",
-                 fontsize=12, color=INK, pad=10)
-    for i, v in enumerate(values):
-        ax.text(v + (0.6 if v >= 0 else -0.6), i, f"{v:+.1f}%", va="center",
-                ha="left" if v >= 0 else "right", fontsize=8, color=INK_SOFT)
-    ax.margins(x=0.18)
+    ax.set_title("What moves the price, age and mileage held fixed",
+                 fontsize=11, color=INK, pad=10)
+    # bar_label offsets in points, not data units, so the gap between bar and
+    # label stays constant as the window resizes. Placing these by hand in data
+    # coordinates put the longest negative label on top of its own tick label
+    # on a small window, because data units per point grow as the axes shrink.
+    span = max(max(values) - min(values), 1e-6)
+    ax.set_xlim(min(min(values), 0) - 0.42 * span, max(max(values), 0) + 0.42 * span)
+    ax.bar_label(bars, labels=[f"{v:+.1f}%" for v in values], padding=3,
+                 fontsize=max(6.0, min(8.0, fig.get_size_inches()[0] * 0.55)),
+                 color=INK_SOFT)
     ax.grid(axis="y", visible=False)
 
     # ---- Panel 4: the numbers ----------------------------------------------
+    # Drawn as ONE multi-line string rather than a text call per line. Line
+    # spacing is then a property of the font, so the block can never overlap
+    # itself no matter how small the window gets — separate calls at fixed
+    # offsets collide as soon as the figure is smaller than it was designed for.
     ax = axes[1, 1]
     ax.axis("off")
     p = model.params_
-    lines = [
-        ("Fitted curve", True),
-        (f"  V0 (price when new)      £{p['V0']:,.0f}", False),
-        (f"  Early annual loss        {(1 - np.exp(-p['k1'])) * 100:.1f}%  (to age {model.transition_age:g})", False),
-        (f"  Later annual loss        {(1 - np.exp(-p['k2'])) * 100:.1f}%", False),
-        (f"  Per 10,000 miles         {(1 - np.exp(-p['b'])) * 100:.1f}%", False),
-        ("", False),
-        ("In-sample fit", True),
-        (f"  R²    {model.metrics_['R2']:.3f}", False),
-        (f"  MAPE  {model.metrics_['MAPE']:.1f}%", False),
-        (f"  MAE   £{model.metrics_['MAE']:,.0f}", False),
-        (f"  RMSE  £{model.metrics_['RMSE']:,.0f}", False),
-        ("", False),
-        ("Out-of-sample (cross-validated)", True),
-        (f"  Random holdout    MAPE {cv_random['MAPE_mean']:.1f}% ± {cv_random['MAPE_std']:.1f}", False),
-        (f"                    MAE  £{cv_random['MAE_mean']:,.0f}", False),
-        (f"  Older-car holdout MAPE {cv_age['MAPE_mean']:.1f}% ± {cv_age['MAPE_std']:.1f}", False),
-        (f"                    MAE  £{cv_age['MAE_mean']:,.0f}", False),
-        ("", False),
-        ("How to read this", True),
-        (f"  {model.metrics_['n']} cars, {model.effective_n_params()} effective parameters.", False),
-        ("  Random holdout is the easier test. The older-car", False),
-        ("  holdout extrapolates beyond the training ages and", False),
-        ("  is the number to quote for forecasting.", False),
-    ]
-    y = 0.98
-    for text, is_head in lines:
-        ax.text(0.02, y, text, transform=ax.transAxes, va="top", fontsize=10,
-                family="DejaVu Sans Mono" if not is_head else "DejaVu Sans",
-                color=INK if is_head else INK_SOFT,
-                fontweight="bold" if is_head else "normal")
-        y -= 0.040 if text else 0.020
+    # Every line kept under ~42 characters so the block does not run past the
+    # panel edge on a small window.
+    block = "\n".join([
+        "FITTED CURVE",
+        f"  V0 (when new)       £{p['V0']:,.0f}",
+        f"  Early annual loss   {(1 - np.exp(-p['k1'])) * 100:4.1f}%  (to age {model.transition_age:g})",
+        f"  Later annual loss   {(1 - np.exp(-p['k2'])) * 100:4.1f}%",
+        f"  Per 10,000 miles    {(1 - np.exp(-p['b'])) * 100:4.1f}%",
+        "",
+        "IN-SAMPLE FIT",
+        f"  R²    {model.metrics_['R2']:.3f}     MAE   £{model.metrics_['MAE']:,.0f}",
+        f"  MAPE  {model.metrics_['MAPE']:.1f}%      RMSE  £{model.metrics_['RMSE']:,.0f}",
+        "",
+        "CROSS-VALIDATED",
+        f"  Random holdout     {cv_random['MAPE_mean']:.1f}% ± {cv_random['MAPE_std']:.1f}"
+        f"  (£{cv_random['MAE_mean']:,.0f})",
+        f"  Older-car holdout  {cv_age['MAPE_mean']:.1f}% ± {cv_age['MAPE_std']:.1f}"
+        f"  (£{cv_age['MAE_mean']:,.0f})",
+        "",
+        "HOW TO READ THIS",
+        f"  {model.metrics_['n']} cars, {model.effective_n_params()} effective parameters.",
+        "  Random holdout is the easier test;",
+        "  the older-car holdout extrapolates,",
+        "  and is the one to quote for forecasts.",
+    ])
+    # Scale on width as well as height: it is the width that clips this block.
+    w_in, h_in = fig.get_size_inches()
+    fs = float(np.clip(min(w_in * 0.62, h_in * 0.92), 6.0, 10.0))
+    ax.text(0.0, 1.0, block, transform=ax.transAxes, va="top", ha="left",
+            fontsize=fs, family="DejaVu Sans Mono", color=INK_SOFT,
+            linespacing=1.5)
 
     fig.suptitle("Vauxhall Astra depreciation model", fontsize=15, color=INK,
-                 x=0.02, ha="left", y=0.985)
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+                 x=0.01, ha="left")
     if save_path:
         fig.savefig(save_path, dpi=120, facecolor="#fcfcfb")
     else:
