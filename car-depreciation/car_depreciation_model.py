@@ -35,7 +35,8 @@ from typing import Dict, Iterable, List, Optional, Tuple
 # Resolved next to this file, not relative to wherever you happen to run it
 # from. Editors and notebooks each pick their own working directory, so a bare
 # filename here is the usual cause of "FileNotFoundError" on someone else's machine.
-DATA_PATH = str(Path(__file__).resolve().parent / "vauxhall_astra_market_sample.csv")
+DATA_DIR = Path(__file__).resolve().parent / "data"
+DATA_PATH = str(DATA_DIR / "vauxhall_astra_market_sample.csv")
 
 # Columns the model needs. Everything else in the CSV is carried along but unused.
 AGE_COL = "age_years"

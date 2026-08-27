@@ -4,7 +4,13 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT = "/home/user/Projects/vauxhall_astra_market_sample.xlsx"
+from pathlib import Path
+
+# Written next to this script, so the generator works from any checkout rather
+# than only on the machine it was first written on.
+DATA_DIR = Path(__file__).resolve().parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+OUT = str(DATA_DIR / "vauxhall_astra_market_sample.xlsx")
 VALUATION_YEAR = 2026
 rng = np.random.default_rng(20260826)
 
@@ -330,7 +336,7 @@ wb.save(OUT)
 # formulas without cached values, so pandas reads those cells as blank; this is
 # the file to load when fitting the model.
 import csv
-CSV_OUT = "/home/user/Projects/vauxhall_astra_market_sample.csv"
+CSV_OUT = str(DATA_DIR / "vauxhall_astra_market_sample.csv")
 with open(CSV_OUT, "w", newline="") as fh:
     w = csv.writer(fh)
     w.writerow(["listing_id", "reg_year", "age_years", "mileage",
