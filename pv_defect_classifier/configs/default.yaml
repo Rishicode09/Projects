@@ -14,14 +14,22 @@ data:
   test_fraction: 0.15
   cells_per_module: 60
   balanced_sampling: true
+  # Scales the Albumentations photometric ops. Lower if the model underfits.
+  augmentation_strength: 1.0
+  # Annotator agreement at or above this counts as "cracked". 0.5 keeps the
+  # ambiguous 1/3 level on the functional side; lower it to trade precision
+  # for recall on hairline cracks.
+  defect_threshold: 0.5
   num_workers: 4
 
 model:
-  backbone: resnet18        # resnet18 | resnet34 | resnet50 | efficientnet_b0
+  # resnet50 | resnet34 | resnet18 | efficientnet_b0 | efficientnet_b1
+  backbone: resnet50
   pretrained: true
   dropout: 0.3
+  # Freezing conv1/bn1/layer1 is worth trying on ResNet-50: the generic edge
+  # filters need no adaptation on 2,624 images.
   freeze_stem: false
-  num_classes: 4
 
 train:
   epochs: 30
@@ -31,12 +39,27 @@ train:
   head_learning_rate_multiplier: 10.0
   warmup_epochs: 2
   label_smoothing: 0.0
+  # Sets BCEWithLogitsLoss pos_weight from the train split's class balance.
   use_class_weights: true
   early_stopping_patience: 8
   seed: 0
   device: auto              # auto | cpu | cuda | mps
   output_dir: artifacts
   amp: true
+
+detection:
+  # yolo11n is the right size here: ELPV has at most a few thousand boxes
+  # after annotation, and a larger backbone memorises the training modules.
+  model: yolo11n.pt
+  dataset_root: data/yolo
+  weights: artifacts/detection/elpv/weights/best.pt
+  epochs: 100
+  image_size: 320           # ELPV cells are 300x300; nearest multiple of 32
+  batch: 16
+  confidence: 0.25
+  # A crack's bounding box is mostly intact silicon, and a crack only costs
+  # power once it isolates material. Calibrate against flash-test data.
+  crack_area_weight: 0.25
 
 physics:
   # Site drives the TMY lookup. Defaults to Erlangen, where the ELPV modules

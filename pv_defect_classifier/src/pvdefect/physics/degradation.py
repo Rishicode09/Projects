@@ -63,15 +63,24 @@ class DegradationModel:
     shunt_resistance_retention_by_level:
         Multiplier on cell ``R_sh``. 1.0 = undamaged; smaller = more shunted.
     area_prior_weight:
-        How much to trust the *image-derived* dark-area estimate from
+        How much to trust the crude *dark-pixel* estimate from
         ``preprocess.cell_prep.estimate_inactive_area_fraction`` relative to
-        the level-table value. 0 = ignore the image, 1 = trust it fully.
+        the level-table value. 0 = ignore the image, 1 = trust it fully. Kept
+        low, because that estimator cannot tell a dead region from a busbar.
+    detection_area_weight:
+        How much to trust a *detector-measured* area from
+        ``detection.detector.defect_area_fraction``. Much higher than
+        ``area_prior_weight``: a reviewed-and-trained detector localises the
+        defect rather than thresholding pixels, so its area is close to the
+        physical quantity the model wants. This is the path by which detection
+        removes the largest guess in the pipeline.
     """
 
     inactive_area_by_level: tuple[float, ...] = (0.0, 0.01, 0.10, 0.30)
     series_resistance_gain_by_level: tuple[float, ...] = (1.0, 1.10, 1.60, 3.00)
     shunt_resistance_retention_by_level: tuple[float, ...] = (1.0, 0.90, 0.55, 0.25)
     area_prior_weight: float = 0.35
+    detection_area_weight: float = 0.80
 
     def _interpolate(self, table: tuple[float, ...], severity: np.ndarray) -> np.ndarray:
         return np.interp(np.clip(severity, 0.0, 1.0), _LEVELS, np.asarray(table, dtype=float))
@@ -80,15 +89,33 @@ class DegradationModel:
         self,
         severity: np.ndarray | float,
         image_area_estimate: np.ndarray | float | None = None,
+        detected_area: np.ndarray | float | None = None,
     ) -> np.ndarray:
         """Fraction of the cell contributing no photocurrent.
 
-        When an image-derived estimate is supplied we blend the two: the
-        classifier knows *whether* a defect is serious, the dark-area measure
-        knows *how much* of the cell it covers, and neither alone is reliable.
+        Three sources of evidence, in ascending order of trust:
+
+        1. the classifier's crack probability, mapped through the level table —
+           knows *whether* a defect is serious, not how big it is;
+        2. the crude dark-pixel estimate — knows how much of the cell is dark,
+           but cannot separate a dead region from a busbar;
+        3. a detector-measured area — localises the defect and measures it.
+
+        When a detected area is supplied it dominates, because it is the only
+        one of the three that measures the physical quantity the single-diode
+        model actually needs. That is the whole argument for annotating boxes.
         """
         severity = np.asarray(severity, dtype=float)
         base = self._interpolate(self.inactive_area_by_level, severity)
+
+        if detected_area is not None:
+            measured = np.clip(np.asarray(detected_area, dtype=float), 0.0, 1.0)
+            # Still gated on severity: a detector firing on a cell the
+            # classifier is confident is clean is more likely a false positive
+            # than a defect both stages agree on.
+            gate = np.clip(severity / max(_LEVELS[1], 1e-6), 0.0, 1.0)
+            weight = self.detection_area_weight * gate
+            return np.clip((1.0 - weight) * base + weight * measured, 0.0, 0.95)
 
         if image_area_estimate is None:
             return base
@@ -112,10 +139,11 @@ class DegradationModel:
         self,
         severity: np.ndarray | float,
         image_area_estimate: np.ndarray | float | None = None,
+        detected_area: np.ndarray | float | None = None,
     ) -> dict[str, np.ndarray]:
         """All three multipliers at once, as arrays broadcast over cells."""
         severity = np.atleast_1d(np.asarray(severity, dtype=float))
-        area = self.inactive_area(severity, image_area_estimate)
+        area = self.inactive_area(severity, image_area_estimate, detected_area)
         return {
             "photocurrent_scale": 1.0 - area,
             "series_resistance_gain": self.series_resistance_gain(severity),

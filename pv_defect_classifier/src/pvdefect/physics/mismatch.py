@@ -137,7 +137,7 @@ def iv_curve(
     module: ModuleSpec,
     points: int = 120,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Full I-V and P-V curves, for plotting in the Streamlit app.
+    """Full I-V and P-V curves, for plotting and inspection.
 
     Returns ``(current, voltage, power)``. Worth looking at directly: the
     staircase kinks in a mismatched curve are the bypass diodes switching, and

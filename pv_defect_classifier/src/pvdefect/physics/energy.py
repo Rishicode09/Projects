@@ -122,6 +122,7 @@ def simulate_annual_energy(
     module: ModuleSpec | None = None,
     degradation: DegradationModel | None = None,
     image_area_estimates: np.ndarray | None = None,
+    detected_areas: np.ndarray | None = None,
 ) -> EnergyResult:
     """Full chain: per-cell severity -> annual kWh lost.
 
@@ -137,6 +138,11 @@ def simulate_annual_energy(
     image_area_estimates:
         Optional per-cell dark-area fractions from
         ``preprocess.cell_prep.estimate_inactive_area_fraction``.
+    detected_areas:
+        Optional per-cell defect area fractions from
+        ``detection.detector.defect_area_fraction``. When supplied these take
+        precedence over ``image_area_estimates`` and over the severity lookup
+        table -- a measured area beats an inferred one.
     """
     module = module or ModuleSpec.default()
     degradation = degradation or DegradationModel()
@@ -151,14 +157,23 @@ def simulate_annual_energy(
             severities = np.zeros(n_expected)
         else:
             positions = np.linspace(0, len(severities) - 1, n_expected)
-            severities = np.interp(positions, np.arange(len(severities)), severities)
-            if image_area_estimates is not None:
-                areas = np.asarray(image_area_estimates, dtype=float).ravel()
-                image_area_estimates = np.interp(
-                    np.linspace(0, len(areas) - 1, n_expected), np.arange(len(areas)), areas
+            original = np.arange(len(severities))
+            severities = np.interp(positions, original, severities)
+
+            def _resample(values):
+                if values is None:
+                    return None
+                array = np.asarray(values, dtype=float).ravel()
+                if len(array) == 0:
+                    return None
+                return np.interp(
+                    np.linspace(0, len(array) - 1, n_expected), np.arange(len(array)), array
                 )
 
-    perturbation = degradation.perturb(severities, image_area_estimates)
+            image_area_estimates = _resample(image_area_estimates)
+            detected_areas = _resample(detected_areas)
+
+    perturbation = degradation.perturb(severities, image_area_estimates, detected_areas)
     healthy_ones = np.ones(n_expected)
 
     healthy_surface = build_power_surface(module, healthy_ones, healthy_ones, healthy_ones)

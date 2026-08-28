@@ -1,8 +1,11 @@
-"""Evaluation metrics for ordinal defect classification.
+"""Evaluation metrics for binary functional/cracked classification.
 
-Accuracy is close to useless on ELPV: 57% of cells are class 0, so a model that
-predicts "no defect" for everything scores 57% and finds nothing. The metrics
-here are chosen to be hard to fool that way.
+Accuracy is a poor summary on ELPV: at the default threshold roughly 69% of
+cells are functional, so predicting "functional" for everything scores 69% and
+finds nothing. The metrics below are chosen to be hard to fool that way, and to
+expose the precision/recall trade-off explicitly — because where you sit on that
+curve is an operational decision (a missed severe cell costs energy; a false
+alarm costs a technician's morning), not something to bury in an argmax.
 """
 
 from __future__ import annotations
@@ -10,23 +13,24 @@ from __future__ import annotations
 import numpy as np
 import torch
 from sklearn.metrics import (
+    average_precision_score,
     balanced_accuracy_score,
-    cohen_kappa_score,
     confusion_matrix,
     f1_score,
-    mean_absolute_error,
+    matthews_corrcoef,
+    precision_recall_curve,
     roc_auc_score,
 )
 
-from .data.elpv import CLASS_NAMES, NUM_CLASSES
-from .models.ordinal import corn_cumulative_probabilities, corn_predict_label, expected_severity
+from .data.elpv import CLASS_NAMES
+from .models.classifier import DEFAULT_THRESHOLD
 
 
 @torch.no_grad()
 def collect_predictions(model, loader, device: torch.device) -> dict[str, np.ndarray]:
     """Run the model over a loader and return raw arrays for metric computation."""
     model.eval()
-    logits_all, labels_all, modules_all = [], [], []
+    logits_all, labels_all, modules_all, probabilities_all = [], [], [], []
 
     for batch in loader:
         images = batch["image"].to(device, non_blocking=True)
@@ -34,93 +38,127 @@ def collect_predictions(model, loader, device: torch.device) -> dict[str, np.nda
         logits_all.append(logits.detach().float().cpu())
         labels_all.append(batch["label"])
         modules_all.append(batch["module_id"])
+        probabilities_all.append(batch["probability"])
 
     logits = torch.cat(logits_all)
-    labels = torch.cat(labels_all)
-
     return {
         "logits": logits.numpy(),
-        "labels": labels.numpy(),
+        "probability": torch.sigmoid(logits).numpy(),
+        "labels": torch.cat(labels_all).numpy().astype(int),
         "modules": torch.cat(modules_all).numpy(),
-        "predictions": corn_predict_label(logits).numpy(),
-        "severity": expected_severity(logits, NUM_CLASSES).numpy(),
-        "cumulative": corn_cumulative_probabilities(logits).numpy(),
+        "graded_severity": torch.cat(probabilities_all).numpy(),
     }
 
 
-def compute_metrics(predictions: dict[str, np.ndarray]) -> dict[str, float]:
-    """Metrics that respect the ordinal structure and the class imbalance.
+def compute_metrics(
+    predictions: dict[str, np.ndarray], threshold: float = DEFAULT_THRESHOLD
+) -> dict[str, float]:
+    """Threshold-dependent and threshold-free metrics.
 
-    ``quadratic_kappa`` is the headline number: it penalises a none->severe
-    error nine times as hard as a none->mild one, which matches the operational
-    cost of the mistake. ``defect_auc`` measures the binary "is this cell worth
-    a technician's time" decision independently of any threshold choice.
-    ``mae_severity`` is in units of severity levels, so 0.3 means the average
-    prediction is a third of a level off.
+    ``roc_auc`` and ``average_precision`` are the ones to compare models on:
+    they integrate over all thresholds, so they do not reward a model that
+    happens to suit the arbitrary 0.5 cut. ``mcc`` is the best single-number
+    summary at a fixed threshold on imbalanced data — unlike F1 it accounts for
+    true negatives, so it cannot be inflated by predicting the majority class.
     """
     labels = predictions["labels"]
-    predicted = predictions["predictions"]
-    severity = predictions["severity"]
+    probability = predictions["probability"]
+    predicted = (probability >= threshold).astype(int)
 
     metrics: dict[str, float] = {
         "accuracy": float((predicted == labels).mean()),
         "balanced_accuracy": float(balanced_accuracy_score(labels, predicted)),
-        "macro_f1": float(f1_score(labels, predicted, average="macro", zero_division=0)),
-        "quadratic_kappa": float(
-            cohen_kappa_score(labels, predicted, weights="quadratic", labels=list(range(NUM_CLASSES)))
-        ),
-        "mae_levels": float(mean_absolute_error(labels, predicted)),
-        "mae_severity": float(np.mean(np.abs(severity - labels / (NUM_CLASSES - 1)))),
+        "f1": float(f1_score(labels, predicted, zero_division=0)),
+        "mcc": float(matthews_corrcoef(labels, predicted)) if len(set(labels)) > 1 else 0.0,
     }
 
-    # Binary defect detection: class 0 vs everything else.
-    binary_labels = (labels > 0).astype(int)
-    if 0 < binary_labels.sum() < len(binary_labels):
-        # P(y > 0) is the first cumulative probability.
-        metrics["defect_auc"] = float(roc_auc_score(binary_labels, predictions["cumulative"][:, 0]))
-        binary_predicted = (predicted > 0).astype(int)
-        metrics["defect_f1"] = float(f1_score(binary_labels, binary_predicted, zero_division=0))
-        true_positive = int(((binary_predicted == 1) & (binary_labels == 1)).sum())
-        metrics["defect_recall"] = float(true_positive / max(binary_labels.sum(), 1))
-        metrics["defect_precision"] = float(true_positive / max(binary_predicted.sum(), 1))
+    true_positive = int(((predicted == 1) & (labels == 1)).sum())
+    metrics["recall"] = float(true_positive / max(int((labels == 1).sum()), 1))
+    metrics["precision"] = float(true_positive / max(int((predicted == 1).sum()), 1))
+    # False-alarm rate: the number a plant operator budgets against.
+    false_positive = int(((predicted == 1) & (labels == 0)).sum())
+    metrics["false_positive_rate"] = float(false_positive / max(int((labels == 0).sum()), 1))
 
-    # Severe-only recall: missing a class-3 cell is the expensive failure.
-    severe_mask = labels == NUM_CLASSES - 1
-    if severe_mask.any():
-        metrics["severe_recall"] = float((predicted[severe_mask] == NUM_CLASSES - 1).mean())
+    if len(set(labels)) > 1:
+        metrics["roc_auc"] = float(roc_auc_score(labels, probability))
+        metrics["average_precision"] = float(average_precision_score(labels, probability))
 
     return metrics
 
 
-def confusion(predictions: dict[str, np.ndarray]) -> np.ndarray:
-    return confusion_matrix(
-        predictions["labels"], predictions["predictions"], labels=list(range(NUM_CLASSES))
-    )
+def best_threshold(
+    predictions: dict[str, np.ndarray], target_recall: float = 0.90
+) -> dict[str, float]:
+    """Lowest-false-alarm threshold that still reaches ``target_recall``.
+
+    Reporting a single 0.5-threshold number hides the actual deployment choice.
+    A plant that must catch 90% of cracked cells needs to know what that costs
+    in false alarms, and this returns exactly that operating point.
+    """
+    labels = predictions["labels"]
+    probability = predictions["probability"]
+    if len(set(labels)) < 2:
+        return {"threshold": DEFAULT_THRESHOLD, "recall": 0.0, "precision": 0.0}
+
+    precision, recall, thresholds = precision_recall_curve(labels, probability)
+    # precision_recall_curve returns one more point than thresholds.
+    precision, recall = precision[:-1], recall[:-1]
+
+    feasible = recall >= target_recall
+    if not feasible.any():
+        best = int(np.argmax(recall))
+    else:
+        # Among thresholds meeting the recall target, take the most precise.
+        candidates = np.flatnonzero(feasible)
+        best = int(candidates[np.argmax(precision[candidates])])
+
+    return {
+        "threshold": float(thresholds[best]),
+        "recall": float(recall[best]),
+        "precision": float(precision[best]),
+    }
 
 
-def format_report(predictions: dict[str, np.ndarray]) -> str:
-    """Human-readable metric block plus confusion matrix."""
-    metrics = compute_metrics(predictions)
-    matrix = confusion(predictions)
+def confusion(
+    predictions: dict[str, np.ndarray], threshold: float = DEFAULT_THRESHOLD
+) -> np.ndarray:
+    predicted = (predictions["probability"] >= threshold).astype(int)
+    return confusion_matrix(predictions["labels"], predicted, labels=[0, 1])
 
-    lines = ["Metrics", "-------"]
-    lines += [f"  {name:<20s} {value:.4f}" for name, value in metrics.items()]
+
+def format_report(
+    predictions: dict[str, np.ndarray], threshold: float = DEFAULT_THRESHOLD
+) -> str:
+    """Human-readable metric block, confusion matrix and operating point."""
+    metrics = compute_metrics(predictions, threshold)
+    matrix = confusion(predictions, threshold)
+
+    lines = [f"Metrics (threshold = {threshold:.2f})", "-" * 34]
+    lines += [f"  {name:<22s} {value:.4f}" for name, value in metrics.items()]
 
     lines += ["", "Confusion matrix (rows = true, cols = predicted)", "-" * 48]
-    header = " " * 12 + "".join(f"{name:>9s}" for name in CLASS_NAMES)
-    lines.append(header)
-    for i, row in enumerate(matrix):
-        lines.append(f"{CLASS_NAMES[i]:>10s}  " + "".join(f"{int(v):>9d}" for v in row))
+    lines.append(" " * 14 + "".join(f"{name:>13s}" for name in CLASS_NAMES))
+    for index, row in enumerate(matrix):
+        lines.append(f"{CLASS_NAMES[index]:>12s}  " + "".join(f"{int(v):>13d}" for v in row))
 
+    operating_point = best_threshold(predictions, target_recall=0.90)
+    lines += [
+        "",
+        "Operating point for 90% recall",
+        "-" * 34,
+        f"  threshold  {operating_point['threshold']:.4f}",
+        f"  recall     {operating_point['recall']:.4f}",
+        f"  precision  {operating_point['precision']:.4f}",
+    ]
     return "\n".join(lines)
 
 
 def aggregate_to_modules(predictions: dict[str, np.ndarray]) -> dict[int, np.ndarray]:
-    """Group per-cell severities by module, for feeding the physics model.
+    """Group per-cell crack probabilities by module, for the physics model.
 
-    The physics model needs a full module's cells at once, because mismatch is
-    a property of the string rather than of any individual cell.
+    The physics needs a whole module's cells at once, because mismatch is a
+    property of the series string rather than of any individual cell.
     """
     modules = predictions["modules"]
-    severity = predictions["severity"]
-    return {int(m): severity[modules == m] for m in np.unique(modules) if m >= 0}
+    probability = predictions["probability"]
+    return {int(m): probability[modules == m] for m in np.unique(modules) if m >= 0}

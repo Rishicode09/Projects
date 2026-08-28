@@ -10,3 +10,10 @@ venv/
 *.pt
 *.pth
 .DS_Store
+
+# Ultralytics
+yolo*.pt
+runs/
+data/yolo/
+*.jpg
+!doc/**/*.jpg

@@ -8,7 +8,9 @@ a consistent brightness gradient in one manufacturer's cells.
 
 Grad-CAM on the last convolutional block gives a 7x7 map for a 224x224 input —
 coarse, but enough to distinguish "looked at the defect" from "looked at the
-frame". Read it as a sanity check, not as segmentation.
+frame". Read it as a sanity check, not as segmentation. Once a trained detector
+exists, prefer its boxes for anything quantitative: Grad-CAM explains the
+classifier, it does not measure the defect.
 """
 
 from __future__ import annotations
@@ -18,7 +20,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .models.ordinal import corn_cumulative_probabilities
 
 
 class GradCam:
@@ -27,7 +28,7 @@ class GradCam:
     Usage::
 
         with GradCam(model) as cam:
-            heatmap = cam(image_tensor, level=0)
+            heatmap = cam(image_tensor)
     """
 
     def __init__(self, model, target_layer=None) -> None:
@@ -64,13 +65,11 @@ class GradCam:
             handle.remove()
         self._handles.clear()
 
-    def __call__(self, image: torch.Tensor, level: int = 0) -> np.ndarray:
+    def __call__(self, image: torch.Tensor) -> np.ndarray:
         """Heatmap in [0, 1] at the input resolution.
 
-        ``level`` selects which ordinal threshold to explain: 0 answers "why do
-        you think this cell is defective at all", 2 answers "why do you think
-        it is severe". They often highlight different regions, which is
-        informative in itself.
+        With a single-logit binary head there is exactly one thing to explain:
+        the evidence pushing this cell toward "cracked".
         """
         was_training = self.model.training
         self.model.eval()
@@ -83,9 +82,8 @@ class GradCam:
         with torch.enable_grad():
             image = image.clone().requires_grad_(True)
             logits = self.model(image)
-            level = int(np.clip(level, 0, logits.shape[1] - 1))
             self.model.zero_grad(set_to_none=True)
-            logits[:, level].sum().backward()
+            logits.sum().backward()
 
         if self._activations is None or self._gradients is None:
             raise RuntimeError("Hooks did not fire; use GradCam as a context manager.")
@@ -138,10 +136,8 @@ def overlay_heatmap(
 
 @torch.no_grad()
 def attribution_summary(model, image: torch.Tensor) -> dict[str, float]:
-    """Per-threshold conditional probabilities, for display alongside a heatmap."""
+    """Crack probability, for display alongside a heatmap."""
     if image.dim() == 3:
         image = image.unsqueeze(0)
-    cumulative = corn_cumulative_probabilities(model(image))[0]
-    return {
-        f"P(severity > {k})": float(value) for k, value in enumerate(cumulative.cpu().numpy())
-    }
+    probability = torch.sigmoid(model(image))
+    return {"P(cracked)": float(probability.reshape(-1)[0])}

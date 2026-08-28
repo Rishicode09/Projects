@@ -1,4 +1,4 @@
-"""Training loop for the ordinal EL defect classifier.
+"""Training loop for the binary EL defect classifier (functional vs cracked).
 
 Run as::
 
@@ -18,11 +18,10 @@ import torch
 
 from .config import Config
 from .data.dataset import build_dataloaders
-from .data.elpv import class_weights, load_index
+from .data.elpv import load_index, positive_weight
 from .data.splits import assign_pseudo_modules, split_by_module, split_random
-from .evaluate import collect_predictions, compute_metrics, format_report
+from .evaluate import best_threshold, collect_predictions, compute_metrics, format_report
 from .models.classifier import build_model
-from .models.ordinal import CornLoss
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +125,8 @@ def train(config: Config) -> dict:
     logger.info("Training on %s", device)
 
     frame = assign_pseudo_modules(
-        load_index(Path(config.data.root)), config.data.cells_per_module
+        load_index(Path(config.data.root), config.data.defect_threshold),
+        config.data.cells_per_module,
     )
 
     splitter = split_by_module if config.data.split == "module" else split_random
@@ -149,17 +149,22 @@ def train(config: Config) -> dict:
         size=config.data.image_size,
         build_channels=config.data.build_channels,
         balanced_sampling=config.data.balanced_sampling,
-        seed=config.train.seed,
+        augmentation_strength=config.data.augmentation_strength,
     )
 
     model = build_model(config.model).to(device)
 
-    weights = None
+    # pos_weight scales the loss on cracked cells so the model cannot settle on
+    # always predicting "functional". Combined with the capped sampler in
+    # dataset.py, this is enough; a larger weight destabilises training on a
+    # dataset this small.
+    pos_weight = None
     if config.train.use_class_weights:
-        weights = torch.tensor(class_weights(splits["train"]), dtype=torch.float32, device=device)
-        logger.info("Class weights: %s", np.round(weights.cpu().numpy(), 3).tolist())
+        weight_value = positive_weight(splits["train"])
+        pos_weight = torch.tensor([weight_value], dtype=torch.float32, device=device)
+        logger.info("pos_weight for cracked class: %.3f", weight_value)
 
-    criterion = CornLoss(config.model.num_classes, weights).to(device)
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = build_optimizer(model, config)
     scheduler = build_scheduler(optimizer, config, max(1, len(loaders["train"])))
     scaler = (
@@ -179,16 +184,18 @@ def train(config: Config) -> dict:
 
         val_predictions = collect_predictions(model, loaders["val"], device)
         val_metrics = compute_metrics(val_predictions)
-        # Quadratic kappa is the selection criterion: it is the metric that
-        # cares about the size of an ordinal mistake, which is what the
-        # downstream physics model is sensitive to.
-        score = val_metrics["quadratic_kappa"]
+        # Average precision is the selection criterion: it is threshold-free, so
+        # checkpoint choice does not depend on the arbitrary 0.5 cut, and on an
+        # imbalanced binary task it tracks the minority class far better than
+        # ROC-AUC does.
+        score = val_metrics.get("average_precision", val_metrics["f1"])
 
         history.append({"epoch": epoch, "train_loss": train_loss, **val_metrics})
         logger.info(
-            "epoch %2d/%d  loss %.4f  kappa %.4f  bal_acc %.4f  severe_recall %.3f  (%.1fs)",
+            "epoch %2d/%d  loss %.4f  AP %.4f  AUC %.4f  recall %.3f  precision %.3f  (%.1fs)",
             epoch + 1, config.train.epochs, train_loss, score,
-            val_metrics["balanced_accuracy"], val_metrics.get("severe_recall", float("nan")),
+            val_metrics.get("roc_auc", float("nan")),
+            val_metrics["recall"], val_metrics["precision"],
             time.time() - started,
         )
 
@@ -212,11 +219,12 @@ def train(config: Config) -> dict:
     if checkpoint_path.exists():
         model.load_state_dict(torch.load(checkpoint_path, map_location=device)["model_state"])
 
-    results = {"best_epoch": best_epoch, "best_val_kappa": best_score, "history": history}
+    results = {"best_epoch": best_epoch, "best_val_average_precision": best_score, "history": history}
 
     if "test" in loaders:
         test_predictions = collect_predictions(model, loaders["test"], device)
         results["test_metrics"] = compute_metrics(test_predictions)
+        results["operating_point_90_recall"] = best_threshold(test_predictions, 0.90)
         report = format_report(test_predictions)
         print("\n" + report)
         (output_dir / "test_report.txt").write_text(report, encoding="utf-8")

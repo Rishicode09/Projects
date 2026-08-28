@@ -19,16 +19,20 @@ class DataConfig:
     test_fraction: float = 0.15
     cells_per_module: int = 60
     balanced_sampling: bool = True
+    augmentation_strength: float = 1.0
+    # Annotator agreement at or above this counts as "cracked". 0.5 keeps the
+    # ambiguous 1/3 level on the functional side; lower it to trade precision
+    # for recall on hairline cracks.
+    defect_threshold: float = 0.5
     num_workers: int = 4
 
 
 @dataclass
 class ModelConfig:
-    backbone: str = "resnet18"
+    backbone: str = "resnet50"
     pretrained: bool = True
     dropout: float = 0.3
     freeze_stem: bool = False
-    num_classes: int = 4
 
 
 @dataclass
@@ -46,6 +50,23 @@ class TrainConfig:
     device: str = "auto"
     output_dir: str = "artifacts"
     amp: bool = True
+
+
+@dataclass
+class DetectionConfig:
+    """Ultralytics YOLO settings for defect localisation."""
+
+    model: str = "yolo11n.pt"
+    dataset_root: str = "data/yolo"
+    weights: str = "artifacts/detection/elpv/weights/best.pt"
+    epochs: int = 100
+    image_size: int = 320
+    batch: int = 16
+    confidence: float = 0.25
+    # A crack's bounding box is mostly intact silicon, and a crack only costs
+    # power once it isolates material -- so crack boxes contribute at a
+    # fraction of their area. Calibrate against flash-test data.
+    crack_area_weight: float = 0.25
 
 
 @dataclass
@@ -68,6 +89,7 @@ class Config:
     data: DataConfig = field(default_factory=DataConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
+    detection: DetectionConfig = field(default_factory=DetectionConfig)
     physics: PhysicsConfig = field(default_factory=PhysicsConfig)
 
     @classmethod
