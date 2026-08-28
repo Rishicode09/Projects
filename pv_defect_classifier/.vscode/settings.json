@@ -1,0 +1,17 @@
+{
+  // This project uses a src/ layout. Without these two settings VS Code's
+  // Python analyser cannot resolve `import pvdefect`, and every import in the
+  // editor shows as unresolved even though the code runs fine.
+  "python.analysis.extraPaths": ["./src"],
+  "python.autoComplete.extraPaths": ["./src"],
+
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests"],
+
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.egg-info": true,
+    "**/.pytest_cache": true
+  }
+}
