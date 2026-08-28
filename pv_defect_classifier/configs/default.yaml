@@ -1,0 +1,56 @@
+# Default configuration. Override individual fields on the command line:
+#   python -m pvdefect.train --config configs/default.yaml --epochs 10
+
+data:
+  root: data/elpv-dataset
+  image_size: 224
+  # build_channels: stack [equalised, grid-suppressed, crack-response].
+  # Set false for the single-channel ablation baseline.
+  build_channels: true
+  # "module" keeps cells from one (pseudo-)module inside a single split.
+  # "random" leaks and exists only to measure how much it leaks.
+  split: module
+  val_fraction: 0.15
+  test_fraction: 0.15
+  cells_per_module: 60
+  balanced_sampling: true
+  num_workers: 4
+
+model:
+  backbone: resnet18        # resnet18 | resnet34 | resnet50 | efficientnet_b0
+  pretrained: true
+  dropout: 0.3
+  freeze_stem: false
+  num_classes: 4
+
+train:
+  epochs: 30
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  head_learning_rate_multiplier: 10.0
+  warmup_epochs: 2
+  label_smoothing: 0.0
+  use_class_weights: true
+  early_stopping_patience: 8
+  seed: 0
+  device: auto              # auto | cpu | cuda | mps
+  output_dir: artifacts
+  amp: true
+
+physics:
+  # Site drives the TMY lookup. Defaults to Erlangen, where the ELPV modules
+  # were imaged, but the defect model is site-independent -- change this to
+  # wherever your plant actually is.
+  site_name: "Erlangen, DE"
+  latitude: 49.60
+  longitude: 11.01
+  altitude: 280.0
+  timezone: "Europe/Berlin"
+  surface_tilt: 30.0
+  surface_azimuth: 180.0
+  # Fetches a PVGIS TMY; falls back to a synthetic clear-sky year when offline.
+  use_network_weather: true
+  tariff_per_kwh: 0.12
+  cells_in_series: 60
+  bypass_diode_count: 3
