@@ -1,5 +1,8 @@
-data/
-artifacts/
+# Anchored to the repo root with a leading slash. An unanchored `data/`
+# matches ANY directory of that name at any depth -- which silently excluded
+# the entire src/pvdefect/data package from version control.
+/data/
+/artifacts/
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -14,6 +17,6 @@ venv/
 # Ultralytics
 yolo*.pt
 runs/
-data/yolo/
+/data/yolo/
 *.jpg
 !doc/**/*.jpg
