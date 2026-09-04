@@ -1,0 +1,3 @@
+model,reg_year,mileage,asking_price_gbp,trim,fuel,transmission,seller_type,service_history,condition,notes
+Vauxhall Astra,2019,58000,7995,SRi,Petrol,Manual,Independent dealer,Full,Good,DELETE THIS ROW - example only
+Volkswagen Golf,2019,61000,10450,Match,Diesel,Manual,Franchise dealer,Full,Good,DELETE THIS ROW - example only

@@ -1,0 +1,101 @@
+listing_id,reg_year,age_years,mileage,avg_annual_mileage,trim,fuel,transmission,engine_litres,body,former_keepers,service_history,seller_type,condition,region,original_list_gbp,asking_price_gbp,retained_pct
+GOL-001,2026,0,25,,Life,Petrol,Automatic,1.4,Hatchback,1,Full,Franchise dealer,Good,Wales,30500,32375,1.0615
+GOL-002,2026,0,25,,Black Edition,Petrol,Automatic,1.4,Hatchback,1,Full,Franchise dealer,Good,North East,30500,36470,1.1957
+GOL-003,2026,0,3056,,GTI,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Good,Yorkshire,30500,35860,1.1757
+GOL-004,2026,0,207,,Black Edition,Petrol,Manual,1.6,Hatchback,1,Full,Independent dealer,Excellent,South West,30500,31855,1.0444
+GOL-005,2026,0,3337,,Match,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Excellent,Scotland,30500,30155,0.9887
+GOL-006,2025,1,7372,7372,GTI,Petrol,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,London,30000,32100,1.07
+GOL-007,2025,1,4212,4212,Life,Petrol,Automatic,1.5,Hatchback,1,Full,Franchise dealer,Good,North East,30000,25125,0.8375
+GOL-008,2025,1,10204,10204,R-Line,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,East of England,30000,27315,0.9105
+GOL-009,2025,1,10809,10809,Life,Petrol,Automatic,1.2,Hatchback,1,Full,Independent dealer,Good,Yorkshire,30000,22755,0.7585
+GOL-010,2025,1,7572,7572,Black Edition,Petrol,Manual,1.4,Hatchback,1,Full,Private,Good,Yorkshire,30000,22075,0.7358
+GOL-011,2024,2,37337,18668,Match,Hybrid,Automatic,1.2,Hatchback,2,Full,Franchise dealer,Good,North West,29000,22855,0.7881
+GOL-012,2024,2,27527,13764,Match,Petrol,Automatic,1.2,Sports Tourer,2,Full,Private,Good,Yorkshire,29000,18050,0.6224
+GOL-013,2024,2,28890,14445,Match,Petrol,Manual,1.2,Sports Tourer,1,Full,Independent dealer,Fair,London,29000,17630,0.6079
+GOL-014,2024,2,24666,12333,Match,Petrol,Manual,1.6,Hatchback,2,Full,Independent dealer,Good,Wales,29000,18775,0.6474
+GOL-015,2024,2,10593,5296,GTI,Petrol,Manual,1.6,Hatchback,1,Full,Independent dealer,Good,London,29000,24055,0.8295
+GOL-016,2024,2,9928,4964,R-Line,Hybrid,Automatic,1.2,Hatchback,1,Full,Private,Good,Yorkshire,29000,22450,0.7741
+GOL-017,2024,2,14304,7152,R-Line,Petrol,Automatic,1.4,Hatchback,1,Full,Private,Fair,South East,29000,19435,0.6702
+GOL-018,2024,2,12606,6303,Black Edition,Petrol,Automatic,1.2,Sports Tourer,1,Full,Independent dealer,Good,Yorkshire,29000,24570,0.8472
+GOL-019,2024,2,38823,19412,Match,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Fair,North West,29000,19755,0.6812
+GOL-020,2024,2,34039,17020,Black Edition,Petrol,Automatic,1.5,Hatchback,1,Full,Private,Good,South West,29000,19325,0.6664
+GOL-021,2023,3,32707,10902,GTI,Plug-in Hybrid,Automatic,1.6,Hatchback,3,None,Private,Excellent,South West,28000,17110,0.6111
+GOL-022,2023,3,24606,8202,Life,Petrol,Automatic,1.4,Hatchback,1,Full,Franchise dealer,Good,West Midlands,28000,19625,0.7009
+GOL-023,2023,3,27435,9145,Style,Petrol,Automatic,1.4,Hatchback,1,Full,Independent dealer,Excellent,South West,28000,19735,0.7048
+GOL-024,2023,3,27509,9170,Style,Hybrid,Automatic,1.2,Sports Tourer,1,Partial,Franchise dealer,Good,Wales,28000,20995,0.7498
+GOL-025,2023,3,15028,5009,Black Edition,Petrol,Manual,1.2,Hatchback,3,Full,Independent dealer,Good,South East,28000,18310,0.6539
+GOL-026,2023,3,41289,13763,Match,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Partial,Independent dealer,Fair,South East,28000,14690,0.5246
+GOL-027,2023,3,11805,3935,R-Line,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Partial,Independent dealer,Excellent,North East,28000,21505,0.768
+GOL-028,2023,3,11369,3790,Black Edition,Petrol,Manual,1.4,Sports Tourer,2,None,Independent dealer,Excellent,South West,28000,17775,0.6348
+GOL-029,2023,3,53789,17930,R-Line,Petrol,Automatic,1.5,Hatchback,1,Full,Independent dealer,Fair,Scotland,28000,16385,0.5852
+GOL-030,2023,3,26779,8926,Match,Petrol,Manual,1.4,Hatchback,2,Full,Independent dealer,Fair,Wales,28000,14900,0.5321
+GOL-031,2022,4,47138,11784,GTI,Petrol,Manual,1.2,Sports Tourer,1,Partial,Franchise dealer,Excellent,South West,26500,17835,0.673
+GOL-032,2022,4,31495,7874,Style,Hybrid,Automatic,1.2,Hatchback,4,Full,Independent dealer,Fair,East of England,26500,13990,0.5279
+GOL-033,2022,4,31467,7867,Match,Petrol,Manual,1.4,Hatchback,4,Partial,Independent dealer,Fair,West Midlands,26500,11645,0.4394
+GOL-034,2022,4,53085,13271,Black Edition,Petrol,Manual,1.6,Hatchback,2,Partial,Franchise dealer,Good,South East,26500,14695,0.5545
+GOL-035,2022,4,48401,12100,Style,Hybrid,Automatic,1.2,Hatchback,3,Partial,Independent dealer,Good,North West,26500,14695,0.5545
+GOL-036,2022,4,64540,16135,Match,Petrol,Manual,1.4,Hatchback,1,Partial,Franchise dealer,Excellent,Yorkshire,26500,12780,0.4823
+GOL-037,2022,4,62212,15553,Life,Hybrid,Automatic,1.2,Sports Tourer,1,Full,Independent dealer,Good,North East,26500,13630,0.5143
+GOL-038,2022,4,77246,19312,Life,Petrol,Manual,1.4,Hatchback,1,Full,Independent dealer,Fair,South East,26500,10635,0.4013
+GOL-039,2022,4,29700,7425,Black Edition,Hybrid,Automatic,1.2,Sports Tourer,2,Partial,Independent dealer,Good,South East,26500,15985,0.6032
+GOL-040,2022,4,40030,10008,Life,Petrol,Manual,1.2,Hatchback,1,Full,Franchise dealer,Fair,East of England,26500,13630,0.5143
+GOL-041,2022,4,82495,20624,Life,Petrol,Automatic,1.5,Hatchback,3,Partial,Independent dealer,Excellent,West Midlands,26500,10405,0.3926
+GOL-042,2022,4,67268,16817,GTI,Hybrid,Automatic,1.2,Hatchback,2,Full,Independent dealer,Good,North West,26500,14675,0.5538
+GOL-043,2022,4,19713,4928,GTI,Petrol,Automatic,1.2,Hatchback,3,Partial,Private,Excellent,East of England,26500,15485,0.5843
+GOL-044,2022,4,71892,17973,Life,Plug-in Hybrid,Automatic,1.6,Hatchback,5,Partial,Franchise dealer,Good,London,26500,11460,0.4325
+GOL-045,2021,5,23561,4712,Black Edition,Diesel,Manual,1.4,Sports Tourer,4,Full,Independent dealer,Fair,South West,25000,12190,0.4876
+GOL-046,2021,5,18451,3690,GTI,Petrol,Automatic,1.6,Hatchback,1,None,Private,Good,North West,25000,12350,0.494
+GOL-047,2021,5,37414,7483,GTI,Diesel,Automatic,1.5,Hatchback,6,Partial,Franchise dealer,Good,North West,25000,13515,0.5406
+GOL-048,2021,5,67759,13552,Style,Diesel,Manual,1.5,Hatchback,3,None,Franchise dealer,Excellent,West Midlands,25000,9785,0.3914
+GOL-049,2021,5,56646,11329,Life,Hybrid,Automatic,1.2,Sports Tourer,2,Partial,Independent dealer,Excellent,South West,25000,11970,0.4788
+GOL-050,2021,5,98456,19691,R-Line,Petrol,Automatic,1.5,Hatchback,2,Full,Franchise dealer,Excellent,East of England,25000,11735,0.4694
+GOL-051,2021,5,41012,8202,Black Edition,Diesel,Automatic,1.4,Hatchback,1,Partial,Franchise dealer,Fair,North East,25000,11020,0.4408
+GOL-052,2021,5,92303,18461,Black Edition,Hybrid,Automatic,1.2,Hatchback,4,None,Franchise dealer,Excellent,East of England,25000,10630,0.4252
+GOL-053,2021,5,24609,4922,Life,Hybrid,Automatic,1.2,Hatchback,4,Partial,Private,Good,North West,25000,10450,0.418
+GOL-054,2021,5,19594,3919,Black Edition,Petrol,Manual,1.6,Sports Tourer,5,Partial,Independent dealer,Excellent,South East,25000,12865,0.5146
+GOL-055,2020,6,25609,4268,Life,Petrol,Automatic,1.6,Sports Tourer,3,Full,Franchise dealer,Fair,East of England,24000,10270,0.4279
+GOL-056,2020,6,61336,10223,Black Edition,Diesel,Manual,1.2,Sports Tourer,4,Full,Franchise dealer,Excellent,Scotland,24000,10175,0.424
+GOL-057,2020,6,110850,18475,R-Line,Petrol,Automatic,1.4,Hatchback,3,Full,Franchise dealer,Good,London,24000,9175,0.3823
+GOL-058,2020,6,79302,13217,R-Line,Hybrid,Automatic,1.2,Hatchback,5,Partial,Private,Fair,North East,24000,7730,0.3221
+GOL-059,2020,6,66692,11115,Style,Hybrid,Automatic,1.2,Sports Tourer,6,Full,Private,Good,London,24000,9255,0.3856
+GOL-060,2020,6,109695,18282,GTI,Petrol,Automatic,1.5,Hatchback,3,None,Private,Fair,Scotland,24000,6290,0.2621
+GOL-061,2020,6,45216,7536,Style,Hybrid,Automatic,1.2,Hatchback,2,Full,Independent dealer,Fair,North West,24000,11230,0.4679
+GOL-062,2020,6,36930,6155,Match,Petrol,Manual,1.5,Sports Tourer,3,Full,Private,Good,Scotland,24000,10080,0.42
+GOL-063,2020,6,58731,9788,Style,Diesel,Manual,1.4,Hatchback,2,Full,Franchise dealer,Fair,East of England,24000,10045,0.4185
+GOL-064,2020,6,108069,18012,Life,Petrol,Manual,1.2,Hatchback,2,Partial,Franchise dealer,Good,North East,24000,7405,0.3085
+GOL-065,2020,6,43827,7304,GTI,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,West Midlands,24000,14650,0.6104
+GOL-066,2020,6,66025,11004,Match,Diesel,Manual,1.5,Sports Tourer,6,Partial,Franchise dealer,Fair,Scotland,24000,8210,0.3421
+GOL-067,2020,6,77450,12908,Style,Petrol,Manual,1.5,Sports Tourer,2,None,Franchise dealer,Fair,Wales,24000,8100,0.3375
+GOL-068,2020,6,35397,5900,R-Line,Diesel,Manual,1.2,Hatchback,4,Full,Private,Good,East of England,24000,9545,0.3977
+GOL-069,2020,6,105048,17508,Match,Diesel,Automatic,1.5,Hatchback,4,Full,Franchise dealer,Good,East of England,24000,8475,0.3531
+GOL-070,2020,6,88618,14770,Match,Petrol,Manual,1.4,Hatchback,5,Full,Franchise dealer,Excellent,Yorkshire,24000,9015,0.3756
+GOL-071,2020,6,45247,7541,Black Edition,Hybrid,Automatic,1.2,Hatchback,5,Full,Independent dealer,Fair,South East,24000,10705,0.446
+GOL-072,2019,7,46482,6640,Match,Diesel,Manual,1.6,Hatchback,5,Partial,Independent dealer,Excellent,North West,23000,8200,0.3565
+GOL-073,2019,7,39016,5574,GTI,Petrol,Automatic,1.2,Sports Tourer,1,None,Independent dealer,Fair,North West,23000,9795,0.4259
+GOL-074,2019,7,102634,14662,GT,Petrol,Manual,1.4,Hatchback,1,Full,Independent dealer,Good,East of England,23000,7655,0.3328
+GOL-075,2019,7,79975,11425,GTI,Petrol,Automatic,1.5,Sports Tourer,2,Partial,Private,Excellent,Scotland,23000,8430,0.3665
+GOL-076,2019,7,102695,14671,R-Line,Diesel,Automatic,1.2,Hatchback,4,Full,Private,Excellent,Wales,23000,6785,0.295
+GOL-077,2019,7,68212,9745,GTI,Diesel,Automatic,1.5,Hatchback,6,Partial,Independent dealer,Excellent,North West,23000,9120,0.3965
+GOL-078,2019,7,132182,18883,S,Diesel,Manual,1.2,Hatchback,3,Full,Independent dealer,Good,Scotland,23000,5320,0.2313
+GOL-079,2019,7,98726,14104,GTI,Petrol,Manual,1.5,Sports Tourer,1,Partial,Independent dealer,Good,North West,23000,7940,0.3452
+GOL-080,2018,8,102766,12846,R-Line,Petrol,Automatic,1.6,Sports Tourer,3,Full,Franchise dealer,Good,East of England,22500,7435,0.3304
+GOL-081,2018,8,97081,12135,GT,Diesel,Manual,1.5,Hatchback,2,Partial,Franchise dealer,Fair,Scotland,22500,6270,0.2787
+GOL-082,2018,8,80367,10046,R-Line,Diesel,Manual,1.2,Hatchback,6,Full,Independent dealer,Good,North East,22500,6965,0.3096
+GOL-083,2017,9,86732,9637,S,Petrol,Automatic,1.2,Hatchback,6,Full,Franchise dealer,Good,West Midlands,22000,6395,0.2907
+GOL-084,2017,9,147802,16422,R-Line,Petrol,Manual,1.6,Hatchback,1,Full,Independent dealer,Good,West Midlands,22000,5575,0.2534
+GOL-085,2017,9,118693,13188,GTI,Diesel,Manual,1.2,Hatchback,6,Full,Franchise dealer,Good,Wales,22000,6530,0.2968
+GOL-086,2017,9,141713,15746,R-Line,Petrol,Manual,1.5,Hatchback,6,Full,Private,Good,Scotland,22000,4890,0.2223
+GOL-087,2017,9,68402,7600,S,Diesel,Manual,1.5,Hatchback,4,Partial,Independent dealer,Good,East of England,22000,5895,0.268
+GOL-088,2017,9,147647,16405,Match,Diesel,Automatic,1.4,Hatchback,4,Partial,Independent dealer,Good,Wales,22000,4640,0.2109
+GOL-089,2016,10,140914,14091,GTI,Petrol,Automatic,1.4,Hatchback,5,Partial,Independent dealer,Good,Scotland,21500,5350,0.2488
+GOL-090,2016,10,133470,13347,GTI,Diesel,Manual,1.5,Hatchback,2,Full,Independent dealer,Fair,London,21500,5440,0.253
+GOL-091,2016,10,56515,5652,GT,Diesel,Manual,1.6,Hatchback,5,Full,Independent dealer,Good,North East,21500,6935,0.3226
+GOL-092,2016,10,106655,10666,S,Diesel,Manual,1.5,Sports Tourer,4,Full,Independent dealer,Good,West Midlands,21500,4725,0.2198
+GOL-093,2016,10,71746,7175,Match,Petrol,Manual,1.5,Sports Tourer,4,Partial,Private,Fair,East of England,21500,4350,0.2023
+GOL-094,2016,10,189362,18936,GT,Diesel,Manual,1.2,Hatchback,3,Full,Private,Excellent,Scotland,21500,3760,0.1749
+GOL-095,2016,10,157086,15709,GTI,Petrol,Manual,1.5,Sports Tourer,6,Partial,Franchise dealer,Good,South West,21500,5485,0.2551
+GOL-096,2016,10,149106,14911,R-Line,Diesel,Manual,1.6,Hatchback,4,Full,Franchise dealer,Good,West Midlands,21500,4730,0.22
+GOL-097,2016,10,81845,8184,R-Line,Petrol,Manual,1.5,Sports Tourer,5,Full,Independent dealer,Good,South East,21500,6330,0.2944
+GOL-098,2016,10,63466,6347,S,Petrol,Manual,1.2,Hatchback,3,Full,Private,Good,Scotland,21500,5690,0.2647
+GOL-099,2016,10,153467,15347,S,Petrol,Automatic,1.6,Hatchback,5,Partial,Private,Good,South East,21500,3825,0.1779
+GOL-100,2016,10,66516,6652,GTI,Diesel,Manual,1.5,Sports Tourer,4,Full,Independent dealer,Good,Scotland,21500,7035,0.3272
