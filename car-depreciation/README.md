@@ -1,7 +1,8 @@
 # Car Depreciation Model
 
-Estimates what a used Vauxhall Astra is worth from its age and mileage, and puts
-an honest uncertainty range around the answer.
+Estimates what a used **Vauxhall Astra** or **VW Golf** is worth from its age and
+mileage, puts an honest uncertainty range around the answer, and compares how the
+two cars hold value.
 
 ```
 price = V0 × exp(−rate(age)) × exp(−b × mileage) × (trim, fuel, history, … multipliers)
@@ -31,9 +32,40 @@ Holding age and mileage fixed, the largest price effects are a private sale
 (−10.3%), Fair condition (−7.4%), no service history (−7.2%), and Ultimate trim
 (+6.5%).
 
+## Astra vs Golf
+
+`python compare_astra_golf.py` fits both cars through the identical model,
+cleaning and cross-validation, so the comparison is between two curves rather
+than two analyses.
+
+| | Astra | Golf |
+|---|---|---|
+| Price when new | £28,321 | £30,289 |
+| Transition age | 4.5 yrs | 6.0 yrs |
+| Early annual loss | 17.0% | 13.6% |
+| Later annual loss | 9.9% | 9.3% |
+| Retained at 3 years | 52.2% | **61.4%** |
+| Retained at 5 years | 41.3% | **47.2%** |
+| Retained at 10 years | 24.4% | 26.0% |
+
+The fitted curves land within ~2 points of the published UK figures the samples
+were calibrated on (Golf at 3 years: fitted 61.4% against a published ~61%).
+
+Two findings worth stating carefully:
+
+- **The Golf's advantage is front-loaded.** It is 9 points ahead at three years,
+  6 at five, and under 2 by ten. Badge premium is an early-life effect that
+  washes out as both cars become old cars.
+- **Better retention is not the same as losing less money.** Because the Golf
+  costs about £2,000 more new, by year seven it has lost *more in pounds* than
+  the Astra (£22k vs £21k) despite retaining a higher percentage throughout.
+  Which number matters depends on whether you are pricing a trade-in or
+  budgeting a purchase.
+
 ## About the data
 
-`data/vauxhall_astra_market_sample.csv` — 100 cars, ages 0–10.
+`data/vauxhall_astra_market_sample.csv` and `data/vw_golf_market_sample.csv` —
+100 cars each, ages 0–10, plus a combined CSV and a comparison workbook.
 
 **These are not real listings.** No row is a real car or a real advert. The
 prices were generated from a documented model calibrated against published
@@ -46,9 +78,14 @@ An earlier synthetic set had mileage ≈ 1.1 × age (correlation 0.999), which m
 the age and mileage effects impossible to tell apart — the mileage coefficient
 pinned to its bound in 85% of runs. The model warns when that happens.
 
+Both cars share **identical** mileage, trim, fuel, history, seller and condition
+multipliers. Only the list prices and retention curves differ, so any fitted
+difference other than the age curve is noise rather than something rigged in.
+
 **Replace this with real data before showing the project to anyone.** Kaggle's
-"100,000 UK Used Car Data set" contains a real scraped `vauxhall.csv`. The
-loader already validates for the mess real exports contain.
+"100,000 UK Used Car Data set" contains real scraped `vauxhall.csv` *and*
+`vw.csv` — the same comparison, done for real. The loader already validates for
+the mess real exports contain.
 
 ## Running it
 
@@ -71,10 +108,13 @@ though the packages are installed.
 
 | File | What it is |
 |---|---|
-| `car_depreciation_model.py` | The model, validation and charts. Run this. |
-| `build_astra_sample.py` | Regenerates the sample dataset. Seeded, so it reproduces exactly. |
-| `data/*.csv` | The dataset the model reads. |
-| `data/*.xlsx` | Same data, plus Read Me / Market Summary / Calibration tabs. |
+| `car_depreciation_model.py` | The model, validation and charts. Run this first. |
+| `compare_astra_golf.py` | Fits both cars and compares them. |
+| `build_samples.py` | Regenerates both datasets. Seeded, so they reproduce exactly. |
+| `data/vauxhall_astra_market_sample.csv` | Astra sample, 100 cars. |
+| `data/vw_golf_market_sample.csv` | Golf sample, 100 cars. |
+| `data/combined_market_sample.csv` | Both, with a `model` column. |
+| `data/astra_vs_golf_market_sample.xlsx` | Both, plus Read Me / Comparison / Calibration tabs. |
 
 ## Using it in your own code
 
