@@ -22,3 +22,4 @@ htmlcov/
 # OS noise
 .DS_Store
 Thumbs.db
+car-depreciation/data/real_listings.csv

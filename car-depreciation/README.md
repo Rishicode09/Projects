@@ -67,10 +67,13 @@ Two findings worth stating carefully:
 The bundled samples are generated. To run the same analysis on real cars:
 
 ```bash
-cp data/real_listings_template.csv data/real_listings.csv
-# delete the two example rows, paste in your own
-python analyse_real_listings.py
+python analyse_real_listings.py     # creates data/real_listings.csv for you
+# open it, delete the two example rows, add your cars
+python analyse_real_listings.py     # run again to get the analysis
 ```
+
+The first run creates the file and stops. It never overwrites an existing one,
+so running it twice cannot destroy data you have collected.
 
 **Only four columns are required** — `model`, `reg_year`, `mileage`,
 `asking_price_gbp`. Trim, fuel, transmission, seller type, service history and

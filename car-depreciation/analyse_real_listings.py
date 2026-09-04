@@ -30,7 +30,21 @@ from car_depreciation_model import (AGE_COL, MILEAGE_COL, PRICE_COL,
 
 HERE = Path(__file__).resolve().parent
 DEFAULT = HERE / "data" / "real_listings.csv"
+TEMPLATE = HERE / "data" / "real_listings_template.csv"
 MIN_PER_MODEL = 12          # below this a four-parameter curve is not worth fitting
+
+
+def start_a_file(path: Path) -> bool:
+    """
+    Create the file to fill in, rather than telling someone to copy it.
+
+    Never overwrites: if the file already exists this does nothing, so running
+    the script twice cannot destroy collected data.
+    """
+    if path.exists() or not TEMPLATE.exists():
+        return False
+    path.write_text(TEMPLATE.read_text(encoding="utf-8"), encoding="utf-8")
+    return True
 
 
 def summarise_reality(df: pd.DataFrame, label: str) -> None:
@@ -65,9 +79,19 @@ def main(argv=None) -> int:
 
     path = Path(args.data)
     if not path.exists():
-        print(f"No file at {path}.\n"
-              f"Copy data/real_listings_template.csv to {path.name}, delete the two\n"
-              f"example rows, and paste in your own listings.", file=sys.stderr)
+        if start_a_file(path):
+            print(f"Created {path}\n")
+            print("Next: open it in VS Code, delete the two example rows, and add your")
+            print("cars — one row each. Only four columns are required:\n")
+            print("    model, reg_year, mileage, asking_price_gbp\n")
+            print("Leave the rest blank if you do not want to type them; they only")
+            print("sharpen the fit. Then run this script again.\n")
+            print("Aim for a spread of ages 1-10 rather than thirty cars of the same")
+            print("age, and deliberately mix low-mileage old cars with high-mileage")
+            print("young ones — otherwise age and mileage cannot be told apart.")
+            return 0
+        print(f"No file at {path}, and no template at {TEMPLATE} to start one from.",
+              file=sys.stderr)
         return 1
 
     df = load_astra_csv(str(path), verbose=False)
