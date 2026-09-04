@@ -38,6 +38,10 @@ from typing import Dict, Iterable, List, Optional, Tuple
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DATA_PATH = str(DATA_DIR / "vauxhall_astra_market_sample.csv")
 
+# Used to turn a registration year into an age when a hand-collected file gives
+# reg_year instead of age_years. Change it if you collect data in a later year.
+VALUATION_YEAR = 2026
+
 # Columns the model needs. Everything else in the CSV is carried along but unused.
 AGE_COL = "age_years"
 MILEAGE_COL = "mileage"
@@ -70,10 +74,17 @@ def load_astra_csv(path: str = DATA_PATH, verbose: bool = True) -> pd.DataFrame:
     df = pd.read_csv(path, keep_default_na=False,
                      na_values=["", "NA", "N/A", "NaN", "null", "NULL"])
 
+    # Hand-collected listings carry a registration year, not an age. Derive it
+    # so a real spreadsheet needs one fewer column typed out by hand.
+    if AGE_COL not in df.columns and "reg_year" in df.columns:
+        df[AGE_COL] = VALUATION_YEAR - pd.to_numeric(df["reg_year"], errors="coerce")
+
     required = [AGE_COL, MILEAGE_COL, PRICE_COL]
     missing = [c for c in required if c not in df.columns]
     if missing:
-        raise ValueError(f"{path} is missing required column(s): {missing}")
+        raise ValueError(
+            f"{path} is missing required column(s): {missing}. "
+            f"Needs '{MILEAGE_COL}', '{PRICE_COL}', and either '{AGE_COL}' or 'reg_year'.")
 
     n_start = len(df)
     reasons: Dict[str, int] = {}

@@ -62,6 +62,43 @@ Two findings worth stating carefully:
   Which number matters depends on whether you are pricing a trade-in or
   budgeting a purchase.
 
+## Using real listings
+
+The bundled samples are generated. To run the same analysis on real cars:
+
+```bash
+cp data/real_listings_template.csv data/real_listings.csv
+# delete the two example rows, paste in your own
+python analyse_real_listings.py
+```
+
+**Only four columns are required** — `model`, `reg_year`, `mileage`,
+`asking_price_gbp`. Trim, fuel, transmission, seller type, service history and
+condition are optional and improve the fit. Age is derived from `reg_year`.
+
+Collecting 30 of each from AutoTrader takes about half an hour. Make the sample
+useful rather than convenient:
+
+- **Spread the ages.** Two or three cars at each age from 1 to 10 beats thirty
+  three-year-old cars. Without age spread there is no curve to fit.
+- **Vary the mileage independently.** Deliberately include low-mileage old cars
+  and high-mileage young ones. If mileage is just age × 10,000, the model cannot
+  separate the two effects and the mileage coefficient will pin to its bound.
+- **Do not filter to one trim.** A sample that is all SRi or all GTI will show
+  an unrealistically tight fit.
+- **Record the asking price as advertised**, not a valuation-tool estimate.
+  Valuation tools output a fitted curve, so feeding one back in measures their
+  model, not the market.
+
+`analyse_real_listings.py` prints the diagnostics that reveal whether the data
+is genuinely real: within-age price spread (real listings run 0.25–0.40; below
+0.20 is suspiciously tidy), R² (above 0.95 on real listings is a warning sign,
+not a triumph), and whether any parameter pinned to a bound.
+
+**The zero-effort alternative:** Kaggle's "100,000 UK Used Car Data set" has
+real scraped `vauxhall.csv` and `vw.csv` with thousands of rows each. Add a
+`model` column and it works with the same script.
+
 ## About the data
 
 `data/vauxhall_astra_market_sample.csv` and `data/vw_golf_market_sample.csv` —
@@ -109,7 +146,9 @@ though the packages are installed.
 | File | What it is |
 |---|---|
 | `car_depreciation_model.py` | The model, validation and charts. Run this first. |
-| `compare_astra_golf.py` | Fits both cars and compares them. |
+| `compare_astra_golf.py` | Fits both cars and compares them, on the generated samples. |
+| `analyse_real_listings.py` | Same comparison on real listings you collect. |
+| `data/real_listings_template.csv` | Fill this in from AutoTrader. |
 | `build_samples.py` | Regenerates both datasets. Seeded, so they reproduce exactly. |
 | `data/vauxhall_astra_market_sample.csv` | Astra sample, 100 cars. |
 | `data/vw_golf_market_sample.csv` | Golf sample, 100 cars. |
