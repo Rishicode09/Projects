@@ -1,0 +1,201 @@
+model,listing_id,reg_year,age_years,mileage,avg_annual_mileage,trim,fuel,transmission,engine_litres,body,former_keepers,service_history,seller_type,condition,region,original_list_gbp,asking_price_gbp,retained_pct
+Vauxhall Astra,AST-001,2026,0,25,,Griffin,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,South West,29995,28375,0.946
+Vauxhall Astra,AST-002,2025,1,19124,19124,Ultimate,Petrol,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,London,29500,23760,0.8054
+Vauxhall Astra,AST-003,2025,1,4360,4360,Ultimate,Petrol,Manual,1.5,Hatchback,1,Full,Private,Good,South East,29500,21600,0.7322
+Vauxhall Astra,AST-004,2025,1,17137,17137,Ultimate,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,Wales,29500,25435,0.8622
+Vauxhall Astra,AST-005,2025,1,6255,6255,GS,Electric,Automatic,-,Hatchback,1,Full,Franchise dealer,Good,Wales,29500,23970,0.8125
+Vauxhall Astra,AST-006,2025,1,8421,8421,GS,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,Scotland,29500,28945,0.9812
+Vauxhall Astra,AST-007,2025,1,4340,4340,GS,Petrol,Manual,1.5,Hatchback,1,Full,Franchise dealer,Good,West Midlands,29500,25425,0.8619
+Vauxhall Astra,AST-008,2025,1,4451,4451,Design,Electric,Automatic,-,Sports Tourer,1,Full,Franchise dealer,Excellent,West Midlands,29500,22455,0.7612
+Vauxhall Astra,AST-009,2025,1,13016,13016,GS,Hybrid,Automatic,1.2,Sports Tourer,1,Full,Independent dealer,Good,London,29500,27160,0.9207
+Vauxhall Astra,AST-010,2025,1,17448,17448,GS Line,Petrol,Manual,1.5,Hatchback,1,Full,Private,Good,East of England,29500,20140,0.6827
+Vauxhall Astra,AST-011,2025,1,9625,9625,Ultimate,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Private,Good,North East,29500,23990,0.8132
+Vauxhall Astra,AST-012,2024,2,31312,15656,Design,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,Wales,28500,18910,0.6635
+Vauxhall Astra,AST-013,2024,2,30654,15327,Griffin,Petrol,Manual,1.4,Hatchback,1,Full,Independent dealer,Good,North West,28500,16120,0.5656
+Vauxhall Astra,AST-014,2024,2,13367,6684,GS,Electric,Automatic,-,Hatchback,1,Full,Independent dealer,Fair,Yorkshire,28500,16005,0.5616
+Vauxhall Astra,AST-015,2024,2,30516,15258,Griffin,Petrol,Manual,1.2,Sports Tourer,1,Full,Private,Good,South West,28500,16485,0.5784
+Vauxhall Astra,AST-016,2024,2,30784,15392,Ultimate,Hybrid,Automatic,1.2,Hatchback,2,Full,Franchise dealer,Excellent,West Midlands,28500,22600,0.793
+Vauxhall Astra,AST-017,2024,2,25250,12625,Ultimate,Petrol,Manual,1.2,Hatchback,2,Full,Franchise dealer,Good,Wales,28500,22175,0.7781
+Vauxhall Astra,AST-018,2024,2,12801,6400,Griffin,Electric,Automatic,-,Hatchback,2,Full,Independent dealer,Excellent,South East,28500,17520,0.6147
+Vauxhall Astra,AST-019,2024,2,16666,8333,GS Line,Plug-in Hybrid,Automatic,1.6,Sports Tourer,2,Full,Franchise dealer,Excellent,South West,28500,21365,0.7496
+Vauxhall Astra,AST-020,2024,2,29182,14591,Ultimate,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Fair,South East,28500,20065,0.704
+Vauxhall Astra,AST-021,2024,2,38022,19011,Design,Plug-in Hybrid,Automatic,1.6,Sports Tourer,1,Full,Independent dealer,Good,South West,28500,16050,0.5632
+Vauxhall Astra,AST-022,2024,2,11933,5966,Design,Hybrid,Automatic,1.2,Sports Tourer,1,Full,Private,Fair,Wales,28500,15420,0.5411
+Vauxhall Astra,AST-023,2024,2,17262,8631,GS,Petrol,Automatic,1.4,Sports Tourer,2,Full,Franchise dealer,Good,London,28500,19765,0.6935
+Vauxhall Astra,AST-024,2023,3,18639,6213,Design,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Full,Franchise dealer,Good,West Midlands,27500,16365,0.5951
+Vauxhall Astra,AST-025,2023,3,25974,8658,Design,Petrol,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,London,27500,14295,0.5198
+Vauxhall Astra,AST-026,2023,3,61727,20576,Design,Hybrid,Automatic,1.2,Hatchback,1,Partial,Franchise dealer,Good,Yorkshire,27500,13355,0.4856
+Vauxhall Astra,AST-027,2023,3,36473,12158,Ultimate,Plug-in Hybrid,Automatic,1.6,Hatchback,1,None,Independent dealer,Good,Yorkshire,27500,13830,0.5029
+Vauxhall Astra,AST-028,2023,3,15959,5320,GS Line,Petrol,Manual,1.5,Hatchback,1,Full,Independent dealer,Fair,Yorkshire,27500,13790,0.5015
+Vauxhall Astra,AST-029,2023,3,29741,9914,GS,Electric,Automatic,-,Sports Tourer,2,Full,Independent dealer,Good,North East,27500,13615,0.4951
+Vauxhall Astra,AST-030,2023,3,61200,20400,Design,Hybrid,Automatic,1.2,Sports Tourer,1,Partial,Private,Good,West Midlands,27500,11650,0.4236
+Vauxhall Astra,AST-031,2023,3,21063,7021,GS Line,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Good,Wales,27500,17545,0.638
+Vauxhall Astra,AST-032,2023,3,29645,9882,Ultimate,Petrol,Automatic,1.4,Hatchback,2,Full,Independent dealer,Excellent,London,27500,16120,0.5862
+Vauxhall Astra,AST-033,2022,4,83026,20756,Ultimate,Petrol,Manual,1.5,Sports Tourer,2,Full,Franchise dealer,Good,North East,25500,10515,0.4124
+Vauxhall Astra,AST-034,2022,4,57452,14363,Design,Petrol,Manual,1.4,Hatchback,3,Full,Independent dealer,Good,North West,25500,10030,0.3933
+Vauxhall Astra,AST-035,2022,4,77061,19265,Ultimate,Petrol,Manual,1.2,Hatchback,2,Full,Independent dealer,Excellent,South West,25500,10595,0.4155
+Vauxhall Astra,AST-036,2022,4,79823,19956,Ultimate,Petrol,Automatic,1.2,Sports Tourer,4,Partial,Independent dealer,Excellent,Yorkshire,25500,10665,0.4182
+Vauxhall Astra,AST-037,2022,4,65448,16362,Ultimate,Petrol,Manual,1.5,Hatchback,2,Full,Franchise dealer,Good,London,25500,12450,0.4882
+Vauxhall Astra,AST-038,2022,4,71119,17780,Design,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Partial,Independent dealer,Good,East of England,25500,8945,0.3508
+Vauxhall Astra,AST-039,2022,4,36871,9218,GS Line,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Franchise dealer,Fair,Wales,25500,13340,0.5231
+Vauxhall Astra,AST-040,2022,4,57613,14403,Design,Petrol,Manual,1.4,Hatchback,3,Full,Franchise dealer,Good,East of England,25500,10890,0.4271
+Vauxhall Astra,AST-041,2022,4,40634,10158,Design,Plug-in Hybrid,Automatic,1.6,Hatchback,3,Partial,Independent dealer,Excellent,West Midlands,25500,10825,0.4245
+Vauxhall Astra,AST-042,2022,4,50692,12673,Griffin,Petrol,Automatic,1.5,Hatchback,1,Partial,Independent dealer,Excellent,North West,25500,11565,0.4535
+Vauxhall Astra,AST-043,2022,4,76845,19211,GS Line,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Partial,Private,Good,North West,25500,8800,0.3451
+Vauxhall Astra,AST-044,2022,4,54773,13693,GS Line,Petrol,Automatic,1.4,Hatchback,3,Full,Franchise dealer,Good,North East,25500,11540,0.4525
+Vauxhall Astra,AST-045,2022,4,60789,15197,Griffin,Petrol,Automatic,1.5,Hatchback,2,Partial,Franchise dealer,Excellent,East of England,25500,11855,0.4649
+Vauxhall Astra,AST-046,2022,4,25827,6457,Design,Petrol,Automatic,1.6,Hatchback,4,Full,Franchise dealer,Good,Yorkshire,25500,12210,0.4788
+Vauxhall Astra,AST-047,2021,5,78739,15748,SRi,Petrol,Manual,1.2,Hatchback,1,Partial,Independent dealer,Good,Wales,23000,8435,0.3667
+Vauxhall Astra,AST-048,2021,5,105118,21024,SRi VX-Line,Petrol,Manual,1.2,Hatchback,6,None,Private,Excellent,Wales,23000,5960,0.2591
+Vauxhall Astra,AST-049,2021,5,68767,13753,Design,Diesel,Automatic,1.5,Hatchback,3,Partial,Independent dealer,Good,Wales,23000,8460,0.3678
+Vauxhall Astra,AST-050,2021,5,29468,5894,Ultimate,Diesel,Manual,1.2,Sports Tourer,5,None,Independent dealer,Fair,London,23000,8360,0.3635
+Vauxhall Astra,AST-051,2021,5,98187,19637,Elite Nav,Petrol,Manual,1.5,Sports Tourer,2,None,Franchise dealer,Good,North East,23000,7440,0.3235
+Vauxhall Astra,AST-052,2021,5,43114,8623,Ultimate,Diesel,Manual,1.5,Hatchback,2,Full,Private,Excellent,Yorkshire,23000,9200,0.4
+Vauxhall Astra,AST-053,2021,5,59864,11973,Design,Petrol,Manual,1.5,Hatchback,1,Partial,Independent dealer,Excellent,South East,23000,8690,0.3778
+Vauxhall Astra,AST-054,2021,5,90975,18195,Design,Petrol,Manual,1.5,Hatchback,5,Full,Private,Fair,South West,23000,6010,0.2613
+Vauxhall Astra,AST-055,2021,5,57664,11533,Design,Petrol,Manual,1.6,Hatchback,2,Full,Franchise dealer,Good,West Midlands,23000,9365,0.4072
+Vauxhall Astra,AST-056,2021,5,89959,17992,SRi VX-Line,Petrol,Automatic,1.2,Hatchback,1,None,Private,Excellent,East of England,23000,7250,0.3152
+Vauxhall Astra,AST-057,2021,5,97381,19476,SRi VX-Line,Petrol,Manual,1.4,Sports Tourer,1,Full,Franchise dealer,Good,Scotland,23000,8395,0.365
+Vauxhall Astra,AST-058,2021,5,95964,19193,Design,Petrol,Manual,1.2,Hatchback,4,Full,Franchise dealer,Good,Wales,23000,7535,0.3276
+Vauxhall Astra,AST-059,2021,5,77994,15599,Design,Diesel,Automatic,1.2,Hatchback,3,Full,Franchise dealer,Excellent,West Midlands,23000,8270,0.3596
+Vauxhall Astra,AST-060,2021,5,59572,11914,SRi VX-Line,Petrol,Manual,1.4,Sports Tourer,5,Full,Private,Good,Scotland,23000,7805,0.3393
+Vauxhall Astra,AST-061,2020,6,120559,20093,Design,Petrol,Automatic,1.2,Hatchback,4,Partial,Franchise dealer,Good,North West,22000,5935,0.2698
+Vauxhall Astra,AST-062,2020,6,52766,8794,Elite Nav,Diesel,Manual,1.2,Sports Tourer,4,Full,Independent dealer,Good,South East,22000,8040,0.3655
+Vauxhall Astra,AST-063,2020,6,30225,5038,SRi VX-Line,Petrol,Automatic,1.2,Sports Tourer,2,Full,Private,Good,Wales,22000,9550,0.4341
+Vauxhall Astra,AST-064,2020,6,109062,18177,Design,Petrol,Manual,1.5,Hatchback,4,Full,Private,Good,Yorkshire,22000,4895,0.2225
+Vauxhall Astra,AST-065,2020,6,77957,12993,Elite Nav,Petrol,Automatic,1.2,Sports Tourer,2,Full,Independent dealer,Good,South West,22000,8640,0.3927
+Vauxhall Astra,AST-066,2020,6,29239,4873,Ultimate,Petrol,Automatic,1.2,Hatchback,2,Full,Independent dealer,Good,Yorkshire,22000,10520,0.4782
+Vauxhall Astra,AST-067,2020,6,57142,9524,Elite Nav,Diesel,Manual,1.5,Hatchback,3,Full,Independent dealer,Excellent,Yorkshire,22000,8775,0.3989
+Vauxhall Astra,AST-068,2020,6,31154,5192,Design,Diesel,Automatic,1.2,Hatchback,3,Full,Franchise dealer,Good,North East,22000,9115,0.4143
+Vauxhall Astra,AST-069,2020,6,45661,7610,SRi VX-Line,Petrol,Manual,1.6,Hatchback,1,Partial,Independent dealer,Good,London,22000,8860,0.4027
+Vauxhall Astra,AST-070,2020,6,90123,15020,Elite Nav,Petrol,Manual,1.6,Hatchback,2,Partial,Franchise dealer,Excellent,Yorkshire,22000,7790,0.3541
+Vauxhall Astra,AST-071,2020,6,53902,8984,Elite Nav,Petrol,Manual,1.6,Hatchback,4,Partial,Independent dealer,Good,Wales,22000,8015,0.3643
+Vauxhall Astra,AST-072,2020,6,40335,6722,SRi VX-Line,Petrol,Manual,1.4,Hatchback,5,Full,Franchise dealer,Good,West Midlands,22000,9210,0.4186
+Vauxhall Astra,AST-073,2020,6,41529,6922,Ultimate,Diesel,Manual,1.5,Sports Tourer,5,None,Independent dealer,Fair,North East,22000,7195,0.327
+Vauxhall Astra,AST-074,2020,6,38221,6370,Elite Nav,Petrol,Manual,1.5,Hatchback,2,Full,Independent dealer,Good,Scotland,22000,9905,0.4502
+Vauxhall Astra,AST-075,2020,6,116680,19447,Design,Petrol,Manual,1.6,Hatchback,5,Partial,Private,Fair,Wales,22000,4480,0.2036
+Vauxhall Astra,AST-076,2019,7,106433,15205,Elite Nav,Petrol,Manual,1.5,Hatchback,4,Partial,Franchise dealer,Excellent,East of England,21000,5975,0.2845
+Vauxhall Astra,AST-077,2019,7,27959,3994,SRi,Diesel,Manual,1.6,Hatchback,2,Full,Franchise dealer,Good,Wales,21000,9195,0.4379
+Vauxhall Astra,AST-078,2019,7,51917,7417,Ultimate,Petrol,Manual,1.4,Sports Tourer,5,Partial,Private,Good,Scotland,21000,6325,0.3012
+Vauxhall Astra,AST-079,2019,7,99002,14143,SRi VX-Line,Petrol,Automatic,1.5,Sports Tourer,2,Full,Private,Good,London,21000,5850,0.2786
+Vauxhall Astra,AST-080,2019,7,56790,8113,SRi,Petrol,Manual,1.4,Hatchback,2,Full,Independent dealer,Excellent,North East,21000,7700,0.3667
+Vauxhall Astra,AST-081,2019,7,110871,15839,Ultimate,Petrol,Automatic,1.5,Hatchback,3,Full,Independent dealer,Excellent,North West,21000,6860,0.3267
+Vauxhall Astra,AST-082,2019,7,126929,18133,Ultimate,Diesel,Automatic,1.2,Hatchback,2,Full,Franchise dealer,Good,London,21000,6735,0.3207
+Vauxhall Astra,AST-083,2018,8,28243,3530,SRi,Diesel,Manual,1.4,Hatchback,5,Partial,Independent dealer,Good,East of England,20000,6645,0.3322
+Vauxhall Astra,AST-084,2018,8,48942,6118,Elite Nav,Petrol,Automatic,1.5,Hatchback,6,Partial,Independent dealer,Good,South West,20000,6505,0.3252
+Vauxhall Astra,AST-085,2018,8,60739,7592,SRi VX-Line,Diesel,Manual,1.4,Hatchback,5,Full,Independent dealer,Excellent,Wales,20000,6395,0.3197
+Vauxhall Astra,AST-086,2018,8,108109,13514,Design,Diesel,Manual,1.4,Hatchback,4,Partial,Independent dealer,Good,Wales,20000,4445,0.2223
+Vauxhall Astra,AST-087,2018,8,95916,11990,Design,Petrol,Manual,1.2,Sports Tourer,5,Partial,Independent dealer,Good,South West,20000,4440,0.222
+Vauxhall Astra,AST-088,2018,8,103278,12910,Elite Nav,Petrol,Manual,1.5,Hatchback,5,None,Independent dealer,Fair,Yorkshire,20000,4935,0.2467
+Vauxhall Astra,AST-089,2017,9,147547,16394,Design,Petrol,Automatic,1.5,Sports Tourer,4,Full,Independent dealer,Fair,East of England,19500,3540,0.1815
+Vauxhall Astra,AST-090,2017,9,56317,6257,Design,Diesel,Manual,1.6,Hatchback,1,Full,Independent dealer,Excellent,Scotland,19500,6025,0.309
+Vauxhall Astra,AST-091,2017,9,80087,8899,SRi VX-Line,Petrol,Automatic,1.6,Sports Tourer,6,Partial,Franchise dealer,Good,North West,19500,6010,0.3082
+Vauxhall Astra,AST-092,2017,9,143622,15958,Ultimate,Petrol,Manual,1.2,Hatchback,1,Full,Independent dealer,Good,East of England,19500,4610,0.2364
+Vauxhall Astra,AST-093,2017,9,58310,6479,SRi,Petrol,Manual,1.2,Sports Tourer,5,Full,Independent dealer,Good,Yorkshire,19500,6185,0.3172
+Vauxhall Astra,AST-094,2017,9,182592,20288,SRi,Petrol,Automatic,1.2,Hatchback,4,Full,Independent dealer,Excellent,London,19500,4280,0.2195
+Vauxhall Astra,AST-095,2017,9,61682,6854,SRi,Petrol,Manual,1.2,Hatchback,4,Full,Independent dealer,Good,Yorkshire,19500,6170,0.3164
+Vauxhall Astra,AST-096,2016,10,109750,10975,Ultimate,Petrol,Manual,1.4,Hatchback,5,Partial,Franchise dealer,Good,South West,19000,4920,0.2589
+Vauxhall Astra,AST-097,2016,10,181288,18129,Ultimate,Petrol,Manual,1.6,Hatchback,5,Full,Franchise dealer,Good,North West,19000,4090,0.2153
+Vauxhall Astra,AST-098,2016,10,64299,6430,Design,Petrol,Automatic,1.5,Sports Tourer,2,Full,Independent dealer,Fair,North West,19000,5290,0.2784
+Vauxhall Astra,AST-099,2016,10,207161,20716,Design,Petrol,Automatic,1.6,Hatchback,3,Full,Independent dealer,Excellent,North East,19000,3560,0.1874
+Vauxhall Astra,AST-100,2016,10,198527,19853,Ultimate,Petrol,Manual,1.6,Hatchback,3,Full,Independent dealer,Good,West Midlands,19000,3685,0.1939
+Volkswagen Golf,GOL-001,2026,0,25,,Life,Petrol,Automatic,1.4,Hatchback,1,Full,Franchise dealer,Good,Wales,30500,32375,1.0615
+Volkswagen Golf,GOL-002,2026,0,25,,Black Edition,Petrol,Automatic,1.4,Hatchback,1,Full,Franchise dealer,Good,North East,30500,36470,1.1957
+Volkswagen Golf,GOL-003,2026,0,3056,,GTI,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Good,Yorkshire,30500,35860,1.1757
+Volkswagen Golf,GOL-004,2026,0,207,,Black Edition,Petrol,Manual,1.6,Hatchback,1,Full,Independent dealer,Excellent,South West,30500,31855,1.0444
+Volkswagen Golf,GOL-005,2026,0,3337,,Match,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Excellent,Scotland,30500,30155,0.9887
+Volkswagen Golf,GOL-006,2025,1,7372,7372,GTI,Petrol,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,London,30000,32100,1.07
+Volkswagen Golf,GOL-007,2025,1,4212,4212,Life,Petrol,Automatic,1.5,Hatchback,1,Full,Franchise dealer,Good,North East,30000,25125,0.8375
+Volkswagen Golf,GOL-008,2025,1,10204,10204,R-Line,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,East of England,30000,27315,0.9105
+Volkswagen Golf,GOL-009,2025,1,10809,10809,Life,Petrol,Automatic,1.2,Hatchback,1,Full,Independent dealer,Good,Yorkshire,30000,22755,0.7585
+Volkswagen Golf,GOL-010,2025,1,7572,7572,Black Edition,Petrol,Manual,1.4,Hatchback,1,Full,Private,Good,Yorkshire,30000,22075,0.7358
+Volkswagen Golf,GOL-011,2024,2,37337,18668,Match,Hybrid,Automatic,1.2,Hatchback,2,Full,Franchise dealer,Good,North West,29000,22855,0.7881
+Volkswagen Golf,GOL-012,2024,2,27527,13764,Match,Petrol,Automatic,1.2,Sports Tourer,2,Full,Private,Good,Yorkshire,29000,18050,0.6224
+Volkswagen Golf,GOL-013,2024,2,28890,14445,Match,Petrol,Manual,1.2,Sports Tourer,1,Full,Independent dealer,Fair,London,29000,17630,0.6079
+Volkswagen Golf,GOL-014,2024,2,24666,12333,Match,Petrol,Manual,1.6,Hatchback,2,Full,Independent dealer,Good,Wales,29000,18775,0.6474
+Volkswagen Golf,GOL-015,2024,2,10593,5296,GTI,Petrol,Manual,1.6,Hatchback,1,Full,Independent dealer,Good,London,29000,24055,0.8295
+Volkswagen Golf,GOL-016,2024,2,9928,4964,R-Line,Hybrid,Automatic,1.2,Hatchback,1,Full,Private,Good,Yorkshire,29000,22450,0.7741
+Volkswagen Golf,GOL-017,2024,2,14304,7152,R-Line,Petrol,Automatic,1.4,Hatchback,1,Full,Private,Fair,South East,29000,19435,0.6702
+Volkswagen Golf,GOL-018,2024,2,12606,6303,Black Edition,Petrol,Automatic,1.2,Sports Tourer,1,Full,Independent dealer,Good,Yorkshire,29000,24570,0.8472
+Volkswagen Golf,GOL-019,2024,2,38823,19412,Match,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Fair,North West,29000,19755,0.6812
+Volkswagen Golf,GOL-020,2024,2,34039,17020,Black Edition,Petrol,Automatic,1.5,Hatchback,1,Full,Private,Good,South West,29000,19325,0.6664
+Volkswagen Golf,GOL-021,2023,3,32707,10902,GTI,Plug-in Hybrid,Automatic,1.6,Hatchback,3,None,Private,Excellent,South West,28000,17110,0.6111
+Volkswagen Golf,GOL-022,2023,3,24606,8202,Life,Petrol,Automatic,1.4,Hatchback,1,Full,Franchise dealer,Good,West Midlands,28000,19625,0.7009
+Volkswagen Golf,GOL-023,2023,3,27435,9145,Style,Petrol,Automatic,1.4,Hatchback,1,Full,Independent dealer,Excellent,South West,28000,19735,0.7048
+Volkswagen Golf,GOL-024,2023,3,27509,9170,Style,Hybrid,Automatic,1.2,Sports Tourer,1,Partial,Franchise dealer,Good,Wales,28000,20995,0.7498
+Volkswagen Golf,GOL-025,2023,3,15028,5009,Black Edition,Petrol,Manual,1.2,Hatchback,3,Full,Independent dealer,Good,South East,28000,18310,0.6539
+Volkswagen Golf,GOL-026,2023,3,41289,13763,Match,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Partial,Independent dealer,Fair,South East,28000,14690,0.5246
+Volkswagen Golf,GOL-027,2023,3,11805,3935,R-Line,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Partial,Independent dealer,Excellent,North East,28000,21505,0.768
+Volkswagen Golf,GOL-028,2023,3,11369,3790,Black Edition,Petrol,Manual,1.4,Sports Tourer,2,None,Independent dealer,Excellent,South West,28000,17775,0.6348
+Volkswagen Golf,GOL-029,2023,3,53789,17930,R-Line,Petrol,Automatic,1.5,Hatchback,1,Full,Independent dealer,Fair,Scotland,28000,16385,0.5852
+Volkswagen Golf,GOL-030,2023,3,26779,8926,Match,Petrol,Manual,1.4,Hatchback,2,Full,Independent dealer,Fair,Wales,28000,14900,0.5321
+Volkswagen Golf,GOL-031,2022,4,47138,11784,GTI,Petrol,Manual,1.2,Sports Tourer,1,Partial,Franchise dealer,Excellent,South West,26500,17835,0.673
+Volkswagen Golf,GOL-032,2022,4,31495,7874,Style,Hybrid,Automatic,1.2,Hatchback,4,Full,Independent dealer,Fair,East of England,26500,13990,0.5279
+Volkswagen Golf,GOL-033,2022,4,31467,7867,Match,Petrol,Manual,1.4,Hatchback,4,Partial,Independent dealer,Fair,West Midlands,26500,11645,0.4394
+Volkswagen Golf,GOL-034,2022,4,53085,13271,Black Edition,Petrol,Manual,1.6,Hatchback,2,Partial,Franchise dealer,Good,South East,26500,14695,0.5545
+Volkswagen Golf,GOL-035,2022,4,48401,12100,Style,Hybrid,Automatic,1.2,Hatchback,3,Partial,Independent dealer,Good,North West,26500,14695,0.5545
+Volkswagen Golf,GOL-036,2022,4,64540,16135,Match,Petrol,Manual,1.4,Hatchback,1,Partial,Franchise dealer,Excellent,Yorkshire,26500,12780,0.4823
+Volkswagen Golf,GOL-037,2022,4,62212,15553,Life,Hybrid,Automatic,1.2,Sports Tourer,1,Full,Independent dealer,Good,North East,26500,13630,0.5143
+Volkswagen Golf,GOL-038,2022,4,77246,19312,Life,Petrol,Manual,1.4,Hatchback,1,Full,Independent dealer,Fair,South East,26500,10635,0.4013
+Volkswagen Golf,GOL-039,2022,4,29700,7425,Black Edition,Hybrid,Automatic,1.2,Sports Tourer,2,Partial,Independent dealer,Good,South East,26500,15985,0.6032
+Volkswagen Golf,GOL-040,2022,4,40030,10008,Life,Petrol,Manual,1.2,Hatchback,1,Full,Franchise dealer,Fair,East of England,26500,13630,0.5143
+Volkswagen Golf,GOL-041,2022,4,82495,20624,Life,Petrol,Automatic,1.5,Hatchback,3,Partial,Independent dealer,Excellent,West Midlands,26500,10405,0.3926
+Volkswagen Golf,GOL-042,2022,4,67268,16817,GTI,Hybrid,Automatic,1.2,Hatchback,2,Full,Independent dealer,Good,North West,26500,14675,0.5538
+Volkswagen Golf,GOL-043,2022,4,19713,4928,GTI,Petrol,Automatic,1.2,Hatchback,3,Partial,Private,Excellent,East of England,26500,15485,0.5843
+Volkswagen Golf,GOL-044,2022,4,71892,17973,Life,Plug-in Hybrid,Automatic,1.6,Hatchback,5,Partial,Franchise dealer,Good,London,26500,11460,0.4325
+Volkswagen Golf,GOL-045,2021,5,23561,4712,Black Edition,Diesel,Manual,1.4,Sports Tourer,4,Full,Independent dealer,Fair,South West,25000,12190,0.4876
+Volkswagen Golf,GOL-046,2021,5,18451,3690,GTI,Petrol,Automatic,1.6,Hatchback,1,None,Private,Good,North West,25000,12350,0.494
+Volkswagen Golf,GOL-047,2021,5,37414,7483,GTI,Diesel,Automatic,1.5,Hatchback,6,Partial,Franchise dealer,Good,North West,25000,13515,0.5406
+Volkswagen Golf,GOL-048,2021,5,67759,13552,Style,Diesel,Manual,1.5,Hatchback,3,None,Franchise dealer,Excellent,West Midlands,25000,9785,0.3914
+Volkswagen Golf,GOL-049,2021,5,56646,11329,Life,Hybrid,Automatic,1.2,Sports Tourer,2,Partial,Independent dealer,Excellent,South West,25000,11970,0.4788
+Volkswagen Golf,GOL-050,2021,5,98456,19691,R-Line,Petrol,Automatic,1.5,Hatchback,2,Full,Franchise dealer,Excellent,East of England,25000,11735,0.4694
+Volkswagen Golf,GOL-051,2021,5,41012,8202,Black Edition,Diesel,Automatic,1.4,Hatchback,1,Partial,Franchise dealer,Fair,North East,25000,11020,0.4408
+Volkswagen Golf,GOL-052,2021,5,92303,18461,Black Edition,Hybrid,Automatic,1.2,Hatchback,4,None,Franchise dealer,Excellent,East of England,25000,10630,0.4252
+Volkswagen Golf,GOL-053,2021,5,24609,4922,Life,Hybrid,Automatic,1.2,Hatchback,4,Partial,Private,Good,North West,25000,10450,0.418
+Volkswagen Golf,GOL-054,2021,5,19594,3919,Black Edition,Petrol,Manual,1.6,Sports Tourer,5,Partial,Independent dealer,Excellent,South East,25000,12865,0.5146
+Volkswagen Golf,GOL-055,2020,6,25609,4268,Life,Petrol,Automatic,1.6,Sports Tourer,3,Full,Franchise dealer,Fair,East of England,24000,10270,0.4279
+Volkswagen Golf,GOL-056,2020,6,61336,10223,Black Edition,Diesel,Manual,1.2,Sports Tourer,4,Full,Franchise dealer,Excellent,Scotland,24000,10175,0.424
+Volkswagen Golf,GOL-057,2020,6,110850,18475,R-Line,Petrol,Automatic,1.4,Hatchback,3,Full,Franchise dealer,Good,London,24000,9175,0.3823
+Volkswagen Golf,GOL-058,2020,6,79302,13217,R-Line,Hybrid,Automatic,1.2,Hatchback,5,Partial,Private,Fair,North East,24000,7730,0.3221
+Volkswagen Golf,GOL-059,2020,6,66692,11115,Style,Hybrid,Automatic,1.2,Sports Tourer,6,Full,Private,Good,London,24000,9255,0.3856
+Volkswagen Golf,GOL-060,2020,6,109695,18282,GTI,Petrol,Automatic,1.5,Hatchback,3,None,Private,Fair,Scotland,24000,6290,0.2621
+Volkswagen Golf,GOL-061,2020,6,45216,7536,Style,Hybrid,Automatic,1.2,Hatchback,2,Full,Independent dealer,Fair,North West,24000,11230,0.4679
+Volkswagen Golf,GOL-062,2020,6,36930,6155,Match,Petrol,Manual,1.5,Sports Tourer,3,Full,Private,Good,Scotland,24000,10080,0.42
+Volkswagen Golf,GOL-063,2020,6,58731,9788,Style,Diesel,Manual,1.4,Hatchback,2,Full,Franchise dealer,Fair,East of England,24000,10045,0.4185
+Volkswagen Golf,GOL-064,2020,6,108069,18012,Life,Petrol,Manual,1.2,Hatchback,2,Partial,Franchise dealer,Good,North East,24000,7405,0.3085
+Volkswagen Golf,GOL-065,2020,6,43827,7304,GTI,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,West Midlands,24000,14650,0.6104
+Volkswagen Golf,GOL-066,2020,6,66025,11004,Match,Diesel,Manual,1.5,Sports Tourer,6,Partial,Franchise dealer,Fair,Scotland,24000,8210,0.3421
+Volkswagen Golf,GOL-067,2020,6,77450,12908,Style,Petrol,Manual,1.5,Sports Tourer,2,None,Franchise dealer,Fair,Wales,24000,8100,0.3375
+Volkswagen Golf,GOL-068,2020,6,35397,5900,R-Line,Diesel,Manual,1.2,Hatchback,4,Full,Private,Good,East of England,24000,9545,0.3977
+Volkswagen Golf,GOL-069,2020,6,105048,17508,Match,Diesel,Automatic,1.5,Hatchback,4,Full,Franchise dealer,Good,East of England,24000,8475,0.3531
+Volkswagen Golf,GOL-070,2020,6,88618,14770,Match,Petrol,Manual,1.4,Hatchback,5,Full,Franchise dealer,Excellent,Yorkshire,24000,9015,0.3756
+Volkswagen Golf,GOL-071,2020,6,45247,7541,Black Edition,Hybrid,Automatic,1.2,Hatchback,5,Full,Independent dealer,Fair,South East,24000,10705,0.446
+Volkswagen Golf,GOL-072,2019,7,46482,6640,Match,Diesel,Manual,1.6,Hatchback,5,Partial,Independent dealer,Excellent,North West,23000,8200,0.3565
+Volkswagen Golf,GOL-073,2019,7,39016,5574,GTI,Petrol,Automatic,1.2,Sports Tourer,1,None,Independent dealer,Fair,North West,23000,9795,0.4259
+Volkswagen Golf,GOL-074,2019,7,102634,14662,GT,Petrol,Manual,1.4,Hatchback,1,Full,Independent dealer,Good,East of England,23000,7655,0.3328
+Volkswagen Golf,GOL-075,2019,7,79975,11425,GTI,Petrol,Automatic,1.5,Sports Tourer,2,Partial,Private,Excellent,Scotland,23000,8430,0.3665
+Volkswagen Golf,GOL-076,2019,7,102695,14671,R-Line,Diesel,Automatic,1.2,Hatchback,4,Full,Private,Excellent,Wales,23000,6785,0.295
+Volkswagen Golf,GOL-077,2019,7,68212,9745,GTI,Diesel,Automatic,1.5,Hatchback,6,Partial,Independent dealer,Excellent,North West,23000,9120,0.3965
+Volkswagen Golf,GOL-078,2019,7,132182,18883,S,Diesel,Manual,1.2,Hatchback,3,Full,Independent dealer,Good,Scotland,23000,5320,0.2313
+Volkswagen Golf,GOL-079,2019,7,98726,14104,GTI,Petrol,Manual,1.5,Sports Tourer,1,Partial,Independent dealer,Good,North West,23000,7940,0.3452
+Volkswagen Golf,GOL-080,2018,8,102766,12846,R-Line,Petrol,Automatic,1.6,Sports Tourer,3,Full,Franchise dealer,Good,East of England,22500,7435,0.3304
+Volkswagen Golf,GOL-081,2018,8,97081,12135,GT,Diesel,Manual,1.5,Hatchback,2,Partial,Franchise dealer,Fair,Scotland,22500,6270,0.2787
+Volkswagen Golf,GOL-082,2018,8,80367,10046,R-Line,Diesel,Manual,1.2,Hatchback,6,Full,Independent dealer,Good,North East,22500,6965,0.3096
+Volkswagen Golf,GOL-083,2017,9,86732,9637,S,Petrol,Automatic,1.2,Hatchback,6,Full,Franchise dealer,Good,West Midlands,22000,6395,0.2907
+Volkswagen Golf,GOL-084,2017,9,147802,16422,R-Line,Petrol,Manual,1.6,Hatchback,1,Full,Independent dealer,Good,West Midlands,22000,5575,0.2534
+Volkswagen Golf,GOL-085,2017,9,118693,13188,GTI,Diesel,Manual,1.2,Hatchback,6,Full,Franchise dealer,Good,Wales,22000,6530,0.2968
+Volkswagen Golf,GOL-086,2017,9,141713,15746,R-Line,Petrol,Manual,1.5,Hatchback,6,Full,Private,Good,Scotland,22000,4890,0.2223
+Volkswagen Golf,GOL-087,2017,9,68402,7600,S,Diesel,Manual,1.5,Hatchback,4,Partial,Independent dealer,Good,East of England,22000,5895,0.268
+Volkswagen Golf,GOL-088,2017,9,147647,16405,Match,Diesel,Automatic,1.4,Hatchback,4,Partial,Independent dealer,Good,Wales,22000,4640,0.2109
+Volkswagen Golf,GOL-089,2016,10,140914,14091,GTI,Petrol,Automatic,1.4,Hatchback,5,Partial,Independent dealer,Good,Scotland,21500,5350,0.2488
+Volkswagen Golf,GOL-090,2016,10,133470,13347,GTI,Diesel,Manual,1.5,Hatchback,2,Full,Independent dealer,Fair,London,21500,5440,0.253
+Volkswagen Golf,GOL-091,2016,10,56515,5652,GT,Diesel,Manual,1.6,Hatchback,5,Full,Independent dealer,Good,North East,21500,6935,0.3226
+Volkswagen Golf,GOL-092,2016,10,106655,10666,S,Diesel,Manual,1.5,Sports Tourer,4,Full,Independent dealer,Good,West Midlands,21500,4725,0.2198
+Volkswagen Golf,GOL-093,2016,10,71746,7175,Match,Petrol,Manual,1.5,Sports Tourer,4,Partial,Private,Fair,East of England,21500,4350,0.2023
+Volkswagen Golf,GOL-094,2016,10,189362,18936,GT,Diesel,Manual,1.2,Hatchback,3,Full,Private,Excellent,Scotland,21500,3760,0.1749
+Volkswagen Golf,GOL-095,2016,10,157086,15709,GTI,Petrol,Manual,1.5,Sports Tourer,6,Partial,Franchise dealer,Good,South West,21500,5485,0.2551
+Volkswagen Golf,GOL-096,2016,10,149106,14911,R-Line,Diesel,Manual,1.6,Hatchback,4,Full,Franchise dealer,Good,West Midlands,21500,4730,0.22
+Volkswagen Golf,GOL-097,2016,10,81845,8184,R-Line,Petrol,Manual,1.5,Sports Tourer,5,Full,Independent dealer,Good,South East,21500,6330,0.2944
+Volkswagen Golf,GOL-098,2016,10,63466,6347,S,Petrol,Manual,1.2,Hatchback,3,Full,Private,Good,Scotland,21500,5690,0.2647
+Volkswagen Golf,GOL-099,2016,10,153467,15347,S,Petrol,Automatic,1.6,Hatchback,5,Partial,Private,Good,South East,21500,3825,0.1779
+Volkswagen Golf,GOL-100,2016,10,66516,6652,GTI,Diesel,Manual,1.5,Sports Tourer,4,Full,Independent dealer,Good,Scotland,21500,7035,0.3272

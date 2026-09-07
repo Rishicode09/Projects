@@ -1,0 +1,101 @@
+listing_id,reg_year,age_years,mileage,avg_annual_mileage,trim,fuel,transmission,engine_litres,body,former_keepers,service_history,seller_type,condition,region,original_list_gbp,asking_price_gbp,retained_pct
+AST-001,2026,0,25,,Griffin,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,South West,29995,28375,0.946
+AST-002,2025,1,19124,19124,Ultimate,Petrol,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,London,29500,23760,0.8054
+AST-003,2025,1,4360,4360,Ultimate,Petrol,Manual,1.5,Hatchback,1,Full,Private,Good,South East,29500,21600,0.7322
+AST-004,2025,1,17137,17137,Ultimate,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,Wales,29500,25435,0.8622
+AST-005,2025,1,6255,6255,GS,Electric,Automatic,-,Hatchback,1,Full,Franchise dealer,Good,Wales,29500,23970,0.8125
+AST-006,2025,1,8421,8421,GS,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,Scotland,29500,28945,0.9812
+AST-007,2025,1,4340,4340,GS,Petrol,Manual,1.5,Hatchback,1,Full,Franchise dealer,Good,West Midlands,29500,25425,0.8619
+AST-008,2025,1,4451,4451,Design,Electric,Automatic,-,Sports Tourer,1,Full,Franchise dealer,Excellent,West Midlands,29500,22455,0.7612
+AST-009,2025,1,13016,13016,GS,Hybrid,Automatic,1.2,Sports Tourer,1,Full,Independent dealer,Good,London,29500,27160,0.9207
+AST-010,2025,1,17448,17448,GS Line,Petrol,Manual,1.5,Hatchback,1,Full,Private,Good,East of England,29500,20140,0.6827
+AST-011,2025,1,9625,9625,Ultimate,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Private,Good,North East,29500,23990,0.8132
+AST-012,2024,2,31312,15656,Design,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Good,Wales,28500,18910,0.6635
+AST-013,2024,2,30654,15327,Griffin,Petrol,Manual,1.4,Hatchback,1,Full,Independent dealer,Good,North West,28500,16120,0.5656
+AST-014,2024,2,13367,6684,GS,Electric,Automatic,-,Hatchback,1,Full,Independent dealer,Fair,Yorkshire,28500,16005,0.5616
+AST-015,2024,2,30516,15258,Griffin,Petrol,Manual,1.2,Sports Tourer,1,Full,Private,Good,South West,28500,16485,0.5784
+AST-016,2024,2,30784,15392,Ultimate,Hybrid,Automatic,1.2,Hatchback,2,Full,Franchise dealer,Excellent,West Midlands,28500,22600,0.793
+AST-017,2024,2,25250,12625,Ultimate,Petrol,Manual,1.2,Hatchback,2,Full,Franchise dealer,Good,Wales,28500,22175,0.7781
+AST-018,2024,2,12801,6400,Griffin,Electric,Automatic,-,Hatchback,2,Full,Independent dealer,Excellent,South East,28500,17520,0.6147
+AST-019,2024,2,16666,8333,GS Line,Plug-in Hybrid,Automatic,1.6,Sports Tourer,2,Full,Franchise dealer,Excellent,South West,28500,21365,0.7496
+AST-020,2024,2,29182,14591,Ultimate,Hybrid,Automatic,1.2,Hatchback,1,Full,Franchise dealer,Fair,South East,28500,20065,0.704
+AST-021,2024,2,38022,19011,Design,Plug-in Hybrid,Automatic,1.6,Sports Tourer,1,Full,Independent dealer,Good,South West,28500,16050,0.5632
+AST-022,2024,2,11933,5966,Design,Hybrid,Automatic,1.2,Sports Tourer,1,Full,Private,Fair,Wales,28500,15420,0.5411
+AST-023,2024,2,17262,8631,GS,Petrol,Automatic,1.4,Sports Tourer,2,Full,Franchise dealer,Good,London,28500,19765,0.6935
+AST-024,2023,3,18639,6213,Design,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Full,Franchise dealer,Good,West Midlands,27500,16365,0.5951
+AST-025,2023,3,25974,8658,Design,Petrol,Automatic,1.6,Hatchback,1,Full,Independent dealer,Good,London,27500,14295,0.5198
+AST-026,2023,3,61727,20576,Design,Hybrid,Automatic,1.2,Hatchback,1,Partial,Franchise dealer,Good,Yorkshire,27500,13355,0.4856
+AST-027,2023,3,36473,12158,Ultimate,Plug-in Hybrid,Automatic,1.6,Hatchback,1,None,Independent dealer,Good,Yorkshire,27500,13830,0.5029
+AST-028,2023,3,15959,5320,GS Line,Petrol,Manual,1.5,Hatchback,1,Full,Independent dealer,Fair,Yorkshire,27500,13790,0.5015
+AST-029,2023,3,29741,9914,GS,Electric,Automatic,-,Sports Tourer,2,Full,Independent dealer,Good,North East,27500,13615,0.4951
+AST-030,2023,3,61200,20400,Design,Hybrid,Automatic,1.2,Sports Tourer,1,Partial,Private,Good,West Midlands,27500,11650,0.4236
+AST-031,2023,3,21063,7021,GS Line,Hybrid,Automatic,1.2,Hatchback,1,Full,Independent dealer,Good,Wales,27500,17545,0.638
+AST-032,2023,3,29645,9882,Ultimate,Petrol,Automatic,1.4,Hatchback,2,Full,Independent dealer,Excellent,London,27500,16120,0.5862
+AST-033,2022,4,83026,20756,Ultimate,Petrol,Manual,1.5,Sports Tourer,2,Full,Franchise dealer,Good,North East,25500,10515,0.4124
+AST-034,2022,4,57452,14363,Design,Petrol,Manual,1.4,Hatchback,3,Full,Independent dealer,Good,North West,25500,10030,0.3933
+AST-035,2022,4,77061,19265,Ultimate,Petrol,Manual,1.2,Hatchback,2,Full,Independent dealer,Excellent,South West,25500,10595,0.4155
+AST-036,2022,4,79823,19956,Ultimate,Petrol,Automatic,1.2,Sports Tourer,4,Partial,Independent dealer,Excellent,Yorkshire,25500,10665,0.4182
+AST-037,2022,4,65448,16362,Ultimate,Petrol,Manual,1.5,Hatchback,2,Full,Franchise dealer,Good,London,25500,12450,0.4882
+AST-038,2022,4,71119,17780,Design,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Partial,Independent dealer,Good,East of England,25500,8945,0.3508
+AST-039,2022,4,36871,9218,GS Line,Plug-in Hybrid,Automatic,1.6,Hatchback,1,Full,Franchise dealer,Fair,Wales,25500,13340,0.5231
+AST-040,2022,4,57613,14403,Design,Petrol,Manual,1.4,Hatchback,3,Full,Franchise dealer,Good,East of England,25500,10890,0.4271
+AST-041,2022,4,40634,10158,Design,Plug-in Hybrid,Automatic,1.6,Hatchback,3,Partial,Independent dealer,Excellent,West Midlands,25500,10825,0.4245
+AST-042,2022,4,50692,12673,Griffin,Petrol,Automatic,1.5,Hatchback,1,Partial,Independent dealer,Excellent,North West,25500,11565,0.4535
+AST-043,2022,4,76845,19211,GS Line,Plug-in Hybrid,Automatic,1.6,Hatchback,2,Partial,Private,Good,North West,25500,8800,0.3451
+AST-044,2022,4,54773,13693,GS Line,Petrol,Automatic,1.4,Hatchback,3,Full,Franchise dealer,Good,North East,25500,11540,0.4525
+AST-045,2022,4,60789,15197,Griffin,Petrol,Automatic,1.5,Hatchback,2,Partial,Franchise dealer,Excellent,East of England,25500,11855,0.4649
+AST-046,2022,4,25827,6457,Design,Petrol,Automatic,1.6,Hatchback,4,Full,Franchise dealer,Good,Yorkshire,25500,12210,0.4788
+AST-047,2021,5,78739,15748,SRi,Petrol,Manual,1.2,Hatchback,1,Partial,Independent dealer,Good,Wales,23000,8435,0.3667
+AST-048,2021,5,105118,21024,SRi VX-Line,Petrol,Manual,1.2,Hatchback,6,None,Private,Excellent,Wales,23000,5960,0.2591
+AST-049,2021,5,68767,13753,Design,Diesel,Automatic,1.5,Hatchback,3,Partial,Independent dealer,Good,Wales,23000,8460,0.3678
+AST-050,2021,5,29468,5894,Ultimate,Diesel,Manual,1.2,Sports Tourer,5,None,Independent dealer,Fair,London,23000,8360,0.3635
+AST-051,2021,5,98187,19637,Elite Nav,Petrol,Manual,1.5,Sports Tourer,2,None,Franchise dealer,Good,North East,23000,7440,0.3235
+AST-052,2021,5,43114,8623,Ultimate,Diesel,Manual,1.5,Hatchback,2,Full,Private,Excellent,Yorkshire,23000,9200,0.4
+AST-053,2021,5,59864,11973,Design,Petrol,Manual,1.5,Hatchback,1,Partial,Independent dealer,Excellent,South East,23000,8690,0.3778
+AST-054,2021,5,90975,18195,Design,Petrol,Manual,1.5,Hatchback,5,Full,Private,Fair,South West,23000,6010,0.2613
+AST-055,2021,5,57664,11533,Design,Petrol,Manual,1.6,Hatchback,2,Full,Franchise dealer,Good,West Midlands,23000,9365,0.4072
+AST-056,2021,5,89959,17992,SRi VX-Line,Petrol,Automatic,1.2,Hatchback,1,None,Private,Excellent,East of England,23000,7250,0.3152
+AST-057,2021,5,97381,19476,SRi VX-Line,Petrol,Manual,1.4,Sports Tourer,1,Full,Franchise dealer,Good,Scotland,23000,8395,0.365
+AST-058,2021,5,95964,19193,Design,Petrol,Manual,1.2,Hatchback,4,Full,Franchise dealer,Good,Wales,23000,7535,0.3276
+AST-059,2021,5,77994,15599,Design,Diesel,Automatic,1.2,Hatchback,3,Full,Franchise dealer,Excellent,West Midlands,23000,8270,0.3596
+AST-060,2021,5,59572,11914,SRi VX-Line,Petrol,Manual,1.4,Sports Tourer,5,Full,Private,Good,Scotland,23000,7805,0.3393
+AST-061,2020,6,120559,20093,Design,Petrol,Automatic,1.2,Hatchback,4,Partial,Franchise dealer,Good,North West,22000,5935,0.2698
+AST-062,2020,6,52766,8794,Elite Nav,Diesel,Manual,1.2,Sports Tourer,4,Full,Independent dealer,Good,South East,22000,8040,0.3655
+AST-063,2020,6,30225,5038,SRi VX-Line,Petrol,Automatic,1.2,Sports Tourer,2,Full,Private,Good,Wales,22000,9550,0.4341
+AST-064,2020,6,109062,18177,Design,Petrol,Manual,1.5,Hatchback,4,Full,Private,Good,Yorkshire,22000,4895,0.2225
+AST-065,2020,6,77957,12993,Elite Nav,Petrol,Automatic,1.2,Sports Tourer,2,Full,Independent dealer,Good,South West,22000,8640,0.3927
+AST-066,2020,6,29239,4873,Ultimate,Petrol,Automatic,1.2,Hatchback,2,Full,Independent dealer,Good,Yorkshire,22000,10520,0.4782
+AST-067,2020,6,57142,9524,Elite Nav,Diesel,Manual,1.5,Hatchback,3,Full,Independent dealer,Excellent,Yorkshire,22000,8775,0.3989
+AST-068,2020,6,31154,5192,Design,Diesel,Automatic,1.2,Hatchback,3,Full,Franchise dealer,Good,North East,22000,9115,0.4143
+AST-069,2020,6,45661,7610,SRi VX-Line,Petrol,Manual,1.6,Hatchback,1,Partial,Independent dealer,Good,London,22000,8860,0.4027
+AST-070,2020,6,90123,15020,Elite Nav,Petrol,Manual,1.6,Hatchback,2,Partial,Franchise dealer,Excellent,Yorkshire,22000,7790,0.3541
+AST-071,2020,6,53902,8984,Elite Nav,Petrol,Manual,1.6,Hatchback,4,Partial,Independent dealer,Good,Wales,22000,8015,0.3643
+AST-072,2020,6,40335,6722,SRi VX-Line,Petrol,Manual,1.4,Hatchback,5,Full,Franchise dealer,Good,West Midlands,22000,9210,0.4186
+AST-073,2020,6,41529,6922,Ultimate,Diesel,Manual,1.5,Sports Tourer,5,None,Independent dealer,Fair,North East,22000,7195,0.327
+AST-074,2020,6,38221,6370,Elite Nav,Petrol,Manual,1.5,Hatchback,2,Full,Independent dealer,Good,Scotland,22000,9905,0.4502
+AST-075,2020,6,116680,19447,Design,Petrol,Manual,1.6,Hatchback,5,Partial,Private,Fair,Wales,22000,4480,0.2036
+AST-076,2019,7,106433,15205,Elite Nav,Petrol,Manual,1.5,Hatchback,4,Partial,Franchise dealer,Excellent,East of England,21000,5975,0.2845
+AST-077,2019,7,27959,3994,SRi,Diesel,Manual,1.6,Hatchback,2,Full,Franchise dealer,Good,Wales,21000,9195,0.4379
+AST-078,2019,7,51917,7417,Ultimate,Petrol,Manual,1.4,Sports Tourer,5,Partial,Private,Good,Scotland,21000,6325,0.3012
+AST-079,2019,7,99002,14143,SRi VX-Line,Petrol,Automatic,1.5,Sports Tourer,2,Full,Private,Good,London,21000,5850,0.2786
+AST-080,2019,7,56790,8113,SRi,Petrol,Manual,1.4,Hatchback,2,Full,Independent dealer,Excellent,North East,21000,7700,0.3667
+AST-081,2019,7,110871,15839,Ultimate,Petrol,Automatic,1.5,Hatchback,3,Full,Independent dealer,Excellent,North West,21000,6860,0.3267
+AST-082,2019,7,126929,18133,Ultimate,Diesel,Automatic,1.2,Hatchback,2,Full,Franchise dealer,Good,London,21000,6735,0.3207
+AST-083,2018,8,28243,3530,SRi,Diesel,Manual,1.4,Hatchback,5,Partial,Independent dealer,Good,East of England,20000,6645,0.3322
+AST-084,2018,8,48942,6118,Elite Nav,Petrol,Automatic,1.5,Hatchback,6,Partial,Independent dealer,Good,South West,20000,6505,0.3252
+AST-085,2018,8,60739,7592,SRi VX-Line,Diesel,Manual,1.4,Hatchback,5,Full,Independent dealer,Excellent,Wales,20000,6395,0.3197
+AST-086,2018,8,108109,13514,Design,Diesel,Manual,1.4,Hatchback,4,Partial,Independent dealer,Good,Wales,20000,4445,0.2223
+AST-087,2018,8,95916,11990,Design,Petrol,Manual,1.2,Sports Tourer,5,Partial,Independent dealer,Good,South West,20000,4440,0.222
+AST-088,2018,8,103278,12910,Elite Nav,Petrol,Manual,1.5,Hatchback,5,None,Independent dealer,Fair,Yorkshire,20000,4935,0.2467
+AST-089,2017,9,147547,16394,Design,Petrol,Automatic,1.5,Sports Tourer,4,Full,Independent dealer,Fair,East of England,19500,3540,0.1815
+AST-090,2017,9,56317,6257,Design,Diesel,Manual,1.6,Hatchback,1,Full,Independent dealer,Excellent,Scotland,19500,6025,0.309
+AST-091,2017,9,80087,8899,SRi VX-Line,Petrol,Automatic,1.6,Sports Tourer,6,Partial,Franchise dealer,Good,North West,19500,6010,0.3082
+AST-092,2017,9,143622,15958,Ultimate,Petrol,Manual,1.2,Hatchback,1,Full,Independent dealer,Good,East of England,19500,4610,0.2364
+AST-093,2017,9,58310,6479,SRi,Petrol,Manual,1.2,Sports Tourer,5,Full,Independent dealer,Good,Yorkshire,19500,6185,0.3172
+AST-094,2017,9,182592,20288,SRi,Petrol,Automatic,1.2,Hatchback,4,Full,Independent dealer,Excellent,London,19500,4280,0.2195
+AST-095,2017,9,61682,6854,SRi,Petrol,Manual,1.2,Hatchback,4,Full,Independent dealer,Good,Yorkshire,19500,6170,0.3164
+AST-096,2016,10,109750,10975,Ultimate,Petrol,Manual,1.4,Hatchback,5,Partial,Franchise dealer,Good,South West,19000,4920,0.2589
+AST-097,2016,10,181288,18129,Ultimate,Petrol,Manual,1.6,Hatchback,5,Full,Franchise dealer,Good,North West,19000,4090,0.2153
+AST-098,2016,10,64299,6430,Design,Petrol,Automatic,1.5,Sports Tourer,2,Full,Independent dealer,Fair,North West,19000,5290,0.2784
+AST-099,2016,10,207161,20716,Design,Petrol,Automatic,1.6,Hatchback,3,Full,Independent dealer,Excellent,North East,19000,3560,0.1874
+AST-100,2016,10,198527,19853,Ultimate,Petrol,Manual,1.6,Hatchback,3,Full,Independent dealer,Good,West Midlands,19000,3685,0.1939
