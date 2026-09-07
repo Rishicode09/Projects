@@ -53,9 +53,15 @@ def summarise_reality(df: pd.DataFrame, label: str) -> None:
     print(f"  age {df[AGE_COL].min():.0f}-{df[AGE_COL].max():.0f} yrs | "
           f"mileage {df[MILEAGE_COL].min():,.0f}-{df[MILEAGE_COL].max():,.0f} | "
           f"price £{df[PRICE_COL].min():,.0f}-£{df[PRICE_COL].max():,.0f}")
-    corr = df[AGE_COL].corr(df[MILEAGE_COL])
-    print(f"  corr(age, mileage) = {corr:.3f}"
-          + ("" if abs(corr) < 0.95 else "   <- too collinear to separate the two effects"))
+    # A correlation needs a few points to mean anything, and numpy warns loudly
+    # on a one-row group. Say nothing rather than print a nan.
+    if len(df) >= 5:
+        with np.errstate(invalid="ignore", divide="ignore"):
+            corr = df[AGE_COL].corr(df[MILEAGE_COL])
+        if pd.notna(corr):
+            print(f"  corr(age, mileage) = {corr:.3f}"
+                  + ("" if abs(corr) < 0.95
+                     else "   <- too collinear to separate the two effects"))
 
     bands = df.groupby(AGE_COL)[PRICE_COL].agg(["count", "mean", "std"])
     bands = bands[bands["count"] >= 3]
@@ -77,18 +83,24 @@ def main(argv=None) -> int:
                     help="CSV of real listings (default: data/real_listings.csv)")
     args = ap.parse_args(argv)
 
-    path = Path(args.data)
+    path = Path(args.data).resolve()
+
+    def what_to_do(headline: str) -> None:
+        """One consistent set of instructions, always naming the exact file."""
+        print(headline)
+        print(f"\n  Edit this file:  {path}\n")
+        print("  One row per car. Only four columns are required:")
+        print("      model, reg_year, mileage, asking_price_gbp")
+        print("  Example:")
+        print("      Vauxhall Astra,2019,58000,7995")
+        print("      Volkswagen Golf,2020,42000,13250")
+        print("\n  Leave the other columns blank if you do not want to type them;")
+        print("  they only sharpen the fit. Save, then run this script again.")
+        print(f"\n  Needs at least {MIN_PER_MODEL} cars per model to fit a curve.")
+
     if not path.exists():
         if start_a_file(path):
-            print(f"Created {path}\n")
-            print("Next: open it in VS Code, delete the two example rows, and add your")
-            print("cars — one row each. Only four columns are required:\n")
-            print("    model, reg_year, mileage, asking_price_gbp\n")
-            print("Leave the rest blank if you do not want to type them; they only")
-            print("sharpen the fit. Then run this script again.\n")
-            print("Aim for a spread of ages 1-10 rather than thirty cars of the same")
-            print("age, and deliberately mix low-mileage old cars with high-mileage")
-            print("young ones — otherwise age and mileage cannot be told apart.")
+            what_to_do(f"Created {path.name} — it currently holds only the two example rows.")
             return 0
         print(f"No file at {path}, and no template at {TEMPLATE} to start one from.",
               file=sys.stderr)
@@ -96,19 +108,32 @@ def main(argv=None) -> int:
 
     df = load_astra_csv(str(path), verbose=False)
     if "model" not in df.columns:
-        print("The file needs a 'model' column naming which car each row is.", file=sys.stderr)
+        print(f"{path} has no 'model' column naming which car each row is.\n"
+              f"Columns found: {list(df.columns)}", file=sys.stderr)
         return 1
 
     # Drop the template's example rows if they were left in by accident.
+    n_examples = 0
     if "notes" in df.columns:
         keep = ~df["notes"].astype(str).str.contains("DELETE THIS ROW", case=False, na=False)
-        if (~keep).any():
-            print(f"Ignoring {int((~keep).sum())} template example row(s).")
-            df = df[keep].copy()
+        n_examples = int((~keep).sum())
+        df = df[keep].copy()
+
+    # Reaching here with nothing usable used to print "fit at least two models",
+    # which says nothing about what to do next. Say it properly instead.
+    if df.empty:
+        if n_examples:
+            what_to_do(f"{path.name} still contains only the {n_examples} example rows, "
+                       f"so there is nothing to analyse yet.")
+        else:
+            what_to_do(f"{path.name} has a header but no car rows yet.")
+        return 0
 
     print("=" * 76)
-    print(f"REAL LISTINGS — {path.name}")
+    print(f"REAL LISTINGS — {path}")
     print("=" * 76)
+    if n_examples:
+        print(f"Ignoring {n_examples} template example row(s).")
 
     fits = []
     for name, sub in df.groupby("model"):
@@ -149,8 +174,12 @@ def main(argv=None) -> int:
             print(f"  {age:>4} {miles:>9,} £{a:>16,.0f} £{b:>16,.0f} "
                   f"{b / a - 1:>13.0%}")
         print("\n  Ages outside the range you collected are extrapolation, not measurement.")
-    elif len(fits) < 2:
-        print("\nFit at least two models to get a comparison.")
+    elif len(fits) == 1:
+        print(f"\nOnly one model had enough cars to fit. Add at least {MIN_PER_MODEL} "
+              f"of the other one to get a comparison.")
+    else:
+        print(f"\nNo model had the {MIN_PER_MODEL} cars needed to fit a curve. "
+              f"Add more rows and run again.")
     return 0
 
 
