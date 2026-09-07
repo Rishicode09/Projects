@@ -67,13 +67,18 @@ Two findings worth stating carefully:
 The bundled samples are generated. To run the same analysis on real cars:
 
 ```bash
-python analyse_real_listings.py     # creates data/real_listings.csv for you
-# open it, delete the two example rows, add your cars
-python analyse_real_listings.py     # run again to get the analysis
+python analyse_real_listings.py
 ```
 
-The first run creates the file and stops. It never overwrites an existing one,
-so running it twice cannot destroy data you have collected.
+Runs immediately with no setup. Until you have collected real listings it
+analyses the bundled sample and says so in a banner at the top and bottom of
+the output — the numbers are real arithmetic on generated data, so they show
+the pipeline works but say nothing about the market.
+
+It also drops a `data/real_listings.csv` for you to fill in. Add your own cars
+and run the same command again: it picks the file up automatically, and the
+sample banner disappears. Use `--strict` to make it fail rather than fall back
+to the sample, which is what you want if you ever script this.
 
 **Only four columns are required** — `model`, `reg_year`, `mileage`,
 `asking_price_gbp`. Trim, fuel, transmission, seller type, service history and
