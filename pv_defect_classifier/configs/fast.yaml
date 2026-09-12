@@ -1,0 +1,77 @@
+# Fast preset -- roughly 10 minutes on 4 CPU cores.
+#
+#   python -m pvdefect.train --config configs/fast.yaml
+#
+# This is for answering "does the pipeline run end to end?", not "how good is
+# the model?". Everything here trades accuracy for speed, and two of the
+# settings cost real detection ability:
+#
+#   image_size 160  ELPV cells are 300x300 and hairline cracks are a couple of
+#                   pixels wide at full resolution. Downsampling to 160 will
+#                   lose some of them. This is the setting to undo first.
+#   epochs 12       Not enough for the cosine schedule to anneal properly, so
+#                   the model is still moving when training stops.
+#
+# Numbers from this config are a smoke test. Use configs/default.yaml before
+# quoting anything.
+
+data:
+  root: data/elpv-dataset
+  image_size: 160
+  build_channels: true
+  split: module
+  val_fraction: 0.15
+  test_fraction: 0.15
+  cells_per_module: 60
+  balanced_sampling: true
+  augmentation_strength: 1.0
+  defect_threshold: 0.5
+  num_workers: 4
+
+model:
+  backbone: resnet18
+  pretrained: true
+  dropout: 0.3
+  # Frozen stem: the generic edge filters need no adaptation, and skipping
+  # their gradients is another ~20% off the step time.
+  freeze_stem: true
+
+train:
+  epochs: 12
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  head_learning_rate_multiplier: 10.0
+  warmup_epochs: 1
+  label_smoothing: 0.0
+  use_class_weights: true
+  early_stopping_patience: 4
+  seed: 0
+  device: auto
+  output_dir: artifacts/fast
+  amp: true
+  technical_output: false
+
+detection:
+  model: yolo11n.pt
+  dataset_root: data/yolo
+  weights: artifacts/detection/elpv/weights/best.pt
+  epochs: 20
+  patience: 8
+  image_size: 320
+  batch: 16
+  confidence: 0.25
+  crack_area_weight: 0.25
+
+physics:
+  site_name: "Erlangen, DE"
+  latitude: 49.60
+  longitude: 11.01
+  altitude: 280.0
+  timezone: "Europe/Berlin"
+  surface_tilt: 30.0
+  surface_azimuth: 180.0
+  use_network_weather: true
+  tariff_per_kwh: 0.12
+  cells_in_series: 60
+  bypass_diode_count: 3

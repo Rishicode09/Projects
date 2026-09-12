@@ -1,0 +1,101 @@
+# Default configuration -- under an hour on 4 CPU cores, minutes on a GPU.
+# Early stopping normally ends it well before the 30-epoch ceiling.
+# Override individual fields on the command line:
+#   python -m pvdefect.train --config configs/default.yaml --epochs 10
+#
+# Two other presets sit alongside this one:
+#   configs/fast.yaml      ~10 min, smoke-testing the pipeline only
+#   configs/accurate.yaml  up to ~3.9 h on CPU, the ResNet-50 arm for comparison
+#
+# The exact figure for your machine is measured and printed when training
+# starts, before it commits to the run.
+
+data:
+  root: data/elpv-dataset
+  image_size: 224
+  # build_channels: stack [equalised, grid-suppressed, crack-response].
+  # Set false for the single-channel ablation baseline.
+  build_channels: true
+  # "module" keeps cells from one (pseudo-)module inside a single split.
+  # "random" leaks and exists only to measure how much it leaks.
+  split: module
+  val_fraction: 0.15
+  test_fraction: 0.15
+  cells_per_module: 60
+  balanced_sampling: true
+  # Scales the Albumentations photometric ops. Lower if the model underfits.
+  augmentation_strength: 1.0
+  # Annotator agreement at or above this counts as "cracked". 0.5 keeps the
+  # ambiguous 1/3 level on the functional side; lower it to trade precision
+  # for recall on hairline cracks.
+  defect_threshold: 0.5
+  num_workers: 4
+
+model:
+  # resnet50 | resnet34 | resnet18 | efficientnet_b0 | efficientnet_b1
+  #
+  # ResNet-18 is 5.7x cheaper per step than ResNet-50 on CPU (1.3 s vs 7.6 s at
+  # 224px, batch 32, 4 cores) and 1,837 training cells is too few to constrain
+  # ResNet-50's extra 14M parameters. configs/accurate.yaml runs the ResNet-50
+  # arm if you want the comparison on your own split.
+  backbone: resnet18
+  pretrained: true
+  dropout: 0.3
+  # Freezing conv1/bn1/layer1 saves another ~20% of the step time: the generic
+  # edge filters need no adaptation on 2,624 images.
+  freeze_stem: false
+
+train:
+  epochs: 30
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  head_learning_rate_multiplier: 10.0
+  warmup_epochs: 2
+  label_smoothing: 0.0
+  # Sets BCEWithLogitsLoss pos_weight from the train split's class balance.
+  use_class_weights: true
+  early_stopping_patience: 8
+  seed: 0
+  device: auto              # auto | cpu | cuda | mps
+  output_dir: artifacts
+  amp: true
+  # false prints a plain-English summary of how good the model is;
+  # true prints the full metric table (AP, MCC, ROC-AUC, confusion matrix).
+  # The full table is always written to artifacts/test_report.txt either way.
+  technical_output: false
+
+detection:
+  # yolo11n is the right size here: ELPV has at most a few thousand boxes
+  # after annotation, and a larger backbone memorises the training modules.
+  model: yolo11n.pt
+  dataset_root: data/yolo
+  weights: artifacts/detection/elpv/weights/best.pt
+  epochs: 60
+  # Ultralytics defaults patience to the epoch count, which turns early
+  # stopping off entirely -- the old 100-epoch setting always cost 100 epochs
+  # even once mAP had plateaued. This is what actually ends most runs.
+  patience: 15
+  image_size: 320           # ELPV cells are 300x300; nearest multiple of 32
+  batch: 16
+  confidence: 0.25
+  # A crack's bounding box is mostly intact silicon, and a crack only costs
+  # power once it isolates material. Calibrate against flash-test data.
+  crack_area_weight: 0.25
+
+physics:
+  # Site drives the TMY lookup. Defaults to Erlangen, where the ELPV modules
+  # were imaged, but the defect model is site-independent -- change this to
+  # wherever your plant actually is.
+  site_name: "Erlangen, DE"
+  latitude: 49.60
+  longitude: 11.01
+  altitude: 280.0
+  timezone: "Europe/Berlin"
+  surface_tilt: 30.0
+  surface_azimuth: 180.0
+  # Fetches a PVGIS TMY; falls back to a synthetic clear-sky year when offline.
+  use_network_weather: true
+  tariff_per_kwh: 0.12
+  cells_in_series: 60
+  bypass_diode_count: 3
