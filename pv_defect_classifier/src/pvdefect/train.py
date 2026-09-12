@@ -22,6 +22,7 @@ from .data.elpv import load_index, positive_weight
 from .data.splits import assign_pseudo_modules, split_by_module, split_random
 from .evaluate import best_threshold, collect_predictions, compute_metrics, format_report
 from .models.classifier import build_model
+from .report import plain_model_report
 
 logger = logging.getLogger(__name__)
 
@@ -225,9 +226,19 @@ def train(config: Config) -> dict:
         test_predictions = collect_predictions(model, loaders["test"], device)
         results["test_metrics"] = compute_metrics(test_predictions)
         results["operating_point_90_recall"] = best_threshold(test_predictions, 0.90)
+
+        # The full metric table always goes to disk; what gets printed depends
+        # on who is watching. Someone running this for the first time needs
+        # "it misses 13 in every 100", not a column of four-decimal scores.
         report = format_report(test_predictions)
-        print("\n" + report)
         (output_dir / "test_report.txt").write_text(report, encoding="utf-8")
+
+        if config.train.technical_output:
+            print("\n" + report)
+        else:
+            print(plain_model_report(results["test_metrics"]))
+            print(f"  Full metric table: {output_dir / 'test_report.txt'}")
+            print("  Want it printed here? Set train.technical_output: true\n")
 
     (output_dir / "history.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
     config.save(output_dir / "config_used.yaml")

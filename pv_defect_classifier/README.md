@@ -96,6 +96,43 @@ python scripts/analyse_module.py --cells path/to/cells/ --detector artifacts/det
 `analyse_module.py` runs with or without a trained model — it degrades to the
 classical area estimator, and tells you it is doing so.
 
+## Reading the results
+
+Output is plain English by default, because the first question is almost always
+"is this panel bad?" rather than "what is the fill factor?":
+
+```
+  VERDICT:   NEEDS ATTENTION
+
+  This panel is losing a serious amount of power.
+  Worth inspecting in person, and worth pricing up a replacement.
+
+  This panel makes 19% less electricity than a healthy one.
+    A healthy panel would make ........ 550 kWh
+    This panel makes .................. 446 kWh
+    So you lose ....................... 104 kWh
+
+  That is the same as this panel being switched off
+  for 69 days out of every year.
+```
+
+Three deliberate choices in `report.py`, which is presentation only and
+computes nothing:
+
+- **The verdict comes first**, in one word, with a recommended action. A number
+  with no action attached is trivia.
+- **"69 days switched off"** is the same fact as "19% loss" — not a second
+  estimate — but it is a form you can picture.
+- **The uncertainty is stated in the report itself**, not buried in a footnote,
+  because the damage model is uncalibrated and a confident-looking number would
+  mislead.
+
+Add `--technical` for the engineering view (STC loss, kWh/module/year, weather
+source), `--glossary` to explain the terms, and `--currency` to put a symbol on
+the money figures. Training does the same: a plain summary by default, the full
+metric table always written to `artifacts/test_report.txt`, and
+`train.technical_output: true` in the config to print it instead.
+
 ---
 
 ## The image pipeline
@@ -332,6 +369,7 @@ straight to "power lost" would over-predict badly; this one is built not to.
 ```
 src/pvdefect/
   config.py                 YAML-backed configuration
+  report.py                 plain-English results (presentation only)
   train.py                  classifier training loop, CLI entry point
   evaluate.py               binary metrics + operating-point selection
   explain.py                Grad-CAM

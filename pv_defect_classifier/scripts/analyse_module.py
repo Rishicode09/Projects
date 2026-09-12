@@ -33,6 +33,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from pvdefect.physics.cell_model import ModuleSpec  # noqa: E402
+from pvdefect.report import glossary, plain_module_report  # noqa: E402
 from pvdefect.physics.degradation import DegradationModel  # noqa: E402
 from pvdefect.physics.energy import revenue_impact, simulate_annual_energy  # noqa: E402
 from pvdefect.physics.weather import (  # noqa: E402
@@ -79,11 +80,18 @@ def load_cells_from_module(path: Path, rows: int, columns: int) -> tuple[list[st
     return names, grid.cells
 
 
-def classify(images: list[np.ndarray], checkpoint: Path | None, threshold: float) -> np.ndarray:
-    """Crack probability per cell, from the CNN if available."""
+def classify(images: list[np.ndarray], checkpoint: Path | None, threshold: float,
+             quiet: bool = False) -> np.ndarray:
+    """Crack probability per cell, from the CNN if available.
+
+    ``quiet`` suppresses the fallback warning, because the plain report says
+    the same thing in its own words and saying it twice in two registers is
+    worse than saying it once.
+    """
     if checkpoint is None or not checkpoint.exists():
-        print("No classifier checkpoint — falling back to the image-only area estimator.")
-        print("This is a weak proxy; train a model for anything you intend to publish.\n")
+        if not quiet:
+            print("No classifier checkpoint — falling back to the image-only area estimator.")
+            print("This is a weak proxy; train a model for anything you intend to publish.\n")
         return np.array([estimate_inactive_area_fraction(image) for image in images])
 
     import torch
@@ -156,9 +164,20 @@ def main() -> None:
     parser.add_argument("--save-crops", type=Path, default=None,
                         help="write the cell crops here, to check the cropping visually")
     parser.add_argument("--json-out", type=Path, default=None)
+    parser.add_argument("--technical", action="store_true",
+                        help="show the engineering numbers instead of the plain summary")
+    parser.add_argument("--glossary", action="store_true",
+                        help="also explain the terms used in the report")
+    parser.add_argument("--currency", type=str, default="",
+                        help="symbol to put in front of money figures, e.g. GBP or $")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)-7s %(message)s")
+    # In plain mode the INFO chatter (pvlib, cropping, resampling) buries the
+    # report, so only surface warnings unless the technical view was asked for.
+    logging.basicConfig(
+        level=logging.INFO if args.technical else logging.WARNING,
+        format="%(levelname)-7s %(message)s",
+    )
 
     if args.cells:
         names, images = load_cells_from_directory(args.cells)
@@ -171,23 +190,29 @@ def main() -> None:
             cv2.imwrite(str(args.save_crops / f"{name}.png"), image)
         print(f"Wrote {len(images)} crops to {args.save_crops}")
 
-    probabilities = classify(images, args.checkpoint, args.threshold)
+    used_model = args.checkpoint is not None and args.checkpoint.exists()
+    probabilities = classify(images, args.checkpoint, args.threshold,
+                             quiet=not args.technical)
     detected_areas = detect(images, args.detector, args.detector_confidence,
                             args.crack_area_weight)
 
-    print(f"\nAnalysed {len(images)} cells")
-    print(f"Cells above threshold {args.threshold:.2f}: "
-          f"{int((probabilities >= args.threshold).sum())}")
+    if args.technical:
+        print(f"\nAnalysed {len(images)} cells")
+        print(f"Cells above threshold {args.threshold:.2f}: "
+              f"{int((probabilities >= args.threshold).sum())}")
 
-    order = np.argsort(probabilities)[::-1][:5]
-    print("\nWorst cells:")
-    for rank, index in enumerate(order, start=1):
-        area = f"  measured area {detected_areas[index]:.1%}" if detected_areas is not None else ""
-        print(f"  {rank}. {names[index]:<20s} P(cracked) {probabilities[index]:.3f}{area}")
+        order = np.argsort(probabilities)[::-1][:5]
+        print("\nWorst cells:")
+        for rank, index in enumerate(order, start=1):
+            area = (f"  measured area {detected_areas[index]:.1%}"
+                    if detected_areas is not None else "")
+            print(f"  {rank}. {names[index]:<20s} "
+                  f"P(cracked) {probabilities[index]:.3f}{area}")
 
-    if detected_areas is None:
-        print("\nNo detector weights supplied — defect area comes from the severity lookup")
-        print("table rather than a measurement. Pass --detector to improve this.")
+        if detected_areas is None:
+            print("\nNo detector weights supplied — defect area comes from the severity "
+                  "lookup")
+            print("table rather than a measurement. Pass --detector to improve this.")
 
     site = SiteSpec(
         latitude=args.latitude, longitude=args.longitude, timezone=args.timezone,
@@ -201,25 +226,44 @@ def main() -> None:
         probabilities, poa, module, degradation, detected_areas=detected_areas
     )
 
-    print("\n" + result.summary())
-
     impact = revenue_impact(result, args.modules, args.tariff, years=10)
-    print(
-        f"\nAcross {args.modules} module(s): "
-        f"{impact['annual_energy_loss_kwh']:.0f} kWh/yr "
-        f"= {impact['annual_revenue_loss']:.0f}/yr "
-        f"({impact['cumulative_revenue_loss']:.0f} over 10 years)"
-    )
+    synthetic = bool(poa.attrs.get("synthetic", True))
 
-    if poa.attrs.get("synthetic", True):
+    if args.technical:
+        print("\n" + result.summary())
         print(
-            "\nNote: synthetic clear-sky weather. Relative losses are meaningful; "
-            "absolute yield is over-stated because there are no clouds."
+            f"\nAcross {args.modules} module(s): "
+            f"{impact['annual_energy_loss_kwh']:.0f} kWh/yr "
+            f"= {impact['annual_revenue_loss']:.0f}/yr "
+            f"({impact['cumulative_revenue_loss']:.0f} over 10 years)"
         )
-    print(
-        "Note: the defect->damage mapping is uncalibrated. Re-run with "
-        "--damage-scaling 0.5 and 1.5 to see the spread before acting on the figure."
-    )
+        if synthetic:
+            print(
+                "\nNote: synthetic clear-sky weather. Relative losses are meaningful; "
+                "absolute yield is over-stated because there are no clouds."
+            )
+        print(
+            "Note: the defect->damage mapping is uncalibrated. Re-run with "
+            "--damage-scaling 0.5 and 1.5 to see the spread before acting on the figure."
+        )
+    else:
+        print(
+            plain_module_report(
+                result,
+                probabilities=probabilities,
+                names=names,
+                threshold=args.threshold,
+                modules_affected=args.modules,
+                tariff=args.tariff,
+                currency=args.currency,
+                detected_areas=detected_areas,
+                used_model=used_model,
+                synthetic_weather=synthetic,
+            )
+        )
+        if args.glossary:
+            print(glossary())
+        print("  Want the engineering numbers instead?  Add --technical\n")
 
     if args.json_out:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)

@@ -46,6 +46,10 @@ train:
   device: auto              # auto | cpu | cuda | mps
   output_dir: artifacts
   amp: true
+  # false prints a plain-English summary of how good the model is;
+  # true prints the full metric table (AP, MCC, ROC-AUC, confusion matrix).
+  # The full table is always written to artifacts/test_report.txt either way.
+  technical_output: false
 
 detection:
   # yolo11n is the right size here: ELPV has at most a few thousand boxes

@@ -50,6 +50,8 @@ class TrainConfig:
     device: str = "auto"
     output_dir: str = "artifacts"
     amp: bool = True
+    # Print the full metric table instead of the plain-English summary.
+    technical_output: bool = False
 
 
 @dataclass
