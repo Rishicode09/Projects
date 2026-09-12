@@ -83,7 +83,8 @@ BibTeX is in the [upstream repo](https://github.com/zae-bayern/elpv-dataset).
 ## Run
 
 ```bash
-make train              # binary classifier          (python -m pvdefect.train)
+make train              # binary classifier, ~55 min on CPU / minutes on a GPU
+make train-fast         # ~9 min pipeline smoke test (configs/fast.yaml)
 make detection-data     # build YOLO dataset + bootstrap boxes  ← review these
 make train-detector     # fine-tune YOLO on reviewed boxes
 make test
@@ -95,6 +96,45 @@ python scripts/analyse_module.py --cells path/to/cells/ --detector artifacts/det
 
 `analyse_module.py` runs with or without a trained model — it degrades to the
 classical area estimator, and tells you it is doing so.
+
+### How long training takes
+
+Training measures one step on your machine and prints the cost before it
+commits to the run, so a three-hour job announces itself while you can still
+change your mind:
+
+```
+----------------------------------------------------------------
+  Training resnet18 on cpu.
+  About 2 minutes per epoch, up to 30 epochs.
+  Worst case: roughly 56 minutes.
+  It usually stops earlier -- training ends after 8 epochs
+  with no improvement, which normally comes first.
+----------------------------------------------------------------
+```
+
+Three presets, measured on 4 CPU cores (a CUDA card is 10–50× faster and needs
+no config change — `device: auto` finds it):
+
+| Config | Backbone | Size | Ceiling | Use for |
+|---|---|---|---|---|
+| `configs/fast.yaml` | ResNet-18, frozen stem | 160 | **~9 min** | does the pipeline run? |
+| `configs/default.yaml` | ResNet-18 | 224 | **~55 min** | ordinary runs |
+| `configs/accurate.yaml` | ResNet-50 | 224 | **~3.9 h** | the ResNet-50 comparison arm |
+
+Those are ceilings, reached only if early stopping never fires. The old default
+was the `accurate` row — which is where a 2–3 hour run came from, that figure
+being the ceiling cut short by early stopping.
+
+The lever that matters is the backbone, not the epoch count: ResNet-50 → 18 is
+5.7× off the step time, where trimming 30 epochs to 22 is 27%. Epochs are also
+the *worst* lever to reach for first, because the cosine schedule is scaled to
+`epochs` — cutting it doesn't stop training early, it compresses the whole
+anneal into fewer steps and changes what you get. Early stopping is the honest
+way to end a run sooner, and it is already on.
+
+`configs/fast.yaml` is a smoke test, not a result: at 160px hairline cracks are
+a pixel or two wide and some are simply gone. Don't quote numbers from it.
 
 ## Reading the results
 
@@ -195,11 +235,18 @@ raising recall and false alarms. At the default the split is 1803 functional /
 The graded probability is kept in the frame regardless, because the physics model
 consumes a continuous severity.
 
-**Model.** torchvision ResNet-50 (default) or EfficientNet-B0, ImageNet
-pretrained, with a **single-logit** head. One logit rather than two: it pairs
-directly with `BCEWithLogitsLoss` and its `pos_weight` (how the imbalance is
-handled), and it keeps the decision threshold an explicit knob at inference
+**Model.** torchvision ResNet-18 (default), ResNet-50 or EfficientNet-B0,
+ImageNet pretrained, with a **single-logit** head. One logit rather than two: it
+pairs directly with `BCEWithLogitsLoss` and its `pos_weight` (how the imbalance
+is handled), and it keeps the decision threshold an explicit knob at inference
 instead of hiding it in an argmax.
+
+ResNet-18 is the default for two reasons, one practical and one statistical. On
+4 CPU cores a ResNet-50 step at 224px costs 7.6 s against ResNet-18's 1.3 s —
+about 5 hours per run against under one. And 1,800 training cells is thin for a
+25M-parameter backbone. The second reason is a claim rather than a measurement,
+which is what `configs/accurate.yaml` is for: it runs the ResNet-50 arm, and the
+comparison is worth making once and reporting.
 
 **Imbalance** is handled twice over — `pos_weight` in the loss, and a capped
 oversampler. The cap matters: uncapped inverse-frequency sampling repeats the

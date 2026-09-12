@@ -51,15 +51,22 @@ class Detection:
 def train_detector(
     data_yaml: Path,
     model_name: str = DEFAULT_MODEL,
-    epochs: int = 100,
+    epochs: int = 60,
     image_size: int = DEFAULT_IMAGE_SIZE,
     batch: int = 16,
     project: str = "artifacts/detection",
     name: str = "elpv",
     device: str | int | None = None,
+    patience: int = 15,
     **kwargs,
 ):
     """Fine-tune a YOLO detector on the EL dataset.
+
+    ``patience`` is passed explicitly because Ultralytics defaults it to the
+    epoch count, which silently disables early stopping: a 60-epoch run costs
+    60 epochs even if mAP peaked at epoch 20. Passing a real value is usually
+    the single largest saving available here, and unlike cutting ``epochs`` it
+    costs nothing when the model is still improving.
 
     Ultralytics runs its own augmentation (mosaic, HSV, flips) internally. Two
     of its defaults are wrong for EL imagery and are overridden here:
@@ -85,6 +92,7 @@ def train_detector(
         project=project,
         name=name,
         device=device,
+        patience=patience,
         hsv_h=0.0,
         hsv_s=0.0,
         hsv_v=0.25,

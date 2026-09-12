@@ -1,0 +1,72 @@
+# Accurate preset -- the ResNet-50 arm. Up to ~3.9 hours on 4 CPU cores if it
+# runs to the 30-epoch ceiling, or a few minutes on a CUDA card.
+#
+#   python -m pvdefect.train --config configs/accurate.yaml
+#
+# This was the default until the CPU cost was measured. It is kept because
+# "ResNet-18 is enough for 1,837 training cells" is a claim, not a measurement,
+# and this config is how you check it on your own split. Run both, compare
+# average precision on the test split, and report the comparison rather than
+# either number alone.
+#
+# Do not run this on a processor unless you mean to. Check the time estimate
+# printed at startup first.
+
+data:
+  root: data/elpv-dataset
+  image_size: 224
+  build_channels: true
+  split: module
+  val_fraction: 0.15
+  test_fraction: 0.15
+  cells_per_module: 60
+  balanced_sampling: true
+  augmentation_strength: 1.0
+  defect_threshold: 0.5
+  num_workers: 4
+
+model:
+  backbone: resnet50
+  pretrained: true
+  dropout: 0.3
+  freeze_stem: false
+
+train:
+  epochs: 30
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  head_learning_rate_multiplier: 10.0
+  warmup_epochs: 2
+  label_smoothing: 0.0
+  use_class_weights: true
+  early_stopping_patience: 8
+  seed: 0
+  device: auto
+  output_dir: artifacts/accurate
+  amp: true
+  technical_output: true
+
+detection:
+  model: yolo11n.pt
+  dataset_root: data/yolo
+  weights: artifacts/detection/elpv/weights/best.pt
+  epochs: 100
+  patience: 25
+  image_size: 320
+  batch: 16
+  confidence: 0.25
+  crack_area_weight: 0.25
+
+physics:
+  site_name: "Erlangen, DE"
+  latitude: 49.60
+  longitude: 11.01
+  altitude: 280.0
+  timezone: "Europe/Berlin"
+  surface_tilt: 30.0
+  surface_azimuth: 180.0
+  use_network_weather: true
+  tariff_per_kwh: 0.12
+  cells_in_series: 60
+  bypass_diode_count: 3

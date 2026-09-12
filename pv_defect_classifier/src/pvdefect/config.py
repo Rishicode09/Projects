@@ -29,7 +29,13 @@ class DataConfig:
 
 @dataclass
 class ModelConfig:
-    backbone: str = "resnet50"
+    # ResNet-18 by default, not ResNet-50. On 4 CPU cores a ResNet-50 step at
+    # 224px costs 7.6 s against ResNet-18's 1.3 s -- about 3.9 hours for a full
+    # 30-epoch run against under one -- and with only 1,800 training cells the
+    # 25M-parameter model has more capacity than the data can constrain. Use
+    # configs/accurate.yaml to compare the two on your own split before
+    # assuming the larger one wins.
+    backbone: str = "resnet18"
     pretrained: bool = True
     dropout: float = 0.3
     freeze_stem: bool = False
@@ -61,7 +67,12 @@ class DetectionConfig:
     model: str = "yolo11n.pt"
     dataset_root: str = "data/yolo"
     weights: str = "artifacts/detection/elpv/weights/best.pt"
-    epochs: int = 100
+    epochs: int = 60
+    # Ultralytics defaults patience to the epoch count, which disables early
+    # stopping entirely -- a 100-epoch run always cost 100 epochs even once it
+    # had stopped improving. 15 is loose enough to survive the noisy mAP of a
+    # small detection set.
+    patience: int = 15
     image_size: int = 320
     batch: int = 16
     confidence: float = 0.25

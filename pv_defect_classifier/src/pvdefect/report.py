@@ -284,6 +284,62 @@ def plain_model_report(metrics: dict, threshold: float = 0.5) -> str:
     return "\n".join(lines)
 
 
+def format_duration(seconds: float) -> str:
+    """A duration at the precision the reader can actually use.
+
+    Nobody plans around "6847 seconds". The thresholds are deliberately low --
+    90 seconds reads as minutes, 90 minutes as hours -- because the decision
+    this figure informs is "do I wait, or come back later?".
+    """
+    if seconds < 90:
+        return f"{seconds:.0f} seconds"
+    minutes = seconds / 60.0
+    if minutes < 90:
+        return f"{minutes:.0f} minutes"
+    return f"{minutes / 60.0:.1f} hours"
+
+
+def training_plan(
+    backbone: str,
+    device: str,
+    epochs: int,
+    seconds_per_epoch: float,
+    patience: int | None = None,
+    slow_threshold: float = 45 * 60,
+) -> str:
+    """What this training run is about to cost, said before it starts.
+
+    A run that turns out to take three hours is a far worse experience than one
+    that says so up front, and the fix is the same either way: print the
+    estimate while the reader can still change their mind.
+    """
+    total = seconds_per_epoch * epochs
+    lines = [
+        "",
+        _rule("-"),
+        f"  Training {backbone} on {device}.",
+        f"  About {format_duration(seconds_per_epoch)} per epoch, "
+        f"up to {epochs} epochs.",
+        f"  Worst case: roughly {format_duration(total)}.",
+    ]
+    if patience:
+        lines.append(
+            f"  It usually stops earlier -- training ends after {patience} epochs"
+        )
+        lines.append("  with no improvement, which normally comes first.")
+    if total > slow_threshold and device == "cpu":
+        lines += [
+            "",
+            "  That is a long time on a processor. Two ways to cut it:",
+            "    - a shorter run for checking the pipeline works:",
+            "        python -m pvdefect.train --config configs/fast.yaml",
+            "    - a machine with a CUDA graphics card, which is 10-50x faster",
+            "      and needs no config change (device: auto finds it).",
+        ]
+    lines += [_rule("-"), ""]
+    return "\n".join(lines)
+
+
 def glossary() -> str:
     """The handful of terms the reports cannot avoid."""
     return "\n".join(

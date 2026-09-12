@@ -1,4 +1,4 @@
-.PHONY: install data test train train-leaky detection-data train-detector clean
+.PHONY: install data test train train-fast train-accurate train-leaky detection-data train-detector clean
 
 install:
 	pip install -e ".[dev]"
@@ -10,8 +10,18 @@ test:
 	pytest -q
 
 # --- classification ---------------------------------------------------
+# ~55 min on 4 CPU cores, minutes on a GPU. The exact figure for your machine
+# is measured and printed before training starts.
 train:
 	python -m pvdefect.train --config configs/default.yaml
+
+# ~9 min. Checks the pipeline runs end to end; not a result worth quoting.
+train-fast:
+	python -m pvdefect.train --config configs/fast.yaml
+
+# ~3.9 h on CPU. The ResNet-50 arm, for the backbone comparison.
+train-accurate:
+	python -m pvdefect.train --config configs/accurate.yaml
 
 # Measures the leakage gap: this number will look better than `train`, and
 # that gap is the thing worth reporting.

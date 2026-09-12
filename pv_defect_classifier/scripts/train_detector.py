@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Fine-tune an Ultralytics YOLO detector on EL defect boxes.
 
-    python scripts/train_detector.py --data data/yolo/data.yaml --epochs 100
+    python scripts/train_detector.py --data data/yolo/data.yaml
 
 Build the dataset first with ``scripts/build_detection_dataset.py``, and review
 the labels before running this — see that script's docstring for why.
+
+On CPU this is slow whatever you do; ``--device 0`` on a CUDA machine is worth
+more than any setting here. Failing that, ``--epochs 30`` halves the ceiling,
+and early stopping (``--patience``) usually ends the run before it anyway.
 
 Model size: ``yolo11n`` (nano) is the default and is the right choice here.
 ELPV is 2,624 cells with at most a few thousand boxes after annotation; a
@@ -28,7 +32,9 @@ def main() -> None:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", type=Path, default=Path("data/yolo/data.yaml"))
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
-    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--epochs", type=int, default=60)
+    parser.add_argument("--patience", type=int, default=15,
+                        help="stop after this many epochs with no mAP improvement")
     parser.add_argument("--image-size", type=int, default=DEFAULT_IMAGE_SIZE)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--device", type=str, default=None, help="e.g. 0, cpu, mps")
@@ -51,6 +57,7 @@ def main() -> None:
         project=args.project,
         name=args.name,
         device=args.device,
+        patience=args.patience,
     )
 
     weights = Path(args.project) / args.name / "weights" / "best.pt"

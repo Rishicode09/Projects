@@ -8,6 +8,7 @@ Run as::
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import logging
 import time
@@ -22,7 +23,7 @@ from .data.elpv import load_index, positive_weight
 from .data.splits import assign_pseudo_modules, split_by_module, split_random
 from .evaluate import best_threshold, collect_predictions, compute_metrics, format_report
 from .models.classifier import build_model
-from .report import plain_model_report
+from .report import plain_model_report, training_plan
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,64 @@ def build_scheduler(optimizer, config: Config, steps_per_epoch: int):
         return 0.5 * (1.0 + np.cos(np.pi * min(progress, 1.0)))
 
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
+
+def estimate_epoch_seconds(
+    model, config: Config, device: torch.device, steps_per_epoch: int, probe_steps: int = 2
+) -> float:
+    """Measure one training step and extrapolate to a full epoch.
+
+    Timed on a deep copy driven by synthetic input, never on the real model or
+    the real loader: an estimate that advances the sampler's RNG or nudges the
+    weights it is estimating for would change the run it is describing.
+
+    The first step is discarded. It pays one-off costs -- lazy kernel
+    selection, cuDNN autotuning, allocator warm-up -- that are not part of the
+    per-epoch cost and would inflate the figure by a large factor on CUDA.
+    """
+    probe = copy.deepcopy(model).to(device)
+    probe.train()
+
+    trainable = [p for p in probe.parameters() if p.requires_grad]
+    # The learning rate is irrelevant: this copy is discarded, and AdamW is
+    # here only so the timing includes an optimiser step like the real loop.
+    optimizer = torch.optim.AdamW(trainable, lr=1e-9)
+    criterion = torch.nn.BCEWithLogitsLoss()
+
+    size = config.data.image_size
+    images = torch.randn(config.train.batch_size, 3, size, size, device=device)
+    labels = torch.rand(config.train.batch_size, device=device)
+
+    def one_step() -> None:
+        optimizer.zero_grad(set_to_none=True)
+        criterion(probe(images), labels).backward()
+        optimizer.step()
+
+    try:
+        one_step()  # warm-up, discarded
+        if device.type == "cuda":
+            torch.cuda.synchronize()
+
+        started = time.perf_counter()
+        for _ in range(probe_steps):
+            one_step()
+        if device.type == "cuda":
+            torch.cuda.synchronize()
+        per_step = (time.perf_counter() - started) / probe_steps
+    except Exception as exc:  # an estimate is never worth failing a run over
+        logger.debug("Could not time a training step: %s", exc)
+        return 0.0
+    finally:
+        del probe, optimizer
+
+    # The probe times compute only, on tensors already on the device. A real
+    # epoch also pays for data loading, the forward-only validation pass, and
+    # the occasional checkpoint write. 1.4 is calibrated against measured runs
+    # (35.6 s of compute against 46 s of wall clock on the fast preset) and is
+    # meant to land just above a steady-state epoch -- finishing early is a
+    # good surprise, overrunning is not. The first epoch still runs over, as it
+    # pays once for dataloader worker start-up.
+    return per_step * steps_per_epoch * 1.4
 
 
 def train_one_epoch(model, loader, criterion, optimizer, scheduler, device, scaler) -> float:
@@ -173,6 +232,21 @@ def train(config: Config) -> dict:
         if (config.train.amp and device.type == "cuda")
         else None
     )
+
+    # Say what this will cost before spending it, not after.
+    seconds_per_epoch = estimate_epoch_seconds(
+        model, config, device, max(1, len(loaders["train"]))
+    )
+    if seconds_per_epoch > 0:
+        print(
+            training_plan(
+                backbone=config.model.backbone,
+                device=device.type,
+                epochs=config.train.epochs,
+                seconds_per_epoch=seconds_per_epoch,
+                patience=config.train.early_stopping_patience,
+            )
+        )
 
     best_score, best_epoch, history = -np.inf, -1, []
     checkpoint_path = output_dir / "model.pt"

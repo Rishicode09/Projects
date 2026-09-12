@@ -389,3 +389,50 @@ def test_gradcam_produces_a_normalised_map():
     overlay = overlay_heatmap(image[0].permute(1, 2, 0).numpy(), heatmap)
     assert overlay.shape == (224, 224, 3)
     assert overlay.dtype == np.uint8
+
+
+# -------------------------------------------------------- training estimate
+
+def test_epoch_estimate_does_not_disturb_the_model_it_measures():
+    """The estimate runs a real training step; it must do so on a copy.
+
+    If it timed the actual model, the weights and the optimiser state would
+    already have moved before epoch 0, and the run would no longer be the one
+    the seed describes.
+    """
+    from pvdefect.config import Config
+    from pvdefect.train import estimate_epoch_seconds
+
+    config = Config()
+    config.model.backbone = "resnet18"
+    config.model.pretrained = False
+    config.data.image_size = 64
+    config.train.batch_size = 2
+
+    model = DefectClassifier(backbone="resnet18", pretrained=False)
+    before = {name: p.detach().clone() for name, p in model.named_parameters()}
+
+    seconds = estimate_epoch_seconds(
+        model, config, torch.device("cpu"), steps_per_epoch=10, probe_steps=1
+    )
+
+    assert seconds > 0
+    for name, parameter in model.named_parameters():
+        assert torch.equal(parameter, before[name]), f"{name} was modified by the estimate"
+    assert all(p.grad is None for p in model.parameters()), "estimate left gradients behind"
+
+
+def test_epoch_estimate_scales_with_the_number_of_steps():
+    from pvdefect.config import Config
+    from pvdefect.train import estimate_epoch_seconds
+
+    config = Config()
+    config.model.pretrained = False
+    config.data.image_size = 64
+    config.train.batch_size = 2
+
+    model = DefectClassifier(backbone="resnet18", pretrained=False)
+    device = torch.device("cpu")
+    short = estimate_epoch_seconds(model, config, device, steps_per_epoch=1, probe_steps=1)
+    long = estimate_epoch_seconds(model, config, device, steps_per_epoch=20, probe_steps=1)
+    assert long > short
