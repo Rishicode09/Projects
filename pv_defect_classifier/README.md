@@ -66,8 +66,12 @@ the most valuable open experiment in the project — see [Next steps](#next-step
 ```bash
 pip install -e ".[dev]"     # or: pip install -r requirements.txt
 python scripts/download_data.py
-pytest -q                    # 60 tests, no dataset required
+pytest -q                    # 98 tests, no dataset required
 ```
+
+On Windows, see [WINDOWS_SETUP.md](WINDOWS_SETUP.md) — execution policy, venv
+activation, interpreter selection in VS Code, and getting the dataset without
+git, written against the errors a fresh machine actually produces.
 
 The ELPV **images** are CC BY-NC-SA 4.0 (non-commercial). Cite Buerhop-Lutz
 et al. 2018, Deitsch et al. 2019 and Deitsch et al. 2021 in any publication —
